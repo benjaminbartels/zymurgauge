@@ -1,0 +1,96 @@
+//package monitor
+
+// import "github.com/orangesword/zymurgauge"
+// import "fmt"
+// import "time"
+
+// type Monitor struct {
+// 	macAddress   string
+// 	client       zymurgauge.Client
+// 	thermostat   zymurgauge.FermentationThermostat
+// 	configUpdate chan zymurgauge.Thermostat
+// 	tempUpdate   chan int
+// 	interval     time.Duration
+// 	isRunning    bool
+// }
+
+// func NewMonitor(c zymurgauge.Client, mac string, i time.Duration) *Monitor {
+
+// 	m := &Monitor{
+// 		client:       c,
+// 		macAddress:   mac,
+// 		interval:     i,
+// 		configUpdate: make(chan zymurgauge.Thermostat),
+// 		tempUpdate:   make(chan int),
+// 	}
+
+// 	return m
+
+// }
+
+// func (m *Monitor) Start() error {
+
+// 	c, err := m.client.ThermostatService().Get(m.macAddress)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	m.thermostat = &Thermostat{controller: *c}
+
+// 	err = m.client.ThermostatService().Subscribe(m.macAddress, m.configUpdate)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	go m.do()
+// 	go m.pollTemp()
+
+// 	m.isRunning = true
+
+// 	return nil
+// }
+
+// func (m *Monitor) Stop() error {
+
+// 	// ToDo: Implement
+
+// 	m.isRunning = false
+// 	return nil
+// }
+
+// func (m *Monitor) IsRunning() bool {
+// 	return m.isRunning
+// }
+
+// func (m *Monitor) do() {
+
+// 	for {
+
+// 		select {
+
+// 		case c := <-m.configUpdate:
+// 			fmt.Println("Controller Update:", c)
+
+// 			m.thermostat.(*Thermostat).controller = c
+
+// 		case t := <-m.tempUpdate:
+// 			fmt.Println("Temperature Update:", t)
+
+// 		}
+// 	}
+// }
+
+// func (m *Monitor) pollTemp() {
+
+// 	for {
+// 		t, err := m.thermostat.GetTemperature()
+
+// 		if err != nil {
+// 			fmt.Println(err) // ToDo: log it
+// 		} else {
+// 			m.tempUpdate <- t
+// 		}
+
+// 		time.Sleep(m.interval)
+// 	}
+// }
