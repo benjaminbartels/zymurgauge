@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/orangesword/zymurgauge/bolt"
+	"github.com/benjaminbartels/zymurgauge/bolt"
 	"github.com/sirupsen/logrus"
 )
 

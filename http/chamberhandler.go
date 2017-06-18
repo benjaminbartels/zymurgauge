@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge/gpio"
 	"github.com/julienschmidt/httprouter"
-	"github.com/orangesword/zymurgauge"
-	"github.com/orangesword/zymurgauge/gpio"
 	"github.com/sirupsen/logrus"
 )
 
@@ -174,18 +174,18 @@ func (h *ChamberHandler) Start() { //ToDo: Rename?
 
 // getChamberResponse represents the http response for a get
 type getChamberResponse struct {
-	Chamber *zymurgauge.Chamber `json:"controller,omitempty"`
+	Chamber *zymurgauge.Chamber `json:"chamber,omitempty"`
 	Err     string              `json:"err,omitempty"`
 }
 
 // postChamberRequest represents the http request for a post
 type postChamberRequest struct {
-	Chamber *zymurgauge.Chamber `json:"controller,omitempty"`
+	Chamber *zymurgauge.Chamber `json:"chamber,omitempty"`
 }
 
 // postChamberResponse represents the http response for a post
 type postChamberResponse struct {
-	Chamber *zymurgauge.Chamber `json:"controller,omitempty"`
+	Chamber *zymurgauge.Chamber `json:"chamber,omitempty"`
 	Err     string              `json:"err,omitempty"`
 }
 

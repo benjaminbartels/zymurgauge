@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/orangesword/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge"
 )
 
 func TestBeerService_Save_New(t *testing.T) {

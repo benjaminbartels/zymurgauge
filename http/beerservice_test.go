@@ -7,7 +7,7 @@ import (
 
 	"time"
 
-	"github.com/orangesword/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge"
 )
 
 func TestBeerService_Get(t *testing.T) {

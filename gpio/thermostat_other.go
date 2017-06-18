@@ -9,11 +9,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
+
+var Logger = logrus.New()
 
 const mockData = "af 01 4b 46 7f ff 01 10 bc : crc=bc YES\naf 01 4b 46 7f ff 01 10 bc t=%d"
 
 func (t *Thermostat) SetTemperature(temp *float64) error {
+
 	t.target = temp
 	if t.target != nil && !t.isPolling {
 		go t.poll()
@@ -29,7 +34,7 @@ func (t *Thermostat) poll() {
 	t.path = os.TempDir() + "zymurgauge/" + t.ThermometerID
 	err := t.prepare()
 	if err != nil {
-		t.logger.Error(err)
+		t.Logger.Error(err)
 		return
 	}
 
@@ -42,21 +47,21 @@ func (t *Thermostat) poll() {
 		case <-time.After(t.Interval):
 			v, err := t.getTemperature()
 			if err != nil {
-				t.logger.Error(err)
+				t.Logger.Error(err)
 			} else {
 				if t.target != nil {
 
 					if v > *t.target {
-						t.logger.Debugf("Temperature above Target. Current: %f Target: %f", v, t.target)
+						t.Logger.Infof("Temperature above Target. Current: %f Target: %f", v, *t.target)
 						err = t.decreaseTemp()
 					} else if v < *t.target {
-						t.logger.Debugf("Temperature below Target. Current: %f Target: %f", v, t.target)
+						t.Logger.Infof("Temperature below Target. Current: %f Target: %f", v, *t.target)
 						err = t.increaseTemp()
 					} else {
-						t.logger.Debugf("Temperature equals Target. Current: %f Target: %f", v, t.target)
+						t.Logger.Infof("Temperature equals Target. Current: %f Target: %f", v, *t.target)
 					}
 					if err != nil {
-						t.logger.Error(err)
+						t.Logger.Error(err)
 					}
 
 				}
@@ -83,12 +88,12 @@ func (t *Thermostat) getTemperature() (float64, error) {
 }
 
 func (t *Thermostat) increaseTemp() error {
-	t.logger.Debug("Simulating heating")
+	t.Logger.Infof("Simulating heating")
 	return t.updateTemp(true)
 }
 
 func (t *Thermostat) decreaseTemp() error {
-	t.logger.Debug("Simulating cooling")
+	t.Logger.Infof("Simulating cooling")
 	return t.updateTemp(false)
 }
 

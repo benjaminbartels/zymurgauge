@@ -1,6 +1,6 @@
 package mock
 
-import "github.com/orangesword/zymurgauge"
+import "github.com/benjaminbartels/zymurgauge"
 
 // ChamberService is the mock implementation of zymurgauge.ChamberService
 type ChamberService struct {

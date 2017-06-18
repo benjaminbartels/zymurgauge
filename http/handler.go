@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/orangesword/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge"
 	"github.com/sirupsen/logrus"
 )
 

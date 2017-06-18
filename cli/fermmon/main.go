@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/orangesword/zymurgauge"
-	"github.com/orangesword/zymurgauge/gpio"
-	"github.com/orangesword/zymurgauge/http"
+	"github.com/benjaminbartels/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge/gpio"
+	"github.com/benjaminbartels/zymurgauge/http"
 	"github.com/sirupsen/logrus"
 )
 
@@ -123,9 +123,15 @@ func (d Daemon) processChamber(c *zymurgauge.Chamber) {
 	// Check for updated fermentation
 	if d.chamber.CurrentFermentation != nil {
 		t := c.CurrentFermentation.Beer.Schedule[0].TargetTemp
-		d.chamber.Controller.SetTemperature(&t)
+		err := d.chamber.Controller.SetTemperature(&t)
+		if err != nil {
+			panic(err)
+		}
 	} else {
-		d.chamber.Controller.SetTemperature(nil)
+		err := d.chamber.Controller.SetTemperature(nil)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 }

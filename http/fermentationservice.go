@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/orangesword/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

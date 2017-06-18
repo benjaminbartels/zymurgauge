@@ -5,9 +5,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/orangesword/zymurgauge"
-	"github.com/orangesword/zymurgauge/bolt"
-	"github.com/orangesword/zymurgauge/http"
+	"github.com/benjaminbartels/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge/bolt"
+	"github.com/benjaminbartels/zymurgauge/http"
 	"github.com/sirupsen/logrus"
 )
 

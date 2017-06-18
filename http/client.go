@@ -3,7 +3,7 @@ package http
 import (
 	"net/url"
 
-	"github.com/orangesword/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge"
 	"github.com/sirupsen/logrus"
 )
 

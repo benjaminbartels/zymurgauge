@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/orangesword/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

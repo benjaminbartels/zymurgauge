@@ -11,7 +11,7 @@ type Thermostat struct {
 	CoolerGPIO    int           `json:"coolerGpio"`
 	HeaterGPIO    int           `json:"heaterGpio"`
 	Interval      time.Duration `json:"interval"`
-	logger        logrus.Logger
+	Logger        *logrus.Logger
 	path          string
 	target        *float64
 	quit          chan bool

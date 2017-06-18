@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/orangesword/zymurgauge"
-	"github.com/orangesword/zymurgauge/gpio"
+	"github.com/benjaminbartels/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge/gpio"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

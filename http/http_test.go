@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/orangesword/zymurgauge/http"
-	"github.com/orangesword/zymurgauge/mock"
+	"github.com/benjaminbartels/zymurgauge/http"
+	"github.com/benjaminbartels/zymurgauge/mock"
 	"github.com/sirupsen/logrus"
 )
 

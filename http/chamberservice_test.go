@@ -7,8 +7,8 @@ import (
 
 	"time"
 
-	"github.com/orangesword/zymurgauge"
-	"github.com/orangesword/zymurgauge/gpio"
+	"github.com/benjaminbartels/zymurgauge"
+	"github.com/benjaminbartels/zymurgauge/gpio"
 )
 
 func TestChamberService_Get(t *testing.T) {

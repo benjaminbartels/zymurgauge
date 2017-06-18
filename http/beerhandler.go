@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge"
 	"github.com/julienschmidt/httprouter"
-	"github.com/orangesword/zymurgauge"
 	"github.com/sirupsen/logrus"
 )
 
