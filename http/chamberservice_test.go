@@ -55,7 +55,7 @@ func testChamberService_Get_NotFound(t *testing.T) {
 		return nil, nil
 	}
 
-	if r, err := c.ChamberService().Get("00:11:22:33:44:55"); err != nil {
+	if r, err := c.ChamberService().Get("00:11:22:33:44:55"); err != zymurgauge.ErrNotFound {
 		t.Fatal(err)
 	} else if r != nil {
 		t.Fatal("expected nil controller")

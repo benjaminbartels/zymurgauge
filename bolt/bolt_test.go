@@ -31,7 +31,6 @@ func MustOpenClient() *TestClient {
 	c := &TestClient{
 		Client: bolt.NewClient(p, l),
 	}
-	c.Path = f.Name()
 
 	if err := c.Open(); err != nil {
 		panic(err)

@@ -4,15 +4,15 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/benjaminbartels/zymurgauge"
+	"github.com/boltdb/bolt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 // Client allows communication with the BoltBD datastore
 type Client struct {
-	path                string
+	Path                string
 	logger              *logrus.Logger
 	db                  *bolt.DB
 	chamberService      ChamberService
@@ -23,16 +23,16 @@ type Client struct {
 // NewClient creates a new client using the given path to the BoltDB datastore
 func NewClient(path string, logger *logrus.Logger) *Client {
 	return &Client{
-		path:   path,
+		Path:   path,
 		logger: logger,
 	}
 }
 
 // Open opens the connection to the BoltDB datastore and initializes the buckets if necessary
 func (c *Client) Open() error {
-	db, err := bolt.Open(c.path, 0666, &bolt.Options{Timeout: 1 * time.Second})
+	db, err := bolt.Open(c.Path, 0666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return errors.Wrapf(err, "Could not open %s", c.path)
+		return errors.Wrapf(err, "Could not open %s", c.Path)
 	}
 	c.db = db
 

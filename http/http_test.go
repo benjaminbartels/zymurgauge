@@ -24,7 +24,7 @@ func MustOpenServerAndClient() (*TestService, *http.Client) {
 	l := logrus.New()
 
 	s := &TestService{
-		Server: http.NewServer(),
+		Server: http.NewServer(l),
 	}
 	s.Addr = ":0"
 
@@ -47,8 +47,8 @@ func MustOpenServerAndClient() (*TestService, *http.Client) {
 		panic(err)
 	}
 
-	c := http.NewClient()
-	c.URL = url.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", s.Port())}
+	u := url.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", s.Port())}
+	c := http.NewClient(u, l)
 
 	return s, c
 }
