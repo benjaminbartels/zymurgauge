@@ -22,6 +22,7 @@ func (t *Thermostat) SetTemperature(temp *float64) error {
 	t.target = temp
 	if t.target != nil && !t.isPolling {
 		go t.poll()
+		go t.updateTemp()
 	} else if t.target == nil {
 		t.quit <- true // ToDo: Check?
 	}
@@ -50,15 +51,15 @@ func (t *Thermostat) poll() {
 				t.Logger.Error(err)
 			} else {
 				if t.target != nil {
-
 					if v > *t.target {
 						t.Logger.Infof("Temperature above Target. Current: %f Target: %f", v, *t.target)
-						err = t.decreaseTemp()
+						t.state = COOLING
 					} else if v < *t.target {
 						t.Logger.Infof("Temperature below Target. Current: %f Target: %f", v, *t.target)
-						err = t.increaseTemp()
+						t.state = HEATING
 					} else {
 						t.Logger.Infof("Temperature equals Target. Current: %f Target: %f", v, *t.target)
+						t.state = OFF
 					}
 					if err != nil {
 						t.Logger.Error(err)
@@ -87,42 +88,40 @@ func (t *Thermostat) getTemperature() (float64, error) {
 	return temp, nil
 }
 
-func (t *Thermostat) increaseTemp() error {
-	t.Logger.Infof("Simulating heating")
-	return t.updateTemp(true)
-}
+func (t *Thermostat) updateTemp() {
 
-func (t *Thermostat) decreaseTemp() error {
-	t.Logger.Infof("Simulating cooling")
-	return t.updateTemp(false)
-}
+	for {
 
-func (t *Thermostat) updateTemp(up bool) error {
+		data, err := ioutil.ReadFile(t.path + "/w1_slave")
+		if err != nil {
+			t.Logger.Error(err)
+		} else {
 
-	data, err := ioutil.ReadFile(t.path + "/w1_slave")
-	if err != nil {
-		return err
+			temp, err := strconv.Atoi(strings.Split(strings.TrimSpace(string(data)), "=")[2])
+			if err != nil {
+				t.Logger.Error(err)
+			} else {
+
+				if t.state == HEATING {
+					temp = temp + 100
+				} else if t.state == COOLING {
+					temp = temp - 100
+				}
+
+				data = []byte(fmt.Sprintf(mockData, temp))
+				err = os.MkdirAll(t.path, 0700)
+				if err != nil {
+					t.Logger.Error(err)
+				} else {
+					err = ioutil.WriteFile(t.path+"/w1_slave", data, 0700)
+					if err != nil {
+						t.Logger.Error(err)
+					}
+				}
+			}
+		}
+		time.Sleep(1 * time.Second)
 	}
-
-	temp, err := strconv.Atoi(strings.Split(strings.TrimSpace(string(data)), "=")[2])
-	if err != nil {
-		return err
-	}
-
-	if up {
-		temp = temp + 100
-	} else {
-		temp = temp - 100
-	}
-
-	data = []byte(fmt.Sprintf(mockData, temp))
-	err = os.MkdirAll(t.path, 0700)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(t.path+"/w1_slave", data, 0700)
-	return err
-
 }
 
 func (t *Thermostat) prepare() error {

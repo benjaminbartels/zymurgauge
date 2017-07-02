@@ -30,6 +30,7 @@ func NewChamberHandler(l *logrus.Logger) *ChamberHandler {
 		newSubscribers:     make(chan subscriber),
 		closingSubscribers: make(chan subscriber),
 	}
+	h.GET("/api/chambers", h.handleGetAll)
 	h.GET("/api/chambers/:mac", h.handleGet)
 	h.GET("/api/chambers/:mac/*option", h.handleGetEvents)
 	h.POST("/api/chambers", h.handlePost)
@@ -37,16 +38,27 @@ func NewChamberHandler(l *logrus.Logger) *ChamberHandler {
 	return h
 }
 
+func (h *ChamberHandler) handleGetAll(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	f, err := h.ChamberService.GetAll()
+
+	if err != nil {
+		handleError(w, err, http.StatusInternalServerError, h.logger)
+	} else if f == nil {
+		notFound(w, h.logger)
+	} else {
+		encode(w, &getAllChambersResponse{Chambers: f}, h.logger)
+	}
+}
+
 // handleGet handles the HTTP GET request for Chambers by MAC address
 func (h *ChamberHandler) handleGet(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
 	mac, err := url.QueryUnescape(ps.ByName("mac"))
 	if err != nil {
 		handleError(w, err, http.StatusBadRequest, h.logger) // ToDo: is this valid
 	}
 
 	f, err := h.ChamberService.Get(mac)
-
 	if err != nil {
 		handleError(w, err, http.StatusInternalServerError, h.logger)
 	} else if f == nil {
@@ -170,6 +182,12 @@ func (h *ChamberHandler) Start() { //ToDo: Rename?
 			h.logger.Debugf("Removed client %s", s.mac)
 		}
 	}
+}
+
+// getChamberResponse represents the http response for a get
+type getAllChambersResponse struct {
+	Chambers []zymurgauge.Chamber `json:"chambers,omitempty"`
+	Err      string               `json:"err,omitempty"`
 }
 
 // getChamberResponse represents the http response for a get

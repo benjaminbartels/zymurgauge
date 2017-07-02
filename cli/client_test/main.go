@@ -54,12 +54,12 @@ func updateChamber(c zymurgauge.ChamberService) error {
 	fmt.Println("Saving Chamber...")
 
 	err := c.Save(&zymurgauge.Chamber{
-		MacAddress: "f4:5c:89:c7:cf:55",
+		MacAddress: "b8:27:eb:8e:d1:75",
 		Name:       "Chamber 1",
 		Controller: &gpio.Thermostat{
-			ThermometerID: "12345",
-			CoolerGPIO:    1,
-			HeaterGPIO:    2,
+			ThermometerID: "28-000006285484",
+			CoolerGPIO:    17,
+			HeaterGPIO:    0,
 			Interval:      5 * time.Second,
 		},
 		CurrentFermentation: &zymurgauge.Fermentation{

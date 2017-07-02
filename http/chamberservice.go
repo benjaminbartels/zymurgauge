@@ -25,6 +25,45 @@ type ChamberService struct {
 	stream *stream
 }
 
+func (s *ChamberService) GetAll() ([]zymurgauge.Chamber, error) {
+
+	u := s.url
+	u.Path = "/api/chambers"
+
+	resp, err := http.Get(u.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "Could not GET Chambers")
+	}
+
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			s.logger.Error(err)
+		}
+	}()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, zymurgauge.ErrNotFound
+	}
+
+	var respBody getAllChambersResponse
+
+	// respBody.Chambers = &zymurgauge.Chamber{Controller: &gpio.Thermostat{}}
+
+	// buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
+	// buf.ReadFrom(resp.Body)
+	// fmt.Printf("Response: %s\n", string(buf.Bytes()))
+
+	if err = json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+		return nil, errors.Wrap(err, "Could not decode Chambers")
+	} else if respBody.Err != "" {
+
+		return nil, zymurgauge.Error(respBody.Err)
+	}
+
+	return respBody.Chambers, nil
+}
+
 // Get returns a controller by MAC address
 func (s *ChamberService) Get(mac string) (*zymurgauge.Chamber, error) {
 

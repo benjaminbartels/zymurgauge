@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/benjaminbartels/zymurgauge"
 	"github.com/benjaminbartels/zymurgauge/gpio"
+	"github.com/boltdb/bolt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -19,6 +19,34 @@ type ChamberService struct {
 	db      *bolt.DB
 	logger  *logrus.Logger
 	clients map[string]chan zymurgauge.Chamber
+}
+
+func (s *ChamberService) GetAll() ([]zymurgauge.Chamber, error) {
+	var chambers []zymurgauge.Chamber
+
+	err := s.db.View(func(tx *bolt.Tx) error {
+
+		if err := tx.Bucket([]byte("Chambers")).ForEach(func(k, v []byte) error {
+
+			var c zymurgauge.Chamber
+			c.Controller = &gpio.Thermostat{}
+			if err := json.Unmarshal(v, &c); err != nil {
+				return errors.Wrap(err, "Could not unmarshal Chambers")
+			}
+
+			chambers = append(chambers, c)
+
+			return nil
+		}); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return chambers, nil
 }
 
 // Get returns a Chamber by its MAC address

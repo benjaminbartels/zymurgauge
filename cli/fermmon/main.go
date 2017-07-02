@@ -34,7 +34,7 @@ func main() {
 	// 	logger.Level = logrus.DebugLevel
 	// }
 
-	address := kingpin.Flag("address", "Url of Zymurgauge server").Default("http://localhost:3000").Short('u').String()
+	address := kingpin.Flag("address", "Url of Zymurgauge server").Default("http://192.168.0.12:3000").Short('u').String()
 
 	kingpin.Parse()
 
@@ -104,6 +104,7 @@ func (d Daemon) processChamber(c *zymurgauge.Chamber) {
 	if new, ok := c.Controller.(*gpio.Thermostat); ok {
 
 		cur := d.chamber.Controller.(*gpio.Thermostat)
+		cur.Logger = d.logger // Todo: maybe
 
 		if cur.ThermometerID != new.ThermometerID ||
 			cur.CoolerGPIO != new.CoolerGPIO ||
@@ -138,15 +139,27 @@ func (d Daemon) processChamber(c *zymurgauge.Chamber) {
 
 // getMacAddress returns the first Mac Address of the first network interface found
 func getMacAddress() (string, error) {
+
+	mac := ""
+
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return "", errors.New("failed to get host MAC address")
 	}
 	for _, iface := range interfaces {
 		if len(iface.HardwareAddr.String()) > 0 {
-			return iface.HardwareAddr.String(), nil
+			if iface.Name == "wlan0" { //ToDo: fix this
+				mac = iface.HardwareAddr.String()
+			}
+			if iface.Name == "en0" && mac == "" { //ToDo: fix this
+				mac = iface.HardwareAddr.String()
+			}
 		}
 	}
 
-	return "", errors.New("Failed to get host MAC address. No valid interfaces found")
+	if mac == "" {
+		return mac, errors.New("Failed to get host MAC address. No valid interfaces found")
+	}
+	return mac, nil
+
 }
