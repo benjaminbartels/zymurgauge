@@ -12,6 +12,7 @@ type Client interface {
 // ChamberService is used to manage fermentation controller
 type ChamberService interface {
 	Get(mac string) (*Chamber, error)
+	GetAll() ([]Chamber, error)
 	Save(f *Chamber) error
 	Subscribe(mac string, ch chan Chamber) error
 	Unsubscribe(mac string)
@@ -31,16 +32,19 @@ type BeerService interface {
 	Save(b *Beer) error
 }
 
-type TemperatureController interface {
-	SetTemperature(t *float64) error
+type Chamber struct {
+	MacAddress          string                 `json:"macAddress"`
+	Name                string                 `json:"name"`
+	Controller          *TemperatureController `json:"controller"`
+	CurrentFermentation *Fermentation          `json:"currentFermentation"`
+	ModTime             time.Time              `json:"modTime"`
 }
 
-type Chamber struct {
-	MacAddress          string                `json:"macAddress"`
-	Name                string                `json:"name"`
-	Controller          TemperatureController `json:"controller"`
-	CurrentFermentation *Fermentation         `json:"currentFermentation"`
-	ModTime             time.Time             `json:"modTime"`
+type TemperatureController struct {
+	ThermometerID string        `json:"thermometerId"`
+	CoolerGPIO    *int          `json:"coolerGpio"`
+	HeaterGPIO    *int          `json:"heaterGpio"`
+	Interval      time.Duration `json:"interval"`
 }
 
 // Fermentation is a single instance of a fermentation of a beer

@@ -9,21 +9,33 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
-
-var Logger = logrus.New()
 
 const mockData = "af 01 4b 46 7f ff 01 10 bc : crc=bc YES\naf 01 4b 46 7f ff 01 10 bc t=%d"
 
 func (t *Thermostat) SetTemperature(temp *float64) error {
 
+	if t.path == "" {
+		t.path = os.TempDir() + "zymurgauge/" + t.ThermometerID
+		t.Logger.Debugf("Creating %s", t.path)
+		data := []byte(fmt.Sprintf(mockData, 26937))
+		err := os.MkdirAll(t.path, 0700)
+		if err != nil {
+			return err
+		}
+		err = ioutil.WriteFile(t.path+"/w1_slave", data, 0700)
+		if err != nil {
+			return err
+		}
+
+		go t.updateTemp()
+	}
+
 	t.target = temp
 	if t.target != nil && !t.isPolling {
 		go t.poll()
 		go t.updateTemp()
-	} else if t.target == nil {
+	} else if t.target == nil && t.quit != nil {
 		t.quit <- true // ToDo: Check?
 	}
 	return nil
@@ -32,12 +44,6 @@ func (t *Thermostat) SetTemperature(temp *float64) error {
 func (t *Thermostat) poll() {
 
 	t.quit = make(chan bool)
-	t.path = os.TempDir() + "zymurgauge/" + t.ThermometerID
-	err := t.prepare()
-	if err != nil {
-		t.Logger.Error(err)
-		return
-	}
 
 	t.isPolling = true // ToDo: Make atomic?
 	for {
@@ -97,39 +103,32 @@ func (t *Thermostat) updateTemp() {
 			t.Logger.Error(err)
 		} else {
 
-			temp, err := strconv.Atoi(strings.Split(strings.TrimSpace(string(data)), "=")[2])
-			if err != nil {
-				t.Logger.Error(err)
-			} else {
+			if len(data) > 0 {
 
-				if t.state == HEATING {
-					temp = temp + 100
-				} else if t.state == COOLING {
-					temp = temp - 100
-				}
-
-				data = []byte(fmt.Sprintf(mockData, temp))
-				err = os.MkdirAll(t.path, 0700)
+				temp, err := strconv.Atoi(strings.Split(strings.TrimSpace(string(data)), "=")[2])
 				if err != nil {
 					t.Logger.Error(err)
 				} else {
-					err = ioutil.WriteFile(t.path+"/w1_slave", data, 0700)
+
+					if t.state == HEATING {
+						temp = temp + 100
+					} else if t.state == COOLING {
+						temp = temp - 100
+					}
+
+					data = []byte(fmt.Sprintf(mockData, temp))
+					err = os.MkdirAll(t.path, 0700)
 					if err != nil {
 						t.Logger.Error(err)
+					} else {
+						err = ioutil.WriteFile(t.path+"/w1_slave", data, 0700)
+						if err != nil {
+							t.Logger.Error(err)
+						}
 					}
 				}
 			}
 		}
 		time.Sleep(1 * time.Second)
 	}
-}
-
-func (t *Thermostat) prepare() error {
-	data := []byte(fmt.Sprintf(mockData, 26937))
-	err := os.MkdirAll(t.path, 0700)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(t.path+"/w1_slave", data, 0700)
-	return err
 }

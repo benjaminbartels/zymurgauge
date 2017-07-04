@@ -13,7 +13,6 @@ import (
 	"fmt"
 
 	"github.com/benjaminbartels/zymurgauge"
-	"github.com/benjaminbartels/zymurgauge/gpio"
 	"github.com/benjaminbartels/zymurgauge/http"
 	"github.com/sirupsen/logrus"
 )
@@ -53,13 +52,21 @@ func updateChamber(c zymurgauge.ChamberService) error {
 
 	fmt.Println("Saving Chamber...")
 
-	err := c.Save(&zymurgauge.Chamber{
-		MacAddress: "b8:27:eb:8e:d1:75",
+	mac, err := getMacAddress()
+	if err != nil {
+		panic(err)
+	}
+
+	coolerGPIO := 17
+	heaterGPIO := 0
+
+	err = c.Save(&zymurgauge.Chamber{
+		MacAddress: mac,
 		Name:       "Chamber 1",
-		Controller: &gpio.Thermostat{
+		Controller: &zymurgauge.TemperatureController{
 			ThermometerID: "28-000006285484",
-			CoolerGPIO:    17,
-			HeaterGPIO:    0,
+			CoolerGPIO:    &coolerGPIO,
+			HeaterGPIO:    &heaterGPIO,
 			Interval:      5 * time.Second,
 		},
 		CurrentFermentation: &zymurgauge.Fermentation{
@@ -86,15 +93,27 @@ func updateChamber(c zymurgauge.ChamberService) error {
 
 // getMacAddress returns the first Mac Address of the first network interface found
 func getMacAddress() (string, error) {
+
+	mac := ""
+
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return "", errors.New("failed to get host MAC address")
 	}
 	for _, iface := range interfaces {
 		if len(iface.HardwareAddr.String()) > 0 {
-			return iface.HardwareAddr.String(), nil
+			if iface.Name == "wlan0" { //ToDo: fix this
+				mac = iface.HardwareAddr.String()
+			}
+			if iface.Name == "en0" && mac == "" { //ToDo: fix this
+				mac = iface.HardwareAddr.String()
+			}
 		}
 	}
 
-	return "", errors.New("Failed to get host MAC address. No valid interfaces found")
+	if mac == "" {
+		return mac, errors.New("Failed to get host MAC address. No valid interfaces found")
+	}
+	return mac, nil
+
 }

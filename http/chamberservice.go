@@ -8,7 +8,6 @@ import (
 	"net/url"
 
 	"github.com/benjaminbartels/zymurgauge"
-	"github.com/benjaminbartels/zymurgauge/gpio"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -88,8 +87,6 @@ func (s *ChamberService) Get(mac string) (*zymurgauge.Chamber, error) {
 
 	var respBody getChamberResponse
 
-	respBody.Chamber = &zymurgauge.Chamber{Controller: &gpio.Thermostat{}}
-
 	// buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
 	// buf.ReadFrom(resp.Body)
 	// fmt.Printf("Response: %s\n", string(buf.Bytes()))
@@ -134,7 +131,6 @@ func (s *ChamberService) Save(f *zymurgauge.Chamber) error {
 	}()
 
 	var respBody postChamberResponse
-	respBody.Chamber = &zymurgauge.Chamber{Controller: &gpio.Thermostat{}}
 
 	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
 		return errors.Wrapf(err, "Could not decode Chamber %s", f.MacAddress)
@@ -229,7 +225,6 @@ func (s *stream) open(req *http.Request) error {
 				data := trimHeader(headerData, msg)
 
 				var c = &zymurgauge.Chamber{}
-				c.Controller = &gpio.Thermostat{}
 
 				err = json.Unmarshal(data, c)
 				if err != nil {

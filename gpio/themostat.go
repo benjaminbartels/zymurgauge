@@ -1,8 +1,7 @@
 package gpio
 
 import (
-	"time"
-
+	"github.com/benjaminbartels/zymurgauge"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,14 +14,11 @@ const (
 )
 
 type Thermostat struct {
-	ThermometerID string        `json:"thermometerId"`
-	CoolerGPIO    *int          `json:"coolerGpio"`
-	HeaterGPIO    *int          `json:"heaterGpio"`
-	Interval      time.Duration `json:"interval"`
-	Logger        *logrus.Logger
-	path          string
-	target        *float64
-	quit          chan bool
-	isPolling     bool
-	state         state
+	zymurgauge.TemperatureController
+	Logger    *logrus.Logger
+	path      string
+	target    *float64
+	quit      chan bool
+	isPolling bool
+	state     state
 }

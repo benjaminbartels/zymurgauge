@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge"
-	"github.com/benjaminbartels/zymurgauge/gpio"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )
@@ -142,9 +141,6 @@ func (h *ChamberHandler) handleGetEvents(w http.ResponseWriter, r *http.Request,
 func (h *ChamberHandler) handlePost(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	var req postChamberRequest
-	req.Chamber = &zymurgauge.Chamber{
-		Controller: &gpio.Thermostat{},
-	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, zymurgauge.ErrInvalidJSON, http.StatusBadRequest, h.logger)
 		return

@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"fmt"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/benjaminbartels/zymurgauge"
 	"github.com/benjaminbartels/zymurgauge/gpio"
@@ -56,9 +58,10 @@ func main() {
 }
 
 type Daemon struct {
-	client  zymurgauge.Client
-	chamber *zymurgauge.Chamber
-	logger  *logrus.Logger
+	client     zymurgauge.Client
+	chamber    *zymurgauge.Chamber
+	thermostat *gpio.Thermostat
+	logger     *logrus.Logger
 }
 
 func (d Daemon) Run() {
@@ -71,13 +74,15 @@ func (d Daemon) Run() {
 	}
 
 	for {
-		d.chamber, err = d.client.ChamberService().Get(mac)
+		chamber, err := d.client.ChamberService().Get(mac)
 		if err != nil {
 			panic(err)
 		}
 
-		if d.chamber != nil {
-			d.processChamber(d.chamber)
+		fmt.Println(chamber)
+
+		if chamber != nil {
+			d.processChamber(chamber)
 			break
 		}
 
@@ -101,22 +106,23 @@ func (d Daemon) Run() {
 
 func (d Daemon) processChamber(c *zymurgauge.Chamber) {
 
-	if new, ok := c.Controller.(*gpio.Thermostat); ok {
+	if d.chamber == nil ||
+		d.chamber.Controller.ThermometerID != c.Controller.ThermometerID ||
+		d.chamber.Controller.CoolerGPIO != c.Controller.CoolerGPIO ||
+		d.chamber.Controller.HeaterGPIO != c.Controller.HeaterGPIO ||
+		d.chamber.Controller.Interval != c.Controller.Interval {
 
-		cur := d.chamber.Controller.(*gpio.Thermostat)
-		cur.Logger = d.logger // Todo: maybe
-
-		if cur.ThermometerID != new.ThermometerID ||
-			cur.CoolerGPIO != new.CoolerGPIO ||
-			cur.HeaterGPIO != new.HeaterGPIO ||
-			cur.Interval != new.Interval {
-
-			err := d.chamber.Controller.SetTemperature(nil)
-			if err != nil {
-				d.logger.Error(err)
-			}
-			d.chamber.Controller = c.Controller
+		d.chamber = c
+		d.thermostat = &gpio.Thermostat{
+			TemperatureController: *d.chamber.Controller,
+			Logger:                d.logger,
 		}
+
+		err := d.thermostat.SetTemperature(nil)
+		if err != nil {
+			d.logger.Error(err)
+		}
+
 	}
 
 	d.chamber.CurrentFermentation = c.CurrentFermentation
@@ -124,12 +130,12 @@ func (d Daemon) processChamber(c *zymurgauge.Chamber) {
 	// Check for updated fermentation
 	if d.chamber.CurrentFermentation != nil {
 		t := c.CurrentFermentation.Beer.Schedule[0].TargetTemp
-		err := d.chamber.Controller.SetTemperature(&t)
+		err := d.thermostat.SetTemperature(&t)
 		if err != nil {
 			panic(err)
 		}
 	} else {
-		err := d.chamber.Controller.SetTemperature(nil)
+		err := d.thermostat.SetTemperature(nil)
 		if err != nil {
 			panic(err)
 		}

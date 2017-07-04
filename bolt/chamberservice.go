@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge"
-	"github.com/benjaminbartels/zymurgauge/gpio"
 	"github.com/boltdb/bolt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -29,7 +28,6 @@ func (s *ChamberService) GetAll() ([]zymurgauge.Chamber, error) {
 		if err := tx.Bucket([]byte("Chambers")).ForEach(func(k, v []byte) error {
 
 			var c zymurgauge.Chamber
-			c.Controller = &gpio.Thermostat{}
 			if err := json.Unmarshal(v, &c); err != nil {
 				return errors.Wrap(err, "Could not unmarshal Chambers")
 			}
@@ -52,7 +50,6 @@ func (s *ChamberService) GetAll() ([]zymurgauge.Chamber, error) {
 // Get returns a Chamber by its MAC address
 func (s *ChamberService) Get(mac string) (*zymurgauge.Chamber, error) {
 	var c zymurgauge.Chamber
-	c.Controller = &gpio.Thermostat{}
 
 	err := s.db.View(func(tx *bolt.Tx) error {
 		if v := tx.Bucket([]byte("Chambers")).Get([]byte(mac)); v == nil {
