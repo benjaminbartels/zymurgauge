@@ -55,7 +55,7 @@ func (s *ChamberService) Get(mac string) (*zymurgauge.Chamber, error) {
 		if v := tx.Bucket([]byte("Chambers")).Get([]byte(mac)); v == nil {
 			return zymurgauge.ErrNotFound
 		} else if err := json.Unmarshal(v, &c); err != nil {
-			return errors.Wrapf(err, "Could not unmarshal Chamber %d", mac)
+			return errors.Wrapf(err, "Could not unmarshal Chamber %s", mac)
 		}
 		return nil
 	})
@@ -74,9 +74,9 @@ func (s *ChamberService) Save(c *zymurgauge.Chamber) error {
 		c.ModTime = time.Now()
 
 		if v, err := json.Marshal(c); err != nil {
-			return errors.Wrapf(err, "Could not marshal Chamber %d", c.MacAddress)
+			return errors.Wrapf(err, "Could not marshal Chamber %s", c.MacAddress)
 		} else if err := bu.Put([]byte(c.MacAddress), v); err != nil {
-			return errors.Wrapf(err, "Could not put Chamber %d", c.MacAddress)
+			return errors.Wrapf(err, "Could not put Chamber %s", c.MacAddress)
 		}
 
 		go s.send(c)
