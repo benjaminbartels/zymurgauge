@@ -12,9 +12,8 @@ import (
 
 	"fmt"
 
-	"github.com/benjaminbartels/zymurgauge"
-	"github.com/benjaminbartels/zymurgauge/http"
-	"github.com/sirupsen/logrus"
+	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/internal/client"
 )
 
 func main() {
@@ -27,28 +26,27 @@ func main() {
 		os.Exit(1)
 	}()
 
-	logger := logrus.New()
-	logger.Level = logrus.DebugLevel
-
 	addr, err := url.Parse("http://localhost:3000")
 	if err != nil {
 		panic(err)
 	}
-	c := http.NewClient(*addr, logger)
+	c, err := client.NewClient(*addr, "v1")
+	if err != nil {
+		panic(err)
+	}
 
 	for {
 
-		err := updateChamber(c.ChamberService())
+		err := updateChamber(c.ChamberResource())
 		if err != nil {
 			fmt.Println(err)
 		}
 
 		time.Sleep(5 * time.Second)
 	}
-
 }
 
-func updateChamber(c zymurgauge.ChamberService) error {
+func updateChamber(c *client.ChamberResource) error {
 
 	fmt.Println("Saving Chamber...")
 
@@ -57,26 +55,25 @@ func updateChamber(c zymurgauge.ChamberService) error {
 		panic(err)
 	}
 
-	coolerGPIO := 17
-	heaterGPIO := 0
-
-	err = c.Save(&zymurgauge.Chamber{
+	err = c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
-		Controller: &zymurgauge.TemperatureController{
+		Controller: &internal.TemperatureController{
 			ThermometerID: "28-000006285484",
-			CoolerGPIO:    &coolerGPIO,
-			HeaterGPIO:    &heaterGPIO,
-			Interval:      5 * time.Second,
+			Chiller: &internal.Device{
+				GPIO:     17,
+				Cooldown: 15 * time.Minute,
+			},
+			Interval: 5 * time.Second,
 		},
-		CurrentFermentation: &zymurgauge.Fermentation{
+		CurrentFermentation: &internal.Fermentation{
 			ID: 1,
-			Beer: zymurgauge.Beer{
+			Beer: internal.Beer{
 				ID:    1,
 				Name:  "My Stout",
 				Style: "Stout",
-				Schedule: []zymurgauge.FermentationStep{
-					zymurgauge.FermentationStep{
+				Schedule: []internal.FermentationStep{
+					internal.FermentationStep{
 						Order:      1,
 						TargetTemp: 25.0,
 						Duration:   9999999,
