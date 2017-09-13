@@ -26,6 +26,7 @@ const (
 )
 
 func (t *TemperatureController) SetTemperature(temp *float64) error {
+	t.reset()
 	t.target = temp
 	t.quit = make(chan bool)
 	if t.target != nil && !t.isPolling {
@@ -36,7 +37,7 @@ func (t *TemperatureController) SetTemperature(temp *float64) error {
 	return nil
 }
 
-func init() {
+func (t *TemperatureController) reset() {
 	err := rpio.Open()
 	if err != nil {
 		panic(err)
