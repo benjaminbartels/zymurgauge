@@ -18,7 +18,7 @@ func TestBeerService_Save_New(t *testing.T) {
 
 	if err := testDB.beerRepo.Save(&b); err != nil {
 		t.Fatal(err)
-	} else if b.ID != 1 {
+	} else if b.ID != 0x1 {
 		t.Fatalf("unexpected id: %d", b.ID)
 	}
 

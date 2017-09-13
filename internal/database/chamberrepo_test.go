@@ -43,7 +43,7 @@ func TestChamberService_Save_New(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	} else if !reflect.DeepEqual(&c, other) {
-		t.Fatalf("unexpected controller: %#v", other)
+		t.Fatalf("unexpected controller: %#v vs %#v", &c, other)
 	}
 }
 

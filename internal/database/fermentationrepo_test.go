@@ -27,7 +27,7 @@ func TestFermentationService_Save_New(t *testing.T) {
 
 	if err := testDB.fermentationRepo.Save(&f); err != nil {
 		t.Fatal(err)
-	} else if f.ID != 1 {
+	} else if f.ID != 0x1 {
 		t.Fatalf("unexpected id: %d", f.ID)
 	}
 
