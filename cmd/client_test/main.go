@@ -26,7 +26,8 @@ func main() {
 		os.Exit(1)
 	}()
 
-	addr, err := url.Parse("http://localhost:3000")
+	// ToDo: Don't hardcode
+	addr, err := url.Parse("http://192.168.0.10:3000")
 	if err != nil {
 		panic(err)
 	}
@@ -50,12 +51,14 @@ func updateChamber(c *client.ChamberResource) error {
 
 	fmt.Println("Saving Chamber...")
 
-	mac, err := getMacAddress()
-	if err != nil {
-		panic(err)
-	}
+	// mac, err := getMacAddress()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	err = c.Save(&internal.Chamber{
+	mac := "b8:27:eb:8e:d1:75"
+
+	err := c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
 		Controller: &internal.TemperatureController{
@@ -75,7 +78,7 @@ func updateChamber(c *client.ChamberResource) error {
 				Schedule: []internal.FermentationStep{
 					internal.FermentationStep{
 						Order:      1,
-						TargetTemp: 25.0,
+						TargetTemp: 20.0,
 						Duration:   9999999,
 					},
 				},

@@ -10,14 +10,15 @@ import (
 )
 
 type TemperatureController struct {
-	ThermometerID string        `json:"thermometerId"`
-	Chiller       *Device       `json:"chiller"`
-	Heater        *Device       `json:"heater"`
-	Interval      time.Duration `json:"interval"`
-	target        *float64
-	quit          chan bool
-	isPolling     bool
-	state         state
+	ThermometerID      string        `json:"thermometerId"`
+	Chiller            *Device       `json:"chiller"`
+	Heater             *Device       `json:"heater"`
+	Interval           time.Duration `json:"interval"`
+	target             *float64
+	quit               chan bool
+	isPolling          bool
+	state              state
+	LastChillerOffTime time.Time
 }
 
 const (
@@ -59,24 +60,40 @@ func init() {
 	rpio.Close()
 }
 
-func (t *TemperatureController) cool(on bool) {
+func (t *TemperatureController) cool(on bool) bool {
 	if t.Chiller != nil {
 
 		err := rpio.Open()
 		if err != nil {
 			panic(err)
 		}
-		pin := rpio.Pin(*t.CoolerGPIO)
+		pin := rpio.Pin(t.Chiller.GPIO)
 		if on {
+
+			fmt.Println("LastChillerOffTime @ on", t.LastChillerOffTime)
+			fmt.Println("next time", t.LastChillerOffTime.Add(t.Chiller.Cooldown))
+			if time.Now().Before(t.LastChillerOffTime.Add(t.Chiller.Cooldown)) {
+				// ignore
+				fmt.Printf("Chiller is still cooling down until %v\n", t.LastChillerOffTime.Add(t.Chiller.Cooldown))
+				return false
+			}
+
 			pin.High()
 			fmt.Printf("Setting Chiller GPIO %d to High\n", t.Chiller.GPIO)
 		} else {
 			pin.Low()
 			fmt.Printf("Setting Chiller GPIO %d to Low\n", t.Chiller.GPIO)
+			// ToDo: refactor
+			t.LastChillerOffTime = time.Now()
+			fmt.Println("cooldown", t.Chiller.Cooldown)
+			fmt.Println("LastChillerOffTime", t.LastChillerOffTime)
 		}
 		rpio.Close()
+		return true
+
 	} else {
-		fmt.PrintLn("No Chiller Configured")
+		fmt.Println("No Chiller Configured")
+		return false
 	}
 
 }
@@ -87,7 +104,7 @@ func (t *TemperatureController) heat(on bool) {
 		if err != nil {
 			panic(err)
 		}
-		pin := rpio.Pin(*t.HeaterGPIO)
+		pin := rpio.Pin(t.Heater.GPIO)
 		if on {
 			pin.High()
 			fmt.Printf("Setting Heater GPIO %d to High\n", t.Heater.GPIO)
@@ -97,6 +114,6 @@ func (t *TemperatureController) heat(on bool) {
 		}
 		rpio.Close()
 	} else {
-		fmt.PrintLn("No Heater Configured")
+		fmt.Println("No Heater Configured")
 	}
 }

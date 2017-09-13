@@ -67,9 +67,10 @@ func (t *TemperatureController) evaluateTemperature(temperature float64) {
 		fmt.Printf("Temperature above Target. Current: %f Target: %f\n", temperature, *t.target)
 
 		if t.state != COOLING {
-			t.cool(true)
 			t.heat(false)
-			t.state = COOLING
+			if t.cool(true) {
+				t.state = COOLING
+			}
 		}
 
 	} else if temperature < *t.target {

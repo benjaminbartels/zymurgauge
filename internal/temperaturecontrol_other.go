@@ -63,7 +63,7 @@ func (t *TemperatureController) SetTemperature(temp *float64) error {
 	return nil
 }
 
-func (t *TemperatureController) cool(on bool) {
+func (t *TemperatureController) cool(on bool) bool {
 	if t.Chiller != nil {
 		if on {
 			fmt.Printf("Setting Chiller GPIO %d to High\n", t.Chiller.GPIO)
@@ -73,6 +73,8 @@ func (t *TemperatureController) cool(on bool) {
 	} else {
 		fmt.Println("No Chiller Configured")
 	}
+	// fis this
+	return true
 }
 
 func (t *TemperatureController) heat(on bool) {

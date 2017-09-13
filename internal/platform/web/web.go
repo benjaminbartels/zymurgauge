@@ -18,7 +18,6 @@ type Error string
 
 func (e Error) Error() string { return string(e) }
 
-// ToDo: move to platform?
 func Encode(w http.ResponseWriter, v interface{}) {
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		HandleError(w, err)

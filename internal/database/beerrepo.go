@@ -57,6 +57,30 @@ func (r *BeerRepo) Get(id uint64) (*internal.Beer, error) {
 	return b, nil
 }
 
+// GetAll returns all Beers
+func (r *BeerRepo) GetAll() ([]internal.Beer, error) {
+	var beers []internal.Beer
+
+	err := r.db.View(func(tx *bolt.Tx) error {
+
+		v := tx.Bucket([]byte("Beers"))
+		return v.ForEach(func(k, v []byte) error {
+			var b internal.Beer
+			if err := json.Unmarshal(v, &b); err != nil {
+				return err
+			}
+			beers = append(beers, b)
+			return nil
+		})
+
+	})
+
+	if err != nil {
+		return []internal.Beer{}, err
+	}
+	return beers, nil
+}
+
 // Save creates or updates a Beer
 func (r *BeerRepo) Save(b *internal.Beer) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {

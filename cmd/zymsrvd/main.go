@@ -13,6 +13,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
 	"github.com/boltdb/bolt"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -52,9 +53,17 @@ func main() {
 		FermentationHandler: handlers.NewFermentationHandler(fermentationRepo),
 	}
 
+	options := cors.Options{
+		AllowedOrigins: []string{"*"},
+	}
+
+	c := cors.New(options)
+
+	corsHandler := c.Handler(api)
+
 	server := http.Server{
 		Addr:    ":3000",
-		Handler: api,
+		Handler: corsHandler,
 	}
 
 	fmt.Println("Listening.....", server.Addr)

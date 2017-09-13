@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"fmt"
 
@@ -34,12 +35,24 @@ func (h *BeerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (h *BeerHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
-	id, err := parseID(r)
-	if err != nil {
-		web.HandleError(w, err)
-		return
+	var head string
+	head, r.URL.Path = shiftPath(r.URL.Path)
+
+	if head != "" {
+
+		if id, err := strconv.ParseUint(head, 10, 64); err != nil {
+			web.HandleError(w, err)
+		} else {
+			h.handleGetOne(w, id)
+		}
+
+	} else {
+		h.handleGetAll(w)
 	}
 
+}
+
+func (h *BeerHandler) handleGetOne(w http.ResponseWriter, id uint64) {
 	if beer, err := h.repo.Get(id); err != nil {
 		web.HandleError(w, err)
 	} else if beer == nil {
@@ -50,10 +63,19 @@ func (h *BeerHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (h *BeerHandler) handleGetAll(w http.ResponseWriter) {
+	if beers, err := h.repo.GetAll(); err != nil {
+		web.HandleError(w, err)
+	} else {
+		web.Encode(w, beers)
+	}
+}
+
 func (h *BeerHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	beer, err := parseBeer(r)
 	if err != nil {
+		fmt.Println(err)
 		web.HandleError(w, err)
 		return
 	}
@@ -61,6 +83,7 @@ func (h *BeerHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(beer)
 
 	if err := h.repo.Save(&beer); err != nil {
+		fmt.Println(err)
 		web.HandleError(w, err)
 	} else {
 		web.Encode(w, &beer)

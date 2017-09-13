@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ToDo: Remove global vars
 var currentChamber *internal.Chamber
 
 func main() {
