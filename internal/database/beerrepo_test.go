@@ -1,7 +1,6 @@
 package database_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
@@ -18,16 +17,16 @@ func TestBeerService_Save_New(t *testing.T) {
 
 	if err := testDB.beerRepo.Save(&b); err != nil {
 		t.Fatal(err)
-	} else if b.ID != 0x1 {
+	} else if b.ID != 1 {
 		t.Fatalf("unexpected id: %d", b.ID)
 	}
 
-	other, err := testDB.beerRepo.Get(1)
-	if err != nil {
-		t.Fatal(err)
-	} else if !reflect.DeepEqual(&b, other) {
-		t.Fatalf("unexpected beer: %#v", other)
-	}
+	// other, err := testDB.beerRepo.Get(1)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// } else if !reflect.DeepEqual(&b, other) {
+	// 	t.Fatalf("unexpected beer: %#v", other)
+	// }
 }
 
 func TestBeerService_Save_Existing(t *testing.T) {
