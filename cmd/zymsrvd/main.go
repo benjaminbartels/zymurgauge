@@ -1,18 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"fmt"
-
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/handlers"
+	_ "github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/statik"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
 	"github.com/boltdb/bolt"
+	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
 )
 
@@ -47,10 +48,18 @@ func main() {
 		panic(err) //ToDo: Implement logger
 	}
 
-	api := &handlers.API{
-		ChamberHandler:      handlers.NewChamberHandler(chamberRepo, pubsub.New()),
-		BeerHandler:         handlers.NewBeerHandler(beerRepo),
-		FermentationHandler: handlers.NewFermentationHandler(fermentationRepo),
+	statikFS, err := fs.New()
+	if err != nil {
+		panic(err) //ToDo: Implement logger
+	}
+
+	app := &handlers.App{
+		API: &handlers.API{
+			ChamberHandler:      handlers.NewChamberHandler(chamberRepo, pubsub.New()),
+			BeerHandler:         handlers.NewBeerHandler(beerRepo),
+			FermentationHandler: handlers.NewFermentationHandler(fermentationRepo),
+		},
+		Web: http.StripPrefix("/", http.FileServer(statikFS)),
 	}
 
 	options := cors.Options{
@@ -59,7 +68,7 @@ func main() {
 
 	c := cors.New(options)
 
-	corsHandler := c.Handler(api)
+	corsHandler := c.Handler(app)
 
 	server := http.Server{
 		Addr:    ":3000",

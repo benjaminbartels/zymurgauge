@@ -8,8 +8,18 @@ services:
 go:
   - 1.9.x
 
+install:
+
+  - . $HOME/.nvm/nvm.sh
+  - nvm install stable
+  - nvm use stable
+  - npm install --prefix cmd/zymsrvd/ui cmd/zymsrvd/ui
+  - npm run --prefix cmd/zymsrvd/ui build
+  - go get github.com/rakyll/statik
+
 script:
   - go test -v ./...
+  - statik -f -src=cmd/zymsrvd/ui/dist -dest=cmd/zymsrvd
   - env GOOS=linux go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
   - env GOOS=linux GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
   - docker build -f ./docker/zymsrv/Dockerfile -t benjaminbartels/zymsrv .
