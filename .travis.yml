@@ -1,4 +1,14 @@
+sudo: required
+
 language: go
+
+services:
+  - docker
 
 go:
   - 1.9.x
+
+script:
+  - go test -v ./...
+  - env GOOS=linux go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
+  - env GOOS=linux GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
