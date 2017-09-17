@@ -12,3 +12,4 @@ script:
   - go test -v ./...
   - env GOOS=linux go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
   - env GOOS=linux GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
+  - docker build ./cmd/fermmond/dockerfile -t benjaminbartels/zymsrv
