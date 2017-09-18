@@ -19,8 +19,8 @@ install:
 script:
   - go test -v $(go list ./... | grep -v /vendor/)
   - statik -f -src=cmd/zymsrvd/ui/dist -dest=cmd/zymsrvd
-  - env GOOS=linux go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
-  - env GOOS=linux GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
+  - env go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
+  - env GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
   - docker build -f ./docker/zymsrv/Dockerfile -t benjaminbartels/zymsrv .
 
 after_success:
