@@ -9,7 +9,6 @@ go:
   - 1.9.x
 
 install:
-
   - . $HOME/.nvm/nvm.sh
   - nvm install stable
   - nvm use stable
@@ -18,7 +17,7 @@ install:
   - go get github.com/rakyll/statik
 
 script:
-  - go test -v ./...
+  - go test -v $(go list ./... | grep -v /vendor/)
   - statik -f -src=cmd/zymsrvd/ui/dist -dest=cmd/zymsrvd
   - env GOOS=linux go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
   - env GOOS=linux GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
