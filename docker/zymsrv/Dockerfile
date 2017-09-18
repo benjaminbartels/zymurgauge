@@ -1,3 +1,3 @@
-FROM golang:alpine
+FROM scratch
 COPY zymsrvd zymsrvd
 CMD ["./zymsrvd"]
