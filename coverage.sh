@@ -20,9 +20,9 @@ generate_cover_data() {
     rm -rf "$workdir"
     mkdir "$workdir"
 
-    for pkg in "$@"; do
+    for pkg in $(go list ./... | grep -v /vendor/); do
         f="$workdir/$(echo $pkg | tr / -).cover"
-        go test -covermode="$mode" -coverprofile="$f" "$pkg"
+        go test -v -covermode="$mode" -coverprofile="$f" "$pkg"
     done
 
     echo "mode: $mode" >"$profile"

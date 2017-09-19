@@ -2,6 +2,10 @@ sudo: required
 
 language: go
 
+env:
+  global:
+    CC_TEST_REPORTER_ID: c7e31d448d85e339bf4def7fcc4e7c7a5adbb6e8d6d9342b2bbe496b2f61a5f8
+
 services:
   - docker
 
@@ -15,13 +19,22 @@ install:
   - npm install --prefix cmd/zymsrvd/ui cmd/zymsrvd/ui
   - npm run --prefix cmd/zymsrvd/ui build
   - go get github.com/rakyll/statik
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+
+before_script:
+
+  - ./cc-test-reporter before-build
 
 script:
-  - go test -v $(go list ./... | grep -v /vendor/)
+  - ./coverage.sh
   - statik -f -src=cmd/zymsrvd/ui/dist -dest=cmd/zymsrvd
   - env CGO_ENABLED=0 go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
   - env GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
   - docker build -f ./docker/zymsrv/Dockerfile -t benjaminbartels/zymsrv .
+
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
