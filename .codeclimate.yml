@@ -25,5 +25,6 @@ ratings:
   - "**.go"
   - "**.js"
   - "**.md"
+  - "**.vue"
 exclude_paths:
   - vendor/
