@@ -19,6 +19,7 @@ install:
   - npm install --prefix cmd/zymsrvd/ui cmd/zymsrvd/ui
   - npm run --prefix cmd/zymsrvd/ui build
   - go get github.com/rakyll/statik
+  - go get github.com/axw/gocov
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
 
