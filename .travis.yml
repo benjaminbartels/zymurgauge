@@ -34,7 +34,7 @@ script:
   - docker build -f ./docker/zymsrv/Dockerfile -t benjaminbartels/zymsrv .
 
 after_script:
-  - ./cc-test-reporter after-build -t gocov -p ./.cover -d --exit-code $TRAVIS_TEST_RESULT
+  - ./cc-test-reporter after-build -t gocov -p $TRAVIS_BUILD_DIR/.cover -d --exit-code $TRAVIS_TEST_RESULT
 
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
