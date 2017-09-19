@@ -13,7 +13,7 @@
 set -e
 
 workdir=.cover
-profile="$workdir/c.out"
+profile="c.out"
 mode=count
 
 generate_cover_data() {
