@@ -24,7 +24,6 @@ install:
   - chmod +x ./cc-test-reporter
 
 before_script:
-
   - ./cc-test-reporter before-build
 
 script:
@@ -35,7 +34,7 @@ script:
   - docker build -f ./docker/zymsrv/Dockerfile -t benjaminbartels/zymsrv .
 
 after_script:
-  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
+  - ./cc-test-reporter after-build -p .cover --exit-code $TRAVIS_TEST_RESULT
 
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
