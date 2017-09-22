@@ -27,4 +27,8 @@ ratings:
   - "**.md"
   - "**.vue"
 exclude_paths:
-  - vendor/
+  - "vendor/"
+  - "**/ui/build/"
+  - "**/ui/config/"
+  - "**/ui/README.md/"
+

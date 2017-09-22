@@ -57,7 +57,7 @@ func main() {
 	for {
 
 		var chamber *internal.Chamber
-		chamber, err = c.ChamberResource().Get(mac)
+		chamber, err = c.ChamberResource.Get(mac)
 		if err != nil {
 			panic(err)
 		}
@@ -72,7 +72,7 @@ func main() {
 		time.Sleep(5 * time.Second)
 	}
 
-	err = c.ChamberResource().Subscribe(mac, ch)
+	err = c.ChamberResource.Subscribe(mac, ch)
 	if err != nil {
 		panic(err)
 	}

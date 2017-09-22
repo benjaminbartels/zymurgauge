@@ -95,11 +95,10 @@ func (t *TemperatureController) cool(on bool) bool {
 		rpio.Close()
 		return true
 
-	} else {
-		fmt.Println("No Chiller Configured")
-		return false
 	}
 
+	fmt.Println("No Chiller Configured")
+	return false
 }
 
 func (t *TemperatureController) heat(on bool) {
