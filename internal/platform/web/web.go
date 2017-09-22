@@ -2,28 +2,32 @@ package web
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 )
 
-const (
-	ErrNotFound    = Error("not found")
-	ErrNotAllowed  = Error("method not allowed")
-	ErrBadRequest  = Error("bad request")
-	ErrInternal    = Error("internal error")
-	ErrInvalidJSON = Error("invalid json")
+var (
+	// ErrNotFound is returned when an entity is not found
+	ErrNotFound = errors.New("not found")
+	// ErrNotAllowed is returned when the http method is not allowed
+	ErrNotAllowed = errors.New("method not allowed")
+	// ErrBadRequest is returned when a bad request has occurred
+	ErrBadRequest = errors.New("bad request")
+	// ErrInternal is returned when an internal error has occurred
+	ErrInternal = errors.New("internal error")
+	// ErrInvalidJSON is returned when json request is invalid
+	ErrInvalidJSON = errors.New("invalid json")
 )
 
-type Error string
-
-func (e Error) Error() string { return string(e) }
-
+// Encode encodes the given interface onto the given http.ResponseWriter
 func Encode(w http.ResponseWriter, v interface{}) {
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		HandleError(w, err)
 	}
 }
 
+// HandleError encodes the given error onto the given http.ResponseWriter
 func HandleError(w http.ResponseWriter, err error) {
 	var code int
 

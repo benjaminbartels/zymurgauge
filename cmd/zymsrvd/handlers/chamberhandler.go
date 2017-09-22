@@ -12,11 +12,13 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
+// ChamberHandler is the http handler for API calls to manage Chambers
 type ChamberHandler struct {
 	repo   *database.ChamberRepo
 	pubSub *pubsub.PubSub
 }
 
+// NewChamberHandler instantiates a ChamberHandler
 func NewChamberHandler(repo *database.ChamberRepo, pubSub *pubsub.PubSub) *ChamberHandler {
 
 	return &ChamberHandler{
@@ -25,6 +27,7 @@ func NewChamberHandler(repo *database.ChamberRepo, pubSub *pubsub.PubSub) *Chamb
 	}
 }
 
+// ServeHTTP calls f(w, r).
 func (h *ChamberHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":

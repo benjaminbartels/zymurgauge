@@ -1,16 +1,15 @@
 package client
 
 import (
+	"io"
 	"net/url"
 )
 
-// Client provides services used to communicate with the HTTP server.
+// Client provides resources used to manage entities via REST.
 type Client struct {
-	url                  url.URL
-	chamberResource      *ChamberResource
-	beerResource         *BeerResource
-	fermentationResource *FermentationResource
-	version              string
+	ChamberResource      *ChamberResource
+	BeerResource         *BeerResource
+	FermentationResource *FermentationResource
 }
 
 // NewClient creates a new instance of the HTTP client
@@ -32,22 +31,16 @@ func NewClient(url url.URL, version string) (*Client, error) { // ToDo: Why is u
 	}
 
 	c := &Client{
-		chamberResource:      chamberResource,
-		beerResource:         beerResource,
-		fermentationResource: fermentationResource,
+		ChamberResource:      chamberResource,
+		BeerResource:         beerResource,
+		FermentationResource: fermentationResource,
 	}
 
 	return c, nil
 }
 
-func (c Client) ChamberResource() *ChamberResource {
-	return c.chamberResource
-}
-
-func (c Client) BeerResource() *BeerResource {
-	return c.beerResource
-}
-
-func (c Client) FermentationResource() *FermentationResource {
-	return c.fermentationResource
+func safeClose(c io.Closer, err *error) {
+	if cerr := c.Close(); cerr != nil && *err == nil {
+		*err = cerr
+	}
 }

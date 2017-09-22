@@ -81,12 +81,12 @@ func TestFermentationService_Save_Existing(t *testing.T) {
 	if uf1, err := testDB.fermentationRepo.Get(f1.ID); err != nil {
 		t.Fatal(err)
 	} else if uf1.CurrentStep != f1.CurrentStep {
-		t.Fatalf("unexpected fermentation #1 CurrentStep: %s", uf1.CurrentStep)
+		t.Fatalf("unexpected fermentation #1 CurrentStep: %d", uf1.CurrentStep)
 	}
 
 	if uf2, err := testDB.fermentationRepo.Get(f2.ID); err != nil {
 		t.Fatal(err)
 	} else if uf2.CurrentStep != f2.CurrentStep {
-		t.Fatalf("unexpected fermentation #2 CurrentStep: %s", uf2.CurrentStep)
+		t.Fatalf("unexpected fermentation #2 CurrentStep: %d", uf2.CurrentStep)
 	}
 }

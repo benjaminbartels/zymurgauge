@@ -9,10 +9,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ChamberRepo represents a boltdb repository for managing Chambers
 type ChamberRepo struct {
 	db *bolt.DB
 }
 
+// NewChamberRepo returns a new Chamber repository using the given bolt database. It also creates the Chambers
+// bucket if it is not yet created on disk.
 func NewChamberRepo(db *bolt.DB) (*ChamberRepo, error) {
 
 	tx, err := db.Begin(true)
@@ -35,6 +38,7 @@ func NewChamberRepo(db *bolt.DB) (*ChamberRepo, error) {
 	}, nil
 }
 
+// GetAll returns all ChamberRepos
 func (r *ChamberRepo) GetAll() ([]internal.Chamber, error) {
 	var chambers []internal.Chamber
 

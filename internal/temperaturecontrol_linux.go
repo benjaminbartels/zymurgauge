@@ -9,6 +9,8 @@ import (
 	"github.com/stianeikeland/go-rpio"
 )
 
+// TemperatureController regulates temperature by activating a cooling or heating device when the temperature strays
+// from a target
 type TemperatureController struct {
 	ThermometerID      string        `json:"thermometerId"`
 	Chiller            *Device       `json:"chiller"`
@@ -25,6 +27,7 @@ const (
 	path = "/sys/devices/w1_bus_master1/"
 )
 
+// SetTemperature sets TemperatureController to the specified temperature
 func (t *TemperatureController) SetTemperature(temp *float64) error {
 	t.reset()
 	t.target = temp

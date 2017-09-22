@@ -12,16 +12,19 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
+// BeerHandler is the http handler for API calls to manage Beers
 type BeerHandler struct {
 	repo *database.BeerRepo
 }
 
+// NewBeerHandler instantiates a BeerHandler
 func NewBeerHandler(repo *database.BeerRepo) *BeerHandler {
 	return &BeerHandler{
 		repo: repo,
 	}
 }
 
+// ServeHTTP calls f(w, r).
 func (h *BeerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":

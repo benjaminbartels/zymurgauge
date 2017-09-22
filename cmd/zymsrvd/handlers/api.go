@@ -7,6 +7,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
+// API is the http handler for call to the API
 type API struct {
 	http.Handler
 	BeerHandler         *BeerHandler
@@ -14,6 +15,7 @@ type API struct {
 	FermentationHandler *FermentationHandler
 }
 
+// ServeHTTP calls f(w, r)
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var head string

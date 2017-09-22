@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Equals returns true if TemperatureController t is equal to the given TemperatureController o
 func (t *TemperatureController) Equals(o *TemperatureController) bool {
 	if t.ThermometerID != o.ThermometerID {
 		return false
@@ -96,7 +97,10 @@ func (t *TemperatureController) evaluateTemperature(temperature float64) {
 type state int
 
 const (
+	// OFF means the Temperature Controller is not heating or cooling
 	OFF state = 1 + iota
+	// COOLING means the Temperature Controller is cooling
 	COOLING
+	// HEATING means the Temperature Controller is heating
 	HEATING
 )

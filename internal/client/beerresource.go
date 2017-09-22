@@ -8,11 +8,11 @@ import (
 	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/pkg/errors"
 )
 
+// BeerResource is a client side rest resource used to manage Beers
 type BeerResource struct {
 	url *url.URL
 }
@@ -35,7 +35,7 @@ func (r *BeerResource) Get(id uint64) (*internal.Beer, error) {
 		return nil, errors.Wrapf(err, "Could not GET Beer %d", id)
 	}
 
-	defer safeclose.Close(resp.Body, &err)
+	defer safeClose(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, web.ErrNotFound
@@ -62,7 +62,7 @@ func (r *BeerResource) Save(b *internal.Beer) error {
 		return errors.Wrapf(err, "Could not POST Beer %d", b.ID)
 	}
 
-	defer safeclose.Close(resp.Body, &err)
+	defer safeClose(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&b); err != nil {
 		return errors.Wrapf(err, "Could not decode Beer %s", b.ID)

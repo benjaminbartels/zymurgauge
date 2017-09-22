@@ -10,16 +10,19 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
+// FermentationHandler is the http handler for API calls to manage Fermentations
 type FermentationHandler struct {
 	repo *database.FermentationRepo
 }
 
+// NewFermentationHandler instantiates a FermentationHandler
 func NewFermentationHandler(repo *database.FermentationRepo) *FermentationHandler {
 	return &FermentationHandler{
 		repo: repo,
 	}
 }
 
+// ServeHTTP calls f(w, r).
 func (h *FermentationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":

@@ -9,14 +9,13 @@ import (
 	"net/url"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/pkg/errors"
 )
 
 var headerData = []byte("data:")
 
-// ChamberService is the HTTP implementation of internal.ChamberService
+// ChamberResource is a client side rest resource used to manage Chambers
 type ChamberResource struct {
 	url    *url.URL
 	stream *stream
@@ -40,7 +39,7 @@ func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 		return nil, errors.Wrapf(err, "Could not GET Chamber %s", mac)
 	}
 
-	defer safeclose.Close(resp.Body, &err)
+	defer safeClose(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, web.ErrNotFound
@@ -71,7 +70,7 @@ func (r ChamberResource) Save(c *internal.Chamber) error {
 		return errors.Wrapf(err, "Could not POST Chamber %s", c.MacAddress)
 	}
 
-	defer safeclose.Close(resp.Body, &err)
+	defer safeClose(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&c); err != nil {
 		return errors.Wrapf(err, "Could not decode Chamber %s", c.MacAddress)
@@ -128,7 +127,7 @@ func (s *stream) open(req *http.Request) error {
 
 		scanner := bufio.NewScanner(s.resp.Body)
 
-		defer safeclose.Close(s.resp.Body, &err)
+		defer safeClose(s.resp.Body, &err)
 
 		for {
 			if !scanner.Scan() {

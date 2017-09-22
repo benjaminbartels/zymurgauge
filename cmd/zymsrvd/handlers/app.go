@@ -6,12 +6,14 @@ import (
 	"strings"
 )
 
+// App is the http handler for call to the Application which include teh API and WebApp
 type App struct {
 	http.Handler
 	API *API
 	Web http.Handler
 }
 
+// ServeHTTP calls f(w, r).
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if strings.HasPrefix(r.URL.Path, "/api") {

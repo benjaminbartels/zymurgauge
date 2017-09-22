@@ -8,13 +8,12 @@ import (
 	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-// FermentationService is the HTTP implementation of internal.FermentationService
+// FermentationResource is a client side rest resource used to manage Fermentations
 type FermentationResource struct {
 	url    *url.URL
 	logger *logrus.Logger
@@ -38,7 +37,7 @@ func (r *FermentationResource) Get(id uint64) (*internal.Fermentation, error) {
 		return nil, errors.Wrapf(err, "Could not GET Fermentation %d", id)
 	}
 
-	defer safeclose.Close(resp.Body, &err)
+	defer safeClose(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, web.ErrNotFound
@@ -65,7 +64,7 @@ func (r *FermentationResource) Save(f *internal.Fermentation) error {
 		return errors.Wrapf(err, "Could not POST Fermentation %d", f.ID)
 	}
 
-	defer safeclose.Close(resp.Body, &err)
+	defer safeClose(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&f); err != nil {
 		return errors.Wrapf(err, "Could not decode Fermentation %s", f.ID)

@@ -9,11 +9,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// FermentationService represents a service for managing fermentations
+// FermentationRepo represents a boltdb repository for managing Fermentations
 type FermentationRepo struct {
 	db *bolt.DB
 }
 
+// NewFermentationRepo returns a new Fermentation repository using the given bolt database. It also creates the
+// Fermentations bucket if it is not yet created on disk.
 func NewFermentationRepo(db *bolt.DB) (*FermentationRepo, error) {
 
 	tx, err := db.Begin(true)

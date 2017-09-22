@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+// TemperatureController regulates temperature by activating a cooling or heating device when the temperature strays
+// from a target
 type TemperatureController struct {
 	ThermometerID string        `json:"thermometerId"`
 	Chiller       *Device       `json:"chiller"`
@@ -29,6 +31,7 @@ const (
 	mockData = "af 01 4b 46 7f ff 01 10 bc : crc=bc YES\naf 01 4b 46 7f ff 01 10 bc t=%d"
 )
 
+// SetTemperature sets TemperatureController to the specified temperature
 func (t *TemperatureController) SetTemperature(temp *float64) error {
 
 	// detect if file exists
