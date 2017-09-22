@@ -20,7 +20,7 @@ generate_cover_data() {
     mkdir "$workdir"
 
     for pkg in "$@"; do
-        f=$workdir/"$(echo $pkg | tr / -)".cover
+        f="$workdir/$(echo "$pkg" | tr / -).cover"
         go test -v -covermode="$mode" -coverprofile="$f" "$pkg"
     done
 
@@ -29,7 +29,7 @@ generate_cover_data() {
 }
 
 show_cover_report() {
-    go tool cover -${1}="$profile"
+    go tool cover -"${1}"="$profile"
 }
 
 generate_cover_data $(go list ./... | grep -v /vendor/)
