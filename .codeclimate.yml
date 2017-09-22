@@ -30,5 +30,4 @@ exclude_paths:
   - "vendor/"
   - "**/ui/build/"
   - "**/ui/config/"
-  - "**/ui/README.md/"
-
+  - "**/ui/README.md"
