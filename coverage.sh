@@ -4,7 +4,7 @@
 # Works around the fact that `go test -coverprofile` currently does not work
 # with multiple packages, see https://code.google.com/p/go/issues/detail?id=6909
 #
-# Usage: script/coverage [--html|--coveralls]
+# Usage: script/coverage [--html]
 #
 #     --html      Additionally create HTML report and open it in browser
 #
@@ -16,20 +16,19 @@ profile="c.out"
 mode=count
 
 show_cover_report() {
-    go tool cover -${1}="$profile"
+    go tool cover -"${1}"="$profile"
 }
 
 rm -rf "$workdir"
 mkdir "$workdir"
 
 for pkg in $(go list ./... | grep -v /vendor/); do
-    f="$workdir/$(echo $pkg | tr / -).cover"
+    f="$workdir/$(echo "$pkg" | tr / -).cover"
     go test -v -covermode="$mode" -coverprofile="$f" "$pkg"
 done
 
 echo "mode: $mode" >"$profile"
 grep -h -v "^mode:" "$workdir"/*.cover >>"$profile"
-
 
 show_cover_report func
 case "$1" in
