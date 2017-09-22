@@ -38,7 +38,7 @@ func main() {
 
 	for {
 
-		err := updateChamber(c.ChamberResource())
+		err := updateChamber(c.ChamberResource)
 		if err != nil {
 			fmt.Println(err)
 		}
