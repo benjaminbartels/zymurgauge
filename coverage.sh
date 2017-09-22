@@ -20,7 +20,7 @@ generate_cover_data() {
     mkdir "$workdir"
 
     for pkg in "$@"; do
-        f="$workdir/$(echo $pkg | tr / -).cover"
+        f=$workdir/"$(echo $pkg | tr / -)".cover
         go test -v -covermode="$mode" -coverprofile="$f" "$pkg"
     done
 
