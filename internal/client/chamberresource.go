@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
 	"github.com/pkg/errors"
 )
 
@@ -42,7 +42,7 @@ func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 	defer safeClose(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, web.ErrNotFound
+		return nil, app.ErrNotFound
 	}
 
 	// buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))

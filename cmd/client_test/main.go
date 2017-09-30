@@ -8,6 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/platforms/raspi"
+
 	"time"
 
 	"fmt"
@@ -59,16 +62,16 @@ func updateChamber(c *client.ChamberResource) error {
 
 	mac := "b8:27:eb:8e:d1:75"
 
+	r := raspi.NewAdaptor()
+
 	err := c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
 		Thermostat: &internal.Thermostat{
 			Thermometer: &ds18b20.Thermometer{ID: "28-000006285484"},
-			Chiller: &internal.Device{
-				GPIO:     17,
-				Cooldown: 15 * time.Minute,
-			},
+			Chiller:     gpio.NewRelayDriver(r, "17"),
 		},
+
 		CurrentFermentation: &internal.Fermentation{
 			ID: 1,
 			Beer: internal.Beer{
