@@ -1,24 +1,32 @@
-package web
+package app
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
+	"path"
+	"strings"
 )
 
-var (
-	// ErrNotFound is returned when an entity is not found
-	ErrNotFound = errors.New("not found")
-	// ErrNotAllowed is returned when the http method is not allowed
-	ErrNotAllowed = errors.New("method not allowed")
-	// ErrBadRequest is returned when a bad request has occurred
-	ErrBadRequest = errors.New("bad request")
-	// ErrInternal is returned when an internal error has occurred
-	ErrInternal = errors.New("internal error")
-	// ErrInvalidJSON is returned when json request is invalid
-	ErrInvalidJSON = errors.New("invalid json")
-)
+type App struct {
+	api http.Handler
+	ui  http.Handler
+}
+
+func New(routes []Route, uiFS http.FileSystem) *App {
+	return &App{
+		api: &API{Routes: routes},
+		ui:  http.FileServer(uiFS),
+	}
+}
+
+func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.HasPrefix(r.URL.Path, "/api/v1/") {
+		http.StripPrefix("/api/v1/", a.api).ServeHTTP(w, r)
+	} else {
+		http.StripPrefix("/", a.ui).ServeHTTP(w, r)
+	}
+}
 
 // Encode encodes the given interface onto the given http.ResponseWriter
 func Encode(w http.ResponseWriter, v interface{}) {
@@ -51,6 +59,11 @@ func HandleError(w http.ResponseWriter, err error) {
 	}
 }
 
-type errorResponse struct {
-	Err string `json:"error,omitempty"`
+func ShiftPath(p string) (head, tail string) {
+	p = path.Clean("/" + p)
+	i := strings.Index(p[1:], "/") + 1
+	if i <= 0 {
+		return p[1:], "/"
+	}
+	return p[1:i], p[i:]
 }

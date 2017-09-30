@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
 )
 
 // FermentationHandler is the http handler for API calls to manage Fermentations
@@ -30,42 +30,57 @@ func (h *FermentationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	case "POST":
 		h.handlePost(w, r)
 	default:
-		web.HandleError(w, web.ErrNotFound)
+		app.HandleError(w, app.ErrNotFound)
 	}
 }
 
 func (h *FermentationHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
-	id, err := parseID(r)
-	if err != nil {
-		web.HandleError(w, err)
-		return
-	}
+	if r.URL.Path != "" {
 
-	if fermentation, err := h.repo.Get(id); err != nil {
-		web.HandleError(w, err)
-	} else if fermentation == nil {
-		web.HandleError(w, web.ErrNotFound)
+		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
+			app.HandleError(w, app.ErrBadRequest)
+		} else {
+			h.handleGetOne(w, id)
+		}
+
 	} else {
-		web.Encode(w, &fermentation)
+		h.handleGetAll(w)
 	}
 
+}
+
+func (h *FermentationHandler) handleGetOne(w http.ResponseWriter, id uint64) {
+	if fermentation, err := h.repo.Get(id); err != nil {
+		app.HandleError(w, err)
+	} else if fermentation == nil {
+		app.HandleError(w, app.ErrNotFound)
+	} else {
+		app.Encode(w, &fermentation)
+	}
+
+}
+
+func (h *FermentationHandler) handleGetAll(w http.ResponseWriter) {
+	if fermentations, err := h.repo.GetAll(); err != nil {
+		app.HandleError(w, err)
+	} else {
+		app.Encode(w, fermentations)
+	}
 }
 
 func (h *FermentationHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	fermentation, err := parseFermentation(r)
 	if err != nil {
-		web.HandleError(w, err)
+		app.HandleError(w, err)
 		return
 	}
 
-	fmt.Println(fermentation)
-
 	if err := h.repo.Save(&fermentation); err != nil {
-		web.HandleError(w, err)
+		app.HandleError(w, err)
 	} else {
-		web.Encode(w, &fermentation)
+		app.Encode(w, &fermentation)
 	}
 }
 

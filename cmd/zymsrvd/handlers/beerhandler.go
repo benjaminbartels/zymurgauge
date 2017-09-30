@@ -5,11 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"fmt"
-
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
 )
 
 // BeerHandler is the http handler for API calls to manage Beers
@@ -32,19 +30,14 @@ func (h *BeerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		h.handlePost(w, r)
 	default:
-		web.HandleError(w, web.ErrNotFound)
+		app.HandleError(w, app.ErrNotFound)
 	}
 }
 
 func (h *BeerHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-
-	var head string
-	head, r.URL.Path = shiftPath(r.URL.Path)
-
-	if head != "" {
-
-		if id, err := strconv.ParseUint(head, 10, 64); err != nil {
-			web.HandleError(w, err)
+	if r.URL.Path != "" {
+		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
+			app.HandleError(w, app.ErrBadRequest)
 		} else {
 			h.handleGetOne(w, id)
 		}
@@ -52,25 +45,24 @@ func (h *BeerHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 	} else {
 		h.handleGetAll(w)
 	}
-
 }
 
 func (h *BeerHandler) handleGetOne(w http.ResponseWriter, id uint64) {
 	if beer, err := h.repo.Get(id); err != nil {
-		web.HandleError(w, err)
+		app.HandleError(w, err)
 	} else if beer == nil {
-		web.HandleError(w, web.ErrNotFound)
+		app.HandleError(w, app.ErrNotFound)
 	} else {
-		web.Encode(w, &beer)
+		app.Encode(w, &beer)
 	}
 
 }
 
 func (h *BeerHandler) handleGetAll(w http.ResponseWriter) {
 	if beers, err := h.repo.GetAll(); err != nil {
-		web.HandleError(w, err)
+		app.HandleError(w, err)
 	} else {
-		web.Encode(w, beers)
+		app.Encode(w, beers)
 	}
 }
 
@@ -78,18 +70,14 @@ func (h *BeerHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	beer, err := parseBeer(r)
 	if err != nil {
-		fmt.Println(err)
-		web.HandleError(w, err)
+		app.HandleError(w, err)
 		return
 	}
 
-	fmt.Println(beer)
-
 	if err := h.repo.Save(&beer); err != nil {
-		fmt.Println(err)
-		web.HandleError(w, err)
+		app.HandleError(w, err)
 	} else {
-		web.Encode(w, &beer)
+		app.Encode(w, &beer)
 	}
 }
 
