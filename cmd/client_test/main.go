@@ -14,6 +14,7 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
+	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
 )
 
 func main() {
@@ -61,13 +62,12 @@ func updateChamber(c *client.ChamberResource) error {
 	err := c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
-		Controller: &internal.TemperatureController{
-			ThermometerID: "28-000006285484",
+		Thermostat: &internal.Thermostat{
+			Thermometer: &ds18b20.Thermometer{ID: "28-000006285484"},
 			Chiller: &internal.Device{
 				GPIO:     17,
 				Cooldown: 15 * time.Minute,
 			},
-			Interval: 5 * time.Second,
 		},
 		CurrentFermentation: &internal.Fermentation{
 			ID: 1,

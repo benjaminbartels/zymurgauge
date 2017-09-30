@@ -45,7 +45,6 @@ func (r *ChamberRepo) GetAll() ([]internal.Chamber, error) {
 	err := r.db.View(func(tx *bolt.Tx) error {
 
 		if err := tx.Bucket([]byte("Chambers")).ForEach(func(k, v []byte) error {
-
 			var c internal.Chamber
 			if err := json.Unmarshal(v, &c); err != nil {
 				return errors.Wrap(err, "Could not unmarshal Chambers")

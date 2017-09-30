@@ -94,19 +94,8 @@ func processChamber(c *internal.Chamber) {
 
 	//Check for updated fermentation
 	if currentChamber.CurrentFermentation != nil {
-		t := c.CurrentFermentation.Beer.Schedule[0].TargetTemp
-
-		err := currentChamber.Controller.SetTemperature(&t)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		err := currentChamber.Controller.SetTemperature(nil)
-		if err != nil {
-			panic(err)
-		}
+		currentChamber.Thermostat.Set(c.CurrentFermentation.Beer.Schedule[0].TargetTemp)
 	}
-
 }
 
 // getMacAddress returns the first Mac Address of the first network interface found
