@@ -55,21 +55,12 @@ func main() {
 	}
 
 	routes := []app.Route{
-		app.Route{"chambers", handlers.NewChamberHandler(chamberRepo, pubsub.New())},
-		app.Route{"beers", handlers.NewBeerHandler(beerRepo)},
-		app.Route{"fermentations", handlers.NewFermentationHandler(fermentationRepo)},
+		app.Route{Path: "chambers", Handler: handlers.NewChamberHandler(chamberRepo, pubsub.New())},
+		app.Route{Path: "beers", Handler: handlers.NewBeerHandler(beerRepo)},
+		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo)},
 	}
 
 	app := app.New(routes, statikFS)
-
-	// app := &handlers.App{
-	// 	API: &handlers.API{
-	// 		ChamberHandler:      handlers.NewChamberHandler(chamberRepo, pubsub.New()),
-	// 		BeerHandler:         handlers.NewBeerHandler(beerRepo),
-	// 		FermentationHandler: handlers.NewFermentationHandler(fermentationRepo),
-	// 	},
-	// 	Web: http.StripPrefix("/", http.FileServer(statikFS)),
-	// }
 
 	options := cors.Options{
 		AllowedOrigins: []string{"*"},

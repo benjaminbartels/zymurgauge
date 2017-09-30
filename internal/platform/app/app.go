@@ -8,11 +8,13 @@ import (
 	"strings"
 )
 
+// App is the http handler for the application which include the API and UI
 type App struct {
 	api http.Handler
 	ui  http.Handler
 }
 
+// New creates a new App
 func New(routes []Route, uiFS http.FileSystem) *App {
 	return &App{
 		api: &API{Routes: routes},
@@ -20,6 +22,7 @@ func New(routes []Route, uiFS http.FileSystem) *App {
 	}
 }
 
+// ServeHTTP calls f(w, r)
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/api/v1/") {
 		http.StripPrefix("/api/v1/", a.api).ServeHTTP(w, r)
@@ -59,6 +62,10 @@ func HandleError(w http.ResponseWriter, err error) {
 	}
 }
 
+// ShiftPath splits off the first component of p, which will be cleaned of
+// relative components before processing. head will never contain a slash and
+// tail will always be a rooted path without trailing slash.
+// https://blog.merovius.de/2017/06/18/how-not-to-use-an-http-router.html
 func ShiftPath(p string) (head, tail string) {
 	p = path.Clean("/" + p)
 	i := strings.Index(p[1:], "/") + 1

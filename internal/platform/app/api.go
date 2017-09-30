@@ -6,10 +6,12 @@ import (
 	"strings"
 )
 
+// API is the http handler for call to the API
 type API struct {
 	Routes []Route
 }
 
+// ServeHTTP calls f(w, r)
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("path", r.URL.Path)
 	handled := false
@@ -31,6 +33,7 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Route associates a path to a http handler
 type Route struct {
 	Path    string
 	Handler http.Handler
