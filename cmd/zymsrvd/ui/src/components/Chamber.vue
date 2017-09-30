@@ -68,11 +68,7 @@ export default {
     submit () {
       HTTP.post('chambers', this.chamber)
         .then(response => {
-          this.chamber = response.data
-          if (this.create) {
-            console.log(this.chamber.macAddress)
-            this.$router.push({ name: 'editChamber', params: { macAddress: this.chamber.macAddress } })
-          }
+          this.$router.push({ name: 'editChamber', params: { macAddress: this.chamber.macAddress } })
         })
         .catch(e => {
           this.errors.push(e)

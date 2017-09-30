@@ -12,7 +12,7 @@ const routes = [
   { path: '/beers/:id/edit', name: 'editBeer', component: Beer, props: true },
   { path: '/beers/create', name: 'createBeer', component: Beer, props: { create: true } },
   { path: '/chambers', name: 'chambers', component: Chambers },
-  { path: '/chambers/:macAddress/edit', name: 'editChambers', component: Chamber, props: true },
+  { path: '/chambers/:macAddress/edit', name: 'editChamber', component: Chamber, props: true },
   { path: '*', redirect: { name: 'fermentations' } }
 ]
 

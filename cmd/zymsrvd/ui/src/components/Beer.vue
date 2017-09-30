@@ -209,11 +209,7 @@ export default {
     submit () {
       HTTP.post('beers', this.beer)
         .then(response => {
-          this.beer = response.data
-          if (this.create) {
-            console.log(this.beer.id)
-            this.$router.push({ name: 'editBeer', params: { id: this.beer.id } })
-          }
+          this.$router.push({ name: 'beers' })
         })
         .catch(e => {
           this.errors.push(e)
