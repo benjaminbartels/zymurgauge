@@ -12,7 +12,6 @@
               <v-card-text>{{beer.style}}</v-card-text>
             </router-link>
           </v-card>
-
         </v-flex>
       </v-layout>
     </v-container>
