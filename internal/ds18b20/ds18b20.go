@@ -3,7 +3,6 @@ package ds18b20
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"path"
 	"sort"
 	"strconv"
@@ -84,7 +83,6 @@ type Thermometer struct {
 
 // ReadTemperature read the current temperature of the Thermometer
 func (t *Thermometer) ReadTemperature() (*float64, error) {
-	fmt.Println("ReadTemperature() called")
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
