@@ -16,6 +16,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
 	"github.com/boltdb/bolt"
 	"github.com/rakyll/statik/fs"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -60,21 +61,15 @@ func main() {
 		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo)},
 	}
 
-	app := app.New(routes, statikFS, middleware.RequestLogger)
+	app := app.New(routes, statikFS)
 
-	// options := cors.Options{
-	// 	AllowedOrigins: []string{"*"},
-	// }
-
-	// c := cors.New(options)
-
-	// corsHandler := c.Handler(middleware.RequestLogger(app))
-
-	//h := middleware.RequestLogger(app)
+	options := cors.Options{
+		AllowedOrigins: []string{"*"},
+	}
 
 	server := http.Server{
 		Addr:    ":3000",
-		Handler: app.Handler(),
+		Handler: app.Handler(middleware.RequestLogger, cors.New(options).Handler),
 	}
 
 	fmt.Println("Listening.....", server.Addr)

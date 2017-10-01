@@ -19,24 +19,20 @@ const traceIDHeader = "X-Trace-ID"
 
 // App is the http handler for the application which include the API and UI
 type App struct {
-	api         http.Handler
-	ui          http.Handler
-	middlewares []Middleware
+	api http.Handler
+	ui  http.Handler
 }
 
 // New creates a new App
-func New(routes []Route, uiFS http.FileSystem, middleswares ...Middleware) *App {
-	app := &App{
-		api:         &API{Routes: routes},
-		ui:          http.FileServer(uiFS),
-		middlewares: middleswares,
+func New(routes []Route, uiFS http.FileSystem) *App {
+	return &App{
+		api: &API{Routes: routes},
+		ui:  http.FileServer(uiFS),
 	}
-
-	return app
 }
 
 // Handler returns a http.Handler for the that is wrapped with the middlewares
-func (a *App) Handler() http.Handler {
+func (a *App) Handler(middlewares ...Middleware) http.Handler {
 
 	var handler http.Handler
 	handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -47,9 +43,9 @@ func (a *App) Handler() http.Handler {
 		}
 	})
 
-	for i := len(a.middlewares) - 1; i >= 0; i-- {
-		if a.middlewares[i] != nil {
-			mw := a.middlewares[i]
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		if middlewares[i] != nil {
+			mw := middlewares[i]
 			handler = mw(handler)
 		}
 	}
