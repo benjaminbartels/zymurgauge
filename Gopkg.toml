@@ -46,5 +46,9 @@
   version = "1.0.3"
 
 [[constraint]]
-  name = "github.com/stianeikeland/go-rpio"
-  version = "3.0.0"
+  branch = "master"
+  name = "github.com/spf13/afero"
+
+[[constraint]]
+  name = "gobot.io/x/gobot"
+  version = "1.6.1"

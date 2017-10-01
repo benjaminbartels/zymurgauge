@@ -26,6 +26,18 @@
   version = "v1.3.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/errwrap"
+  packages = ["."]
+  revision = "7554cd9344cec97297fa6649b055a8c98c2a1e55"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-multierror"
+  packages = ["."]
+  revision = "83588e72410abfbe4df460eeb6f30841ae47d4c4"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -44,32 +56,56 @@
   version = "v1.2"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/sigurn/crc8"
+  packages = ["."]
+  revision = "e55481d6f45c5a8f040343bace9013571dae103e"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/sigurn/utils"
+  packages = ["."]
+  revision = "f19e41f79f8f006116f682c1af454591bc278ad4"
+
+[[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
   version = "v1.0.3"
 
 [[projects]]
-  name = "github.com/stianeikeland/go-rpio"
-  packages = ["."]
-  revision = "896db2ee1c7f95240dd6a09e56edf9cece107a34"
-  version = "v3.0.0"
+  branch = "master"
+  name = "github.com/spf13/afero"
+  packages = [".","mem"]
+  revision = "ee1bd8ee15a1306d1f9201acc41ef39cd9f99a1b"
+
+[[projects]]
+  name = "gobot.io/x/gobot"
+  packages = [".","drivers/gpio","drivers/i2c","platforms/raspi","sysfs"]
+  revision = "ca421efda6b51dab319a63da0285003c5bc8cf36"
+  version = "v1.6.1"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "7d9177d70076375b9a59c8fde23d52d9c4a7ecd5"
+  revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "062cd7e4e68206d8bab9b18396626e855c992658"
+  revision = "314a259e304ff91bd6985da2a7149bbf91237993"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/text"
+  packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
+  revision = "1cbadb444a806fd9430d14ad08967ed91da4fa0a"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "15064ffb4f02e8a7eea6358f8a3c45a618018fe8269e1cff1b9ec2818b9eec41"
+  inputs-digest = "53e5ec1fad2250ac57d6be6b08f8d9e3893f5c9e80170facc36a930799bf0d4e"
   solver-name = "gps-cdcl"
   solver-version = 1
