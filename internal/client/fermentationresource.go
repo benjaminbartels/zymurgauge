@@ -10,13 +10,11 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // FermentationResource is a client side rest resource used to manage Fermentations
 type FermentationResource struct {
-	url    *url.URL
-	logger *logrus.Logger
+	url *url.URL
 }
 
 func newFermentationResource(base string, version string) (*FermentationResource, error) {
