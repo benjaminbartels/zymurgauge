@@ -106,7 +106,7 @@ func HandleError(w http.ResponseWriter, err error) {
 	w.WriteHeader(code)
 	encErr := json.NewEncoder(w).Encode(&errorResponse{Err: err.Error()})
 	if encErr != nil {
-		fmt.Println(encErr)
+		fmt.Println(encErr) // This should never happen...
 	}
 }
 

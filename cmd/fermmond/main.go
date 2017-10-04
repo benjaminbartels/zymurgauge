@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"fmt"
+	"log"
 	"net"
 	"net/url"
 	"os"
@@ -13,14 +13,17 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
-
-	"github.com/sirupsen/logrus"
 )
 
 // ToDo: Remove global vars
-var currentChamber *internal.Chamber
+var (
+	currentChamber *internal.Chamber
+	logger         *log.Logger
+)
 
 func main() {
+
+	logger = log.New(os.Stderr, "", log.LstdFlags)
 
 	// Setup graceful exit
 	sig := make(chan os.Signal, 2)
@@ -30,28 +33,25 @@ func main() {
 		os.Exit(1)
 	}()
 
-	logger := logrus.New()
-	logger.Level = logrus.DebugLevel
-
 	address := kingpin.Flag("address", "Url of Zymurgauge server").Default("http://localhost:3000").Short('u').String()
 
 	kingpin.Parse()
 
 	addr, err := url.Parse(*address)
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 
-	c, err := client.NewClient(*addr, "v1")
+	c, err := client.NewClient(*addr, "v1", logger)
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 
 	ch := make(chan internal.Chamber)
 
 	mac, err := getMacAddress()
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 
 	for {
@@ -59,7 +59,7 @@ func main() {
 		var chamber *internal.Chamber
 		chamber, err = c.ChamberResource.Get(mac)
 		if err != nil {
-			panic(err)
+			logger.Fatal(err)
 		}
 
 		if chamber != nil {
@@ -67,18 +67,18 @@ func main() {
 			break
 		}
 
-		logger.Infof("No Chamber found for Mac: %s, retrying in 5 seconds", mac)
+		logger.Printf("No Chamber found for Mac: %s, retrying in 5 seconds\n", mac)
 
 		time.Sleep(5 * time.Second)
 	}
 
 	err = c.ChamberResource.Subscribe(mac, ch)
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 
 	for {
-		logger.Debug("Waiting for ChamberService updates")
+		logger.Println("Waiting for ChamberService updates")
 		c := <-ch
 		processChamber(&c)
 	}
@@ -86,11 +86,11 @@ func main() {
 }
 
 func processChamber(c *internal.Chamber) {
-	fmt.Println("processChamber called")
+	logger.Println("processChamber called")
 
 	currentChamber = c
 
-	fmt.Println(currentChamber)
+	logger.Println(currentChamber)
 
 	//Check for updated fermentation
 	if currentChamber.CurrentFermentation != nil {

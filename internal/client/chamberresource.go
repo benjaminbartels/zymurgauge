@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/pkg/errors"
 )
 
@@ -19,16 +19,17 @@ var headerData = []byte("data:")
 type ChamberResource struct {
 	url    *url.URL
 	stream *stream
+	logger log.Logger
 }
 
-func newChamberResource(base string, version string) (*ChamberResource, error) {
+func newChamberResource(base string, version string, logger log.Logger) (*ChamberResource, error) {
 
 	u, err := url.Parse(base + "/" + version + "/chambers/")
 	if err != nil {
 		return nil, err
 	}
 
-	return &ChamberResource{url: u}, nil
+	return &ChamberResource{url: u, logger: logger}, nil
 }
 
 // Get returns a controller by MAC address
@@ -44,10 +45,6 @@ func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, app.ErrNotFound
 	}
-
-	// buf := bytes.NewBuffer(make([]byte, 0, resp.ContentLength))
-	// buf.ReadFrom(resp.Body)
-	// fmt.Printf("Response: %s\n", string(buf.Bytes()))
 
 	var chamber *internal.Chamber
 	if err = json.NewDecoder(resp.Body).Decode(&chamber); err != nil {
@@ -84,7 +81,7 @@ func (r ChamberResource) Subscribe(mac string, ch chan internal.Chamber) error {
 
 	r.url.Path = r.url.Path + url.QueryEscape(mac) + "/events"
 
-	fmt.Println(r.url.String())
+	r.logger.Println(r.url.String())
 
 	req, err := http.NewRequest("GET", r.url.String(), nil)
 	if err != nil {
@@ -92,7 +89,8 @@ func (r ChamberResource) Subscribe(mac string, ch chan internal.Chamber) error {
 	}
 
 	r.stream = &stream{
-		ch: ch,
+		ch:     ch,
+		logger: r.logger,
 	}
 
 	return r.stream.open(req)
@@ -109,6 +107,7 @@ type stream struct {
 	ch     chan internal.Chamber
 	client *http.Client // ToDo: make all methods use this client
 	resp   *http.Response
+	logger log.Logger
 }
 
 // open opens the http event stream using the provied http request
@@ -122,7 +121,7 @@ func (s *stream) open(req *http.Request) error {
 		var err error
 		s.resp, err = s.client.Do(req)
 		if err != nil {
-			fmt.Println(err)
+			s.logger.Println(err)
 		}
 
 		scanner := bufio.NewScanner(s.resp.Body)
@@ -136,11 +135,11 @@ func (s *stream) open(req *http.Request) error {
 
 			msg := scanner.Bytes()
 			if err != nil {
-				fmt.Print(err)
+				s.logger.Print(err)
 				continue
 			}
 
-			fmt.Printf("Received: [%s]\n", string(msg))
+			s.logger.Printf("Received: [%s]\n", string(msg))
 
 			if bytes.Contains(msg, headerData) {
 
@@ -150,14 +149,14 @@ func (s *stream) open(req *http.Request) error {
 
 				err = json.Unmarshal(data, c)
 				if err != nil {
-					fmt.Print(err)
+					s.logger.Print(err)
 					continue
 				}
 
 				s.ch <- *c
 
 			} else {
-				fmt.Printf("Unrecognized Message: %s\n", msg)
+				s.logger.Printf("Unrecognized Message: %s\n", msg)
 			}
 		}
 	}()
@@ -170,7 +169,7 @@ func (s *stream) close() {
 	close(s.ch)
 	err := s.resp.Body.Close()
 	if err != nil {
-		fmt.Print(err)
+		s.logger.Print(err)
 	}
 }
 

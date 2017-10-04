@@ -3,6 +3,8 @@ package client
 import (
 	"io"
 	"net/url"
+
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
 
 // Client provides resources used to manage entities via REST.
@@ -13,9 +15,9 @@ type Client struct {
 }
 
 // NewClient creates a new instance of the HTTP client
-func NewClient(url url.URL, version string) (*Client, error) { // ToDo: Why is url no set
+func NewClient(url url.URL, version string, logger log.Logger) (*Client, error) { // ToDo: Why is url no set
 
-	chamberResource, err := newChamberResource(url.String(), version)
+	chamberResource, err := newChamberResource(url.String(), version, logger)
 	if err != nil {
 		return nil, err
 	}

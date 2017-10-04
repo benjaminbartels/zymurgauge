@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net"
 	"net/url"
 	"os"
@@ -13,14 +14,16 @@ import (
 
 	"time"
 
-	"fmt"
-
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
 	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
 )
 
+var logger *log.Logger
+
 func main() {
+
+	logger = log.New(os.Stderr, "", log.LstdFlags)
 
 	// Setup graceful exit
 	sig := make(chan os.Signal, 2)
@@ -33,18 +36,18 @@ func main() {
 	// ToDo: Don't hardcode
 	addr, err := url.Parse("http://192.168.0.10:3000")
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
-	c, err := client.NewClient(*addr, "v1")
+	c, err := client.NewClient(*addr, "v1", logger)
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
 
 	for {
 
 		err := updateChamber(c.ChamberResource)
 		if err != nil {
-			fmt.Println(err)
+			logger.Fatal(err)
 		}
 
 		time.Sleep(5 * time.Second)
@@ -53,7 +56,7 @@ func main() {
 
 func updateChamber(c *client.ChamberResource) error {
 
-	fmt.Println("Saving Chamber...")
+	logger.Println("Saving Chamber...")
 
 	// mac, err := getMacAddress()
 	// if err != nil {

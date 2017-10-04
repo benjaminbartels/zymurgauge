@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,6 +21,8 @@ import (
 
 func main() {
 
+	logger := log.New(os.Stderr, "", log.LstdFlags)
+
 	// Setup graceful exit
 	sig := make(chan os.Signal, 2)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
@@ -31,32 +33,32 @@ func main() {
 
 	db, err := bolt.Open("zymurgaugedb", 0666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		panic(err) //ToDo: Implement logger
+		logger.Fatal(err)
 	}
 	defer db.Close()
 
 	chamberRepo, err := database.NewChamberRepo(db)
 	if err != nil {
-		panic(err) //ToDo: Implement logger
+		logger.Fatal(err)
 	}
 
 	beerRepo, err := database.NewBeerRepo(db)
 	if err != nil {
-		panic(err) //ToDo: Implement logger
+		logger.Fatal(err)
 	}
 
 	fermentationRepo, err := database.NewFermentationRepo(db)
 	if err != nil {
-		panic(err) //ToDo: Implement logger
+		logger.Fatal(err)
 	}
 
 	statikFS, err := fs.New()
 	if err != nil {
-		panic(err) //ToDo: Implement logger
+		logger.Fatal(err)
 	}
 
 	routes := []app.Route{
-		app.Route{Path: "chambers", Handler: handlers.NewChamberHandler(chamberRepo, pubsub.New())},
+		app.Route{Path: "chambers", Handler: handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)},
 		app.Route{Path: "beers", Handler: handlers.NewBeerHandler(beerRepo)},
 		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo)},
 	}
@@ -67,12 +69,14 @@ func main() {
 		AllowedOrigins: []string{"*"},
 	}
 
+	requestLogger := middleware.NewRequestLogger(logger)
+
 	server := http.Server{
 		Addr:    ":3000",
-		Handler: app.Handler(middleware.RequestLogger, cors.New(options).Handler),
+		Handler: app.Handler(requestLogger.Handler, cors.New(options).Handler),
 	}
 
-	fmt.Println("Listening.....", server.Addr)
-	panic(server.ListenAndServe())
+	logger.Println("Listening at", server.Addr)
+	logger.Fatal(server.ListenAndServe())
 
 }

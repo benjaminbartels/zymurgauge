@@ -1,12 +1,12 @@
 package internal
 
 import (
-	"fmt"
 	"time"
 
 	"gobot.io/x/gobot/drivers/gpio"
 
 	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
 
 const interval time.Duration = time.Minute
@@ -21,6 +21,7 @@ type Thermostat struct {
 	isOn        bool
 	state       state
 	quit        chan bool
+	logger      log.Logger
 }
 
 // On turns the Thermostat On
@@ -34,7 +35,9 @@ func (t *Thermostat) On() {
 				case <-time.After(interval):
 					v, err := t.Thermometer.ReadTemperature()
 					if err != nil {
-						fmt.Println(err) // ToDo: how to notify caller about error
+						if t.logger != nil {
+							t.logger.Println(err)
+						}
 						continue
 					}
 					if v != nil {
@@ -59,25 +62,35 @@ func (t *Thermostat) Set(temp float64) {
 
 func (t *Thermostat) eval(temperature float64) {
 	if temperature > t.target {
-		fmt.Printf("Temperature above Target. Current: %f Target: %f\n", temperature, t.target)
+		t.log("Temperature above Target. Current: %f Target: %f\n", temperature, t.target)
 		if t.state != COOLING {
 			t.Chiller.On()
 			t.Heater.Off()
 			t.state = COOLING
 		}
 	} else if temperature < t.target {
-		fmt.Printf("Temperature below Target. Current: %f Target: %f\n", temperature, t.target)
+		t.log("Temperature below Target. Current: %f Target: %f\n", temperature, t.target)
 		if t.state != HEATING {
 			t.Chiller.Off()
 			t.Heater.On()
 			t.state = HEATING
 		}
 	} else {
-		fmt.Printf("Temperature equals Target. Current: %f Target: %f\n", temperature, t.target)
+		t.log("Temperature equals Target. Current: %f Target: %f\n", temperature, t.target)
 		if t.state != OFF {
 			t.Chiller.Off()
 			t.Heater.Off()
 			t.state = OFF
+		}
+	}
+}
+
+func (t *Thermostat) log(s string, a ...interface{}) {
+	if t.logger != nil {
+		if a != nil {
+			t.logger.Printf(s, a)
+		} else {
+			t.logger.Println(s)
 		}
 	}
 }

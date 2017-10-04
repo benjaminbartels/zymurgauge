@@ -9,6 +9,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
 )
 
@@ -16,14 +17,16 @@ import (
 type ChamberHandler struct {
 	repo   *database.ChamberRepo
 	pubSub *pubsub.PubSub
+	logger log.Logger
 }
 
 // NewChamberHandler instantiates a ChamberHandler
-func NewChamberHandler(repo *database.ChamberRepo, pubSub *pubsub.PubSub) *ChamberHandler {
+func NewChamberHandler(repo *database.ChamberRepo, pubSub *pubsub.PubSub, logger log.Logger) *ChamberHandler {
 
 	return &ChamberHandler{
 		repo:   repo,
 		pubSub: pubSub,
+		logger: logger,
 	}
 }
 
@@ -95,14 +98,14 @@ func (h *ChamberHandler) handleGetEvents(w http.ResponseWriter, mac string) {
 
 	ch := h.pubSub.Subscribe(mac)
 
-	fmt.Printf("Added client [%s]\n", mac)
+	h.logger.Printf("Added client [%s]\n", mac)
 
 	notify := w.(http.CloseNotifier).CloseNotify()
 	go func() {
 		<-notify
 
 		h.pubSub.Unsubscribe(ch)
-		fmt.Printf("Removed client %s channel\n", mac)
+		h.logger.Printf("Removed client %s channel\n", mac)
 	}()
 
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -117,7 +120,7 @@ func (h *ChamberHandler) handleGetEvents(w http.ResponseWriter, mac string) {
 		msg := fmt.Sprintf("data: %s\n", c)
 		fmt.Fprint(w, msg)
 
-		fmt.Printf("Sending: %s\n", msg)
+		h.logger.Printf("Sending: %s\n", msg)
 
 		f.Flush()
 	}
