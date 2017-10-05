@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -24,12 +26,12 @@ func main() {
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 
 	// Setup graceful exit
-	sig := make(chan os.Signal, 2)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sig
-		os.Exit(1)
-	}()
+	// sig := make(chan os.Signal, 2)
+	// signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	// go func() {
+	// 	<-sig
+	// 	os.Exit(1)
+	// }()
 
 	db, err := bolt.Open("zymurgaugedb", 0666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
@@ -72,11 +74,36 @@ func main() {
 	requestLogger := middleware.NewRequestLogger(logger)
 
 	server := http.Server{
-		Addr:    ":3000",
-		Handler: app.Handler(requestLogger.Handler, cors.New(options).Handler),
+		Addr:         ":3000",
+		Handler:      app.Handler(requestLogger.Handler, cors.New(options).Handler),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
-	logger.Println("Listening at", server.Addr)
-	logger.Fatal(server.ListenAndServe())
+	var wg sync.WaitGroup
+	wg.Add(1)
 
+	go func() {
+		logger.Printf("Listening at %s", server.Addr)
+		logger.Printf("Listener at %s closed: %v", server.Addr, server.ListenAndServe())
+		wg.Done()
+	}()
+
+	sig := make(chan os.Signal, 2)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	<-sig
+
+	timeout := 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		logger.Printf("Graceful shutdown did not complete in %v : %v", timeout, err)
+		if err := server.Close(); err != nil {
+			logger.Printf("Error killing server : %v", err)
+		}
+	}
+
+	wg.Wait()
+	logger.Println("Bye!")
 }
