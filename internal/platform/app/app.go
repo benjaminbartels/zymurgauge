@@ -2,13 +2,11 @@ package app
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"path"
 	"strings"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/rs/xid"
 )
 
@@ -24,9 +22,9 @@ type App struct {
 }
 
 // New creates a new App
-func New(routes []Route, uiFS http.FileSystem) *App {
+func New(routes []Route, uiFS http.FileSystem, logger log.Logger) *App {
 	return &App{
-		api: &API{Routes: routes},
+		api: &API{Routes: routes, Logger: logger},
 		ui:  http.FileServer(uiFS),
 	}
 }
@@ -65,50 +63,6 @@ type RequestState struct {
 
 // Middleware wraps a handler to remove boilerplate or other concerns not direct to any given Handler.
 type Middleware func(http.Handler) http.Handler
-
-// ShiftPath splits off the first component of p, which will be cleaned of
-// relative components before processing. head will never contain a slash and
-// tail will always be a rooted path without trailing slash.
-// https://blog.merovius.de/2017/06/18/how-not-to-use-an-http-router.html
-func ShiftPath(p string) (head, tail string) {
-	p = path.Clean("/" + p)
-	i := strings.Index(p[1:], "/") + 1
-	if i <= 0 {
-		return p[1:], "/"
-	}
-	return p[1:i], p[i:]
-}
-
-// Encode encodes the given interface onto the given http.ResponseWriter
-func Encode(w http.ResponseWriter, v interface{}) {
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		HandleError(w, err)
-	}
-}
-
-// HandleError encodes the given error onto the given http.ResponseWriter
-func HandleError(w http.ResponseWriter, err error) {
-	var code int
-
-	switch err {
-	case ErrNotFound:
-		code = http.StatusNotFound
-	case ErrNotAllowed:
-		code = http.StatusMethodNotAllowed
-	case ErrBadRequest:
-		code = http.StatusBadRequest
-	case ErrInvalidJSON:
-		code = http.StatusBadRequest
-	default:
-		code = http.StatusInternalServerError
-	}
-
-	w.WriteHeader(code)
-	encErr := json.NewEncoder(w).Encode(&errorResponse{Err: err.Error()})
-	if encErr != nil {
-		fmt.Println(encErr) // This should never happen...
-	}
-}
 
 func addRequestInfo(f http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

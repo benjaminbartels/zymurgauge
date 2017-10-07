@@ -1,13 +1,17 @@
 package app
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
+
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
 
 // API is the http handler for call to the API
 type API struct {
 	Routes []Route
+	Logger log.Logger
 }
 
 // ServeHTTP calls f(w, r)
@@ -24,7 +28,11 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !handled {
-		HandleError(w, ErrNotFound)
+		w.WriteHeader(http.StatusNotFound)
+		err := json.NewEncoder(w).Encode(&errorResponse{Err: ErrNotFound.Error()})
+		if err != nil {
+			a.Logger.Println(err)
+		}
 	}
 }
 

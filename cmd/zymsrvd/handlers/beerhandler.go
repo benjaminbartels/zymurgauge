@@ -8,17 +8,20 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
 
 // BeerHandler is the http handler for API calls to manage Beers
 type BeerHandler struct {
+	app.Handler
 	repo *database.BeerRepo
 }
 
 // NewBeerHandler instantiates a BeerHandler
-func NewBeerHandler(repo *database.BeerRepo) *BeerHandler {
+func NewBeerHandler(repo *database.BeerRepo, logger log.Logger) *BeerHandler {
 	return &BeerHandler{
-		repo: repo,
+		Handler: app.Handler{Logger: logger},
+		repo:    repo,
 	}
 }
 
@@ -30,14 +33,14 @@ func (h *BeerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		h.handlePost(w, r)
 	default:
-		app.HandleError(w, app.ErrNotFound)
+		h.HandleError(w, app.ErrNotFound)
 	}
 }
 
 func (h *BeerHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "" {
 		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
-			app.HandleError(w, app.ErrBadRequest)
+			h.HandleError(w, app.ErrBadRequest)
 		} else {
 			h.handleGetOne(w, id)
 		}
@@ -49,20 +52,20 @@ func (h *BeerHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 func (h *BeerHandler) handleGetOne(w http.ResponseWriter, id uint64) {
 	if beer, err := h.repo.Get(id); err != nil {
-		app.HandleError(w, err)
+		h.HandleError(w, err)
 	} else if beer == nil {
-		app.HandleError(w, app.ErrNotFound)
+		h.HandleError(w, app.ErrNotFound)
 	} else {
-		app.Encode(w, &beer)
+		h.Encode(w, &beer)
 	}
 
 }
 
 func (h *BeerHandler) handleGetAll(w http.ResponseWriter) {
 	if beers, err := h.repo.GetAll(); err != nil {
-		app.HandleError(w, err)
+		h.HandleError(w, err)
 	} else {
-		app.Encode(w, beers)
+		h.Encode(w, beers)
 	}
 }
 
@@ -70,14 +73,14 @@ func (h *BeerHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	beer, err := parseBeer(r)
 	if err != nil {
-		app.HandleError(w, err)
+		h.HandleError(w, err)
 		return
 	}
 
 	if err := h.repo.Save(&beer); err != nil {
-		app.HandleError(w, err)
+		h.HandleError(w, err)
 	} else {
-		app.Encode(w, &beer)
+		h.Encode(w, &beer)
 	}
 }
 

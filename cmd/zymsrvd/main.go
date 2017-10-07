@@ -25,14 +25,6 @@ func main() {
 
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 
-	// Setup graceful exit
-	// sig := make(chan os.Signal, 2)
-	// signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-	// go func() {
-	// 	<-sig
-	// 	os.Exit(1)
-	// }()
-
 	db, err := bolt.Open("zymurgaugedb", 0666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		logger.Fatal(err)
@@ -61,11 +53,11 @@ func main() {
 
 	routes := []app.Route{
 		app.Route{Path: "chambers", Handler: handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)},
-		app.Route{Path: "beers", Handler: handlers.NewBeerHandler(beerRepo)},
-		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo)},
+		app.Route{Path: "beers", Handler: handlers.NewBeerHandler(beerRepo, logger)},
+		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo, logger)},
 	}
 
-	app := app.New(routes, statikFS)
+	app := app.New(routes, statikFS, logger)
 
 	options := cors.Options{
 		AllowedOrigins: []string{"*"},

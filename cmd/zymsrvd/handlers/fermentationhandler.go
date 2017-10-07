@@ -8,17 +8,20 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
 
 // FermentationHandler is the http handler for API calls to manage Fermentations
 type FermentationHandler struct {
+	app.Handler
 	repo *database.FermentationRepo
 }
 
 // NewFermentationHandler instantiates a FermentationHandler
-func NewFermentationHandler(repo *database.FermentationRepo) *FermentationHandler {
+func NewFermentationHandler(repo *database.FermentationRepo, logger log.Logger) *FermentationHandler {
 	return &FermentationHandler{
-		repo: repo,
+		Handler: app.Handler{Logger: logger},
+		repo:    repo,
 	}
 }
 
@@ -30,7 +33,7 @@ func (h *FermentationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	case "POST":
 		h.handlePost(w, r)
 	default:
-		app.HandleError(w, app.ErrNotFound)
+		h.HandleError(w, app.ErrNotFound)
 	}
 }
 
@@ -39,7 +42,7 @@ func (h *FermentationHandler) handleGet(w http.ResponseWriter, r *http.Request) 
 	if r.URL.Path != "" {
 
 		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
-			app.HandleError(w, app.ErrBadRequest)
+			h.HandleError(w, app.ErrBadRequest)
 		} else {
 			h.handleGetOne(w, id)
 		}
@@ -52,20 +55,20 @@ func (h *FermentationHandler) handleGet(w http.ResponseWriter, r *http.Request) 
 
 func (h *FermentationHandler) handleGetOne(w http.ResponseWriter, id uint64) {
 	if fermentation, err := h.repo.Get(id); err != nil {
-		app.HandleError(w, err)
+		h.HandleError(w, err)
 	} else if fermentation == nil {
-		app.HandleError(w, app.ErrNotFound)
+		h.HandleError(w, app.ErrNotFound)
 	} else {
-		app.Encode(w, &fermentation)
+		h.Encode(w, &fermentation)
 	}
 
 }
 
 func (h *FermentationHandler) handleGetAll(w http.ResponseWriter) {
 	if fermentations, err := h.repo.GetAll(); err != nil {
-		app.HandleError(w, err)
+		h.HandleError(w, err)
 	} else {
-		app.Encode(w, fermentations)
+		h.Encode(w, fermentations)
 	}
 }
 
@@ -73,14 +76,14 @@ func (h *FermentationHandler) handlePost(w http.ResponseWriter, r *http.Request)
 
 	fermentation, err := parseFermentation(r)
 	if err != nil {
-		app.HandleError(w, err)
+		h.HandleError(w, err)
 		return
 	}
 
 	if err := h.repo.Save(&fermentation); err != nil {
-		app.HandleError(w, err)
+		h.HandleError(w, err)
 	} else {
-		app.Encode(w, &fermentation)
+		h.Encode(w, &fermentation)
 	}
 }
 
