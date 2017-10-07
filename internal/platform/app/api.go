@@ -8,6 +8,13 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
 
+const (
+	// GET method
+	GET string = "GET"
+	// POST method
+	POST string = "POST"
+)
+
 // API is the http handler for call to the API
 type API struct {
 	Routes []Route

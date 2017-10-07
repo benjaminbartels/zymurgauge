@@ -23,7 +23,7 @@ func NewChamberRepo(db *bolt.DB) (*ChamberRepo, error) {
 		return nil, errors.Wrap(err, "Could not begin transaction")
 	}
 
-	defer tx.Rollback()
+	defer rollback(tx, &err)
 
 	if _, err := tx.CreateBucketIfNotExists([]byte("Chambers")); err != nil {
 		return nil, errors.Wrap(err, "Could not create Chamber bucket")
@@ -38,13 +38,12 @@ func NewChamberRepo(db *bolt.DB) (*ChamberRepo, error) {
 	}, nil
 }
 
-// GetAll returns all ChamberRepos
+// GetAll returns all Chambers
 func (r *ChamberRepo) GetAll() ([]internal.Chamber, error) {
 	var chambers []internal.Chamber
 
 	err := r.db.View(func(tx *bolt.Tx) error {
-
-		if err := tx.Bucket([]byte("Chambers")).ForEach(func(k, v []byte) error {
+		err := tx.Bucket([]byte("Chambers")).ForEach(func(k, v []byte) error {
 			var c internal.Chamber
 			if err := json.Unmarshal(v, &c); err != nil {
 				return errors.Wrap(err, "Could not unmarshal Chambers")
@@ -53,10 +52,8 @@ func (r *ChamberRepo) GetAll() ([]internal.Chamber, error) {
 			chambers = append(chambers, c)
 
 			return nil
-		}); err != nil {
-			return err
-		}
-		return nil
+		})
+		return err
 	})
 
 	if err != nil {

@@ -61,6 +61,11 @@ func createTestDB() *testDB {
 }
 
 func (t *testDB) Close() {
-	t.db.Close()
-	os.Remove(t.db.Path())
+	p := t.db.Path()
+	if err := t.db.Close(); err != nil {
+		panic(err)
+	}
+	if err := os.Remove(p); err != nil {
+		panic(err)
+	}
 }

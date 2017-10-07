@@ -28,9 +28,9 @@ func NewFermentationHandler(repo *database.FermentationRepo, logger log.Logger) 
 // ServeHTTP calls f(w, r).
 func (h *FermentationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case app.GET:
 		h.handleGet(w, r)
-	case "POST":
+	case app.POST:
 		h.handlePost(w, r)
 	default:
 		h.HandleError(w, app.ErrNotFound)

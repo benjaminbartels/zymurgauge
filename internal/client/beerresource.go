@@ -9,6 +9,7 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/pkg/errors"
 )
 
@@ -18,12 +19,10 @@ type BeerResource struct {
 }
 
 func newBeerResource(base string, version string) (*BeerResource, error) {
-
 	u, err := url.Parse(base + "/" + version + "/beers/")
 	if err != nil {
 		return nil, err
 	}
-
 	return &BeerResource{url: u}, nil
 }
 
@@ -35,7 +34,7 @@ func (r *BeerResource) Get(id uint64) (*internal.Beer, error) {
 		return nil, errors.Wrapf(err, "Could not GET Beer %d", id)
 	}
 
-	defer safeClose(resp.Body, &err)
+	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, app.ErrNotFound
@@ -62,7 +61,7 @@ func (r *BeerResource) Save(b *internal.Beer) error {
 		return errors.Wrapf(err, "Could not POST Beer %d", b.ID)
 	}
 
-	defer safeClose(resp.Body, &err)
+	defer safeclose.Close(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&b); err != nil {
 		return errors.Wrapf(err, "Could not decode Beer %s", b.ID)

@@ -10,6 +10,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/pkg/errors"
 )
 
@@ -40,7 +41,7 @@ func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 		return nil, errors.Wrapf(err, "Could not GET Chamber %s", mac)
 	}
 
-	defer safeClose(resp.Body, &err)
+	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, app.ErrNotFound
@@ -67,7 +68,7 @@ func (r ChamberResource) Save(c *internal.Chamber) error {
 		return errors.Wrapf(err, "Could not POST Chamber %s", c.MacAddress)
 	}
 
-	defer safeClose(resp.Body, &err)
+	defer safeclose.Close(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&c); err != nil {
 		return errors.Wrapf(err, "Could not decode Chamber %s", c.MacAddress)
@@ -99,7 +100,6 @@ func (r ChamberResource) Subscribe(mac string, ch chan internal.Chamber) error {
 // Unsubscribe unregisters the caller to receives updates to the given controller
 func (r ChamberResource) Unsubscribe(mac string) {
 	r.stream.close()
-	r.stream = nil
 }
 
 // stream represents a http event stream
@@ -126,7 +126,7 @@ func (s *stream) open(req *http.Request) error {
 
 		scanner := bufio.NewScanner(s.resp.Body)
 
-		defer safeClose(s.resp.Body, &err)
+		defer safeclose.Close(s.resp.Body, &err)
 
 		for {
 			if !scanner.Scan() {

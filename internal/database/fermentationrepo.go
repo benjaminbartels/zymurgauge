@@ -23,7 +23,7 @@ func NewFermentationRepo(db *bolt.DB) (*FermentationRepo, error) {
 		return nil, errors.Wrap(err, "Could not begin transaction")
 	}
 
-	defer tx.Rollback()
+	defer rollback(tx, &err)
 
 	if _, err := tx.CreateBucketIfNotExists([]byte("Fermentations")); err != nil {
 		return nil, errors.Wrap(err, "Could not create Fermentation bucket")

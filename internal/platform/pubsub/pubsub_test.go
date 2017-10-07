@@ -13,13 +13,11 @@ func TestPubSub(t *testing.T) {
 
 	topicA := "topicA"
 	topicB := "topicB"
-	topicC := "topicC"
 	msg := "Hello"
 
 	ps := pubsub.New()
 	chA := ps.Subscribe(topicA)
 	chB := ps.Subscribe(topicB)
-	chC := ps.Subscribe(topicC)
 
 	timeout := make(chan bool, 1)
 	result := make(chan error, 1)
@@ -31,7 +29,6 @@ func TestPubSub(t *testing.T) {
 
 	aDone := false
 	bDone := false
-	cDone := false
 
 	go func() {
 
@@ -52,18 +49,11 @@ func TestPubSub(t *testing.T) {
 					bDone = true
 				}
 
-			case m := <-chC:
-				if string(m) != msg+" C" {
-					result <- fmt.Errorf("Expected [%s],  got [%s]", msg+" C", string(m))
-				} else {
-					cDone = true
-				}
-
 			case <-timeout:
 				result <- errors.New("Timeout waiting for message")
 			}
 
-			if aDone && bDone && cDone {
+			if aDone && bDone {
 				result <- nil
 			}
 
@@ -73,7 +63,6 @@ func TestPubSub(t *testing.T) {
 
 	ps.Send(topicA, []byte(msg+" A"))
 	ps.Send(topicB, []byte(msg+" B"))
-	ps.Send(topicC, []byte(msg+" C"))
 
 	err := <-result
 

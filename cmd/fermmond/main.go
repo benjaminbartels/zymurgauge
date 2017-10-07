@@ -42,7 +42,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	c, err := client.NewClient(*addr, "v1", logger)
+	c, err := client.NewClient(addr, "v1", logger)
 	if err != nil {
 		logger.Fatal(err)
 	}

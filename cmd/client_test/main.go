@@ -38,7 +38,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	c, err := client.NewClient(*addr, "v1", logger)
+	c, err := client.NewClient(addr, "v1", logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -58,16 +58,16 @@ func updateChamber(c *client.ChamberResource) error {
 
 	logger.Println("Saving Chamber...")
 
-	// mac, err := getMacAddress()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	mac, err := getMacAddress()
+	if err != nil {
+		panic(err)
+	}
 
-	mac := "b8:27:eb:8e:d1:75"
+	//mac := "b8:27:eb:8e:d1:75"
 
 	r := raspi.NewAdaptor()
 
-	err := c.Save(&internal.Chamber{
+	err = c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
 		Thermostat: &internal.Thermostat{

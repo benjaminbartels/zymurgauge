@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/spf13/afero"
 )
 
@@ -39,7 +40,7 @@ func (t *ThermometerGroup) GetThermometers() ([]Thermometer, error) {
 		return nil, err
 	}
 	infos, err := dir.Readdir(-1)
-	defer dir.Close()
+	defer safeclose.Close(dir, &err)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func (t *Thermometer) ReadTemperature() (*float64, error) {
 		return nil, err
 	}
 
-	defer file.Close()
+	defer safeclose.Close(file, &err)
 
 	r := bufio.NewReader(file)
 

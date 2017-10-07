@@ -1,8 +1,7 @@
 package client
 
 import (
-	"io"
-	"net/url"
+	"fmt"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
@@ -15,7 +14,7 @@ type Client struct {
 }
 
 // NewClient creates a new instance of the HTTP client
-func NewClient(url url.URL, version string, logger log.Logger) (*Client, error) { // ToDo: Why is url no set
+func NewClient(url fmt.Stringer, version string, logger log.Logger) (*Client, error) { // ToDo: Why is url no set
 
 	chamberResource, err := newChamberResource(url.String(), version, logger)
 	if err != nil {
@@ -39,10 +38,4 @@ func NewClient(url url.URL, version string, logger log.Logger) (*Client, error) 
 	}
 
 	return c, nil
-}
-
-func safeClose(c io.Closer, err *error) {
-	if cerr := c.Close(); cerr != nil && *err == nil {
-		*err = cerr
-	}
 }

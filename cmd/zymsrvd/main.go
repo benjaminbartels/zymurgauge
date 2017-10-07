@@ -16,6 +16,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/boltdb/bolt"
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/cors"
@@ -29,7 +30,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	defer db.Close()
+	defer safeclose.Close(db, &err)
 
 	chamberRepo, err := database.NewChamberRepo(db)
 	if err != nil {

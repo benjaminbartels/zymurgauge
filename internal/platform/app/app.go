@@ -32,8 +32,7 @@ func New(routes []Route, uiFS http.FileSystem, logger log.Logger) *App {
 // Handler returns a http.Handler for the that is wrapped with the middlewares
 func (a *App) Handler(middlewares ...Middleware) http.Handler {
 
-	var handler http.Handler
-	handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/v1/") {
 			http.StripPrefix("/api/v1/", a.api).ServeHTTP(w, r)
 		} else {
