@@ -17,15 +17,20 @@ type Thermostat struct {
 	Thermometer *ds18b20.Thermometer `json:"thermometer"`
 	Chiller     *gpio.RelayDriver    `json:"chiller"`
 	Heater      *gpio.RelayDriver    `json:"heater"`
+	State       State
 	target      float64
 	isOn        bool
-	state       state
 	quit        chan bool
+	statusCh    chan Status
 	logger      log.Logger
 }
 
 // On turns the Thermostat On
-func (t *Thermostat) On() {
+func (t *Thermostat) On() chan Status {
+	if t.statusCh == nil {
+		t.statusCh = make(chan Status)
+	}
+
 	if !t.isOn {
 		go func() {
 			for {
@@ -34,17 +39,15 @@ func (t *Thermostat) On() {
 					return
 				case <-time.After(interval):
 					if v, err := t.Thermometer.ReadTemperature(); err != nil {
-						t.log(err.Error())
-						continue
+						t.statusCh <- Status{OFF, err}
 					} else if v != nil {
-						if err = t.eval(*v); err != nil {
-							t.log(err.Error())
-						}
+						t.eval(*v)
 					}
 				}
 			}
 		}()
 	}
+	return t.statusCh
 }
 
 // Off turns the Thermostat Off
@@ -58,28 +61,32 @@ func (t *Thermostat) Set(temp float64) {
 	t.target = temp
 }
 
-func (t *Thermostat) eval(temperature float64) error {
+func (t *Thermostat) eval(temperature float64) {
 
 	var err error
 
 	if temperature > t.target {
 		t.log("Temperature above Target. Current: %f Target: %f", temperature, t.target)
-		if t.state != COOLING {
+		if t.State != COOLING {
 			err = t.cool()
 		}
 	} else if temperature < t.target {
 		t.log("Temperature below Target. Current: %f Target: %f", temperature, t.target)
-		if t.state != HEATING {
+		if t.State != HEATING {
 			err = t.heat()
 		}
 	} else {
 		t.log("Temperature equals Target. Current: %f Target: %f", temperature, t.target)
-		if t.state != OFF {
+		if t.State != OFF {
 			err = t.off()
 		}
 	}
 
-	return err
+	if err != nil {
+		t.State = ERROR
+	}
+
+	t.statusCh <- Status{t.State, err}
 }
 
 func (t *Thermostat) cool() error {
@@ -89,7 +96,7 @@ func (t *Thermostat) cool() error {
 	if err := t.Heater.Off(); err != nil {
 		return err
 	}
-	t.state = COOLING
+	t.State = COOLING
 	return nil
 }
 
@@ -100,7 +107,7 @@ func (t *Thermostat) heat() error {
 	if err := t.Heater.On(); err != nil {
 		return err
 	}
-	t.state = HEATING
+	t.State = HEATING
 	return nil
 }
 
@@ -111,7 +118,7 @@ func (t *Thermostat) off() error {
 	if err := t.Heater.Off(); err != nil {
 		return err
 	}
-	t.state = OFF
+	t.State = OFF
 	return nil
 }
 
@@ -125,13 +132,22 @@ func (t *Thermostat) log(s string, a ...interface{}) {
 	}
 }
 
-type state int
+// Status contains the state of the thermostat and an error
+type Status struct {
+	State State
+	Error error
+}
+
+// State is the current state (OFF, COOLING, HEATING) of teh thermostat
+type State int
 
 const (
 	// OFF means the Thermostat is not heating or cooling
-	OFF state = 1 + iota
+	OFF State = 1 + iota
 	// COOLING means the Thermostat is cooling
 	COOLING
 	// HEATING means the Thermostat is heating
 	HEATING
+	// ERROR means the Thermostat has an error
+	ERROR
 )
