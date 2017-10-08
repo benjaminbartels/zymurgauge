@@ -32,25 +32,23 @@ func (h *FermentationHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		h.handleGet(w, r)
 	case app.POST:
 		h.handlePost(w, r)
+	case app.DELETE:
+		h.handleDelete(w, r)
 	default:
 		h.HandleError(w, app.ErrNotFound)
 	}
 }
 
 func (h *FermentationHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-
 	if r.URL.Path != "" {
-
 		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
 			h.HandleError(w, app.ErrBadRequest)
 		} else {
 			h.handleGetOne(w, id)
 		}
-
 	} else {
 		h.handleGetAll(w)
 	}
-
 }
 
 func (h *FermentationHandler) handleGetOne(w http.ResponseWriter, id uint64) {
@@ -61,7 +59,6 @@ func (h *FermentationHandler) handleGetOne(w http.ResponseWriter, id uint64) {
 	} else {
 		h.Encode(w, &fermentation)
 	}
-
 }
 
 func (h *FermentationHandler) handleGetAll(w http.ResponseWriter) {
@@ -73,18 +70,30 @@ func (h *FermentationHandler) handleGetAll(w http.ResponseWriter) {
 }
 
 func (h *FermentationHandler) handlePost(w http.ResponseWriter, r *http.Request) {
-
 	fermentation, err := parseFermentation(r)
 	if err != nil {
 		h.HandleError(w, err)
 		return
 	}
-
 	if err := h.repo.Save(&fermentation); err != nil {
 		h.HandleError(w, err)
 	} else {
 		h.Encode(w, &fermentation)
 	}
+}
+
+func (h *FermentationHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "" {
+		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
+			h.HandleError(w, app.ErrBadRequest)
+		} else {
+			if err := h.repo.Delete(id); err != nil {
+				h.HandleError(w, err)
+			}
+		}
+		return
+	}
+	h.HandleError(w, app.ErrBadRequest)
 }
 
 func parseFermentation(r *http.Request) (internal.Fermentation, error) {

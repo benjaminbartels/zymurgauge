@@ -17,22 +17,17 @@ type BeerRepo struct {
 // NewBeerRepo returns a new Beer repository using the given bolt database. It also creates the Beers
 // bucket if it is not yet created on disk.
 func NewBeerRepo(db *bolt.DB) (*BeerRepo, error) {
-
 	tx, err := db.Begin(true)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not begin transaction")
 	}
-
 	defer rollback(tx, &err)
-
 	if _, err := tx.CreateBucketIfNotExists([]byte("Beers")); err != nil {
 		return nil, errors.Wrap(err, "Could not create Beer bucket")
 	}
-
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "Could not commit transaction")
 	}
-
 	return &BeerRepo{
 		db: db,
 	}, nil
@@ -41,7 +36,6 @@ func NewBeerRepo(db *bolt.DB) (*BeerRepo, error) {
 // Get returns a Beer by its ID
 func (r *BeerRepo) Get(id uint64) (*internal.Beer, error) {
 	var b *internal.Beer
-
 	err := r.db.View(func(tx *bolt.Tx) error {
 		if v := tx.Bucket([]byte("Beers")).Get(itob(id)); v != nil {
 			if err := json.Unmarshal(v, &b); err != nil {
@@ -50,7 +44,6 @@ func (r *BeerRepo) Get(id uint64) (*internal.Beer, error) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +67,6 @@ func (r *BeerRepo) GetAll() ([]internal.Beer, error) {
 		})
 
 	})
-
 	if err != nil {
 		return []internal.Beer{}, err
 	}
@@ -99,10 +91,19 @@ func (r *BeerRepo) Save(b *internal.Beer) error {
 		} else if err := bu.Put(itob(b.ID), v); err != nil {
 			return errors.Wrapf(err, "Could not put Beer %d", b.ID)
 		}
-
 		return nil
-
 	})
+	return err
+}
 
+// Delete permanently removes a Beer
+func (r *BeerRepo) Delete(id uint64) error {
+	err := r.db.Update(func(tx *bolt.Tx) error {
+		bu := tx.Bucket([]byte("Beers"))
+		if err := bu.Delete(itob(id)); err != nil {
+			return errors.Wrapf(err, "Could not delete Beer %d", id)
+		}
+		return nil
+	})
 	return err
 }

@@ -32,6 +32,8 @@ func (h *BeerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleGet(w, r)
 	case app.POST:
 		h.handlePost(w, r)
+	case app.DELETE:
+		h.handleDelete(w, r)
 	default:
 		h.HandleError(w, app.ErrNotFound)
 	}
@@ -44,7 +46,6 @@ func (h *BeerHandler) handleGet(w http.ResponseWriter, r *http.Request) {
 		} else {
 			h.handleGetOne(w, id)
 		}
-
 	} else {
 		h.handleGetAll(w)
 	}
@@ -58,7 +59,6 @@ func (h *BeerHandler) handleGetOne(w http.ResponseWriter, id uint64) {
 	} else {
 		h.Encode(w, &beer)
 	}
-
 }
 
 func (h *BeerHandler) handleGetAll(w http.ResponseWriter) {
@@ -70,7 +70,6 @@ func (h *BeerHandler) handleGetAll(w http.ResponseWriter) {
 }
 
 func (h *BeerHandler) handlePost(w http.ResponseWriter, r *http.Request) {
-
 	beer, err := parseBeer(r)
 	if err != nil {
 		h.HandleError(w, err)
@@ -82,6 +81,20 @@ func (h *BeerHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 	} else {
 		h.Encode(w, &beer)
 	}
+}
+
+func (h *BeerHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "" {
+		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
+			h.HandleError(w, app.ErrBadRequest)
+		} else {
+			if err := h.repo.Delete(id); err != nil {
+				h.HandleError(w, err)
+			}
+		}
+		return
+	}
+	h.HandleError(w, app.ErrBadRequest)
 }
 
 func parseBeer(r *http.Request) (internal.Beer, error) {

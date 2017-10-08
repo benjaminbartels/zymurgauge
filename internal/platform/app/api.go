@@ -13,6 +13,8 @@ const (
 	GET string = "GET"
 	// POST method
 	POST string = "POST"
+	// DELETE method
+	DELETE string = "DELETE"
 )
 
 // API is the http handler for call to the API
