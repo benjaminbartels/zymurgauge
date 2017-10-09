@@ -47,7 +47,7 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	statikFS, err := fs.New()
+	uiFS, err := fs.New()
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -58,10 +58,11 @@ func main() {
 		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo, logger)},
 	}
 
-	app := app.New(routes, statikFS, logger)
+	app := app.New(routes, uiFS, logger)
 
 	options := cors.Options{
 		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"},
 	}
 
 	requestLogger := middleware.NewRequestLogger(logger)

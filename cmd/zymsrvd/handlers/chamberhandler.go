@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
@@ -140,10 +139,10 @@ func (h *ChamberHandler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 func (h *ChamberHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "" {
-		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
+		if mac, err := url.QueryUnescape(r.URL.Path); err != nil {
 			h.HandleError(w, app.ErrBadRequest)
 		} else {
-			if err := h.repo.Delete(id); err != nil {
+			if err := h.repo.Delete(mac); err != nil {
 				h.HandleError(w, err)
 			}
 		}

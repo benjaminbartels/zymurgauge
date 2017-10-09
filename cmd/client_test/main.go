@@ -9,14 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"gobot.io/x/gobot/drivers/gpio"
-	"gobot.io/x/gobot/platforms/raspi"
-
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
-	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
 )
 
 var logger *log.Logger
@@ -34,7 +30,7 @@ func main() {
 	}()
 
 	// ToDo: Don't hardcode
-	addr, err := url.Parse("http://192.168.0.10:3000")
+	addr, err := url.Parse("http://localhost:3000")
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -63,33 +59,14 @@ func updateChamber(c *client.ChamberResource) error {
 		panic(err)
 	}
 
-	//mac := "b8:27:eb:8e:d1:75"
-
-	r := raspi.NewAdaptor()
+	// mac := "b8:27:eb:8e:d1:75"
 
 	err = c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
 		Thermostat: &internal.Thermostat{
-			Thermometer: &ds18b20.Thermometer{ID: "28-000006285484"},
-			Chiller:     gpio.NewRelayDriver(r, "17"),
-		},
-
-		CurrentFermentation: &internal.Fermentation{
-			ID: 1,
-			Beer: internal.Beer{
-				ID:    1,
-				Name:  "My Stout",
-				Style: "Stout",
-				Schedule: []internal.FermentationStep{
-					internal.FermentationStep{
-						Order:      1,
-						TargetTemp: 20.0,
-						Duration:   9999999,
-					},
-				},
-			},
-			CurrentStep: 1,
+			ThermometerID: "28-000006285484",
+			ChillerPin:    "17",
 		},
 	})
 

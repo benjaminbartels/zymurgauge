@@ -30,9 +30,8 @@ export default {
     return {
       drawer: true,
       items: [
-        { icon: 'bubble_chart', title: 'Fermentations', route: 'fermentations' },
-        { icon: 'local_drink', title: 'Beers', route: 'beers' },
-        { icon: 'devices', title: 'Chambers', route: 'chambers' }
+        { icon: 'devices', title: 'Chambers', route: 'chambers' },
+        { icon: 'local_drink', title: 'Beers', route: 'beers' }
       ],
       title: 'Zymurgauge'
     }

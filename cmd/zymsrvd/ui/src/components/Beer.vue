@@ -1,9 +1,9 @@
 <template>
   <v-container>
     <div v-if="beer">
-      <v-form v-model="valid">
-        <v-text-field label="Name" v-model="beer.name" required></v-text-field>
-        <v-select label="Styles" v-bind:items="styles" v-model="beer.style"></v-select>
+      <v-form v-model="valid" ref="form" lazy-validation>
+        <v-text-field label="Name" v-model="beer.name" :rules="nameRules" required></v-text-field>
+        <v-select label="Styles" v-model="beer.style" :rules="styleRules" v-bind:items="styles" required></v-select>
         <v-list>
           <v-list-tile>
             <v-list-tile-content>
@@ -15,18 +15,23 @@
             <v-list-tile-content>
               Duration
             </v-list-tile-content>
+            <v-btn absolute fab right top small @click="addSchedule">
+              <v-icon>add</v-icon>
+            </v-btn>
           </v-list-tile>
-          <template v-for="schedule in beer.schedule">
+          <template v-for="(schedule, i) in beer.schedule">
             <v-list-tile v-bind:key="schedule.order">
               <v-text-field v-model.number="schedule.order"></v-text-field>
               <v-text-field v-model.number="schedule.targetTemp"></v-text-field>
               <v-text-field v-model.number="schedule.duration"></v-text-field>
+              <v-btn fab small @click="removeSchedule(i)">
+                <v-icon>delete</v-icon>
+              </v-btn>
             </v-list-tile>
           </template>
         </v-list>
-        <v-btn @click="addSchedule">add</v-btn>
-
-        <v-btn @click="submit">submit</v-btn>
+        <v-btn @click="save" :disabled="!valid">save</v-btn>
+        <v-btn @click="remove" :disabled="this.create">remove</v-btn>
       </v-form>
     </div>
 
@@ -50,7 +55,7 @@ export default {
     beer: null,
     errors: [],
     loading: false,
-    valid: false,
+    valid: true,
     nameRules: [(v) => !!v || 'Name is required'],
     styleRules: [(v) => !!v || 'Style is required'],
     styles: ['1A - American Light Lager',
@@ -179,7 +184,10 @@ export default {
     if (!this.create) {
       this.fetch()
     } else {
-      this.beer = {}
+      this.beer = {
+        name: '',
+        style: ''
+      }
     }
   },
 
@@ -204,10 +212,27 @@ export default {
         })
     },
     addSchedule () {
+      if (this.beer.schedule == null) {
+        this.beer.schedule = []
+      }
       this.beer.schedule.push({})
     },
-    submit () {
-      HTTP.post('beers', this.beer)
+    removeSchedule (index) {
+      this.beer.schedule.splice(index, 1)
+    },
+    save () {
+      if (this.$refs.form.validate()) {
+        HTTP.post('beers', this.beer)
+          .then(response => {
+            this.$router.push({ name: 'beers' })
+          })
+          .catch(e => {
+            this.errors.push(e)
+          })
+      }
+    },
+    remove () {
+      HTTP.delete('beers/' + this.beer.id)
         .then(response => {
           this.$router.push({ name: 'beers' })
         })
@@ -217,5 +242,4 @@ export default {
     }
   }
 }
-
 </script>

@@ -3,10 +3,9 @@ package internal
 import (
 	"time"
 
-	"gobot.io/x/gobot/drivers/gpio"
-
 	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
+	"gobot.io/x/gobot/drivers/gpio"
 )
 
 const interval time.Duration = time.Minute
@@ -14,15 +13,18 @@ const interval time.Duration = time.Minute
 // Thermostat regulates temperature by activating a cooling or heating device when the temperature strays
 // from a target
 type Thermostat struct {
-	Thermometer *ds18b20.Thermometer `json:"thermometer"`
-	Chiller     *gpio.RelayDriver    `json:"chiller"`
-	Heater      *gpio.RelayDriver    `json:"heater"`
-	State       State
-	target      float64
-	isOn        bool
-	quit        chan bool
-	statusCh    chan Status
-	logger      log.Logger
+	ThermometerID string `json:"thermometerId"`
+	ChillerPin    string `json:"chillerPin,omitempty"`
+	HeaterPin     string `json:"heaterPin,omitempty"`
+	thermometer   *ds18b20.Thermometer
+	chiller       *gpio.RelayDriver
+	heater        *gpio.RelayDriver
+	State         State
+	target        float64
+	isOn          bool
+	quit          chan bool
+	statusCh      chan Status
+	logger        log.Logger
 }
 
 // On turns the Thermostat On
@@ -38,7 +40,7 @@ func (t *Thermostat) On() chan Status {
 				case <-t.quit:
 					return
 				case <-time.After(interval):
-					if v, err := t.Thermometer.ReadTemperature(); err != nil {
+					if v, err := t.thermometer.ReadTemperature(); err != nil {
 						t.statusCh <- Status{OFF, err}
 					} else if v != nil {
 						t.eval(*v)
@@ -90,10 +92,10 @@ func (t *Thermostat) eval(temperature float64) {
 }
 
 func (t *Thermostat) cool() error {
-	if err := t.Chiller.On(); err != nil {
+	if err := t.chiller.On(); err != nil {
 		return err
 	}
-	if err := t.Heater.Off(); err != nil {
+	if err := t.heater.Off(); err != nil {
 		return err
 	}
 	t.State = COOLING
@@ -101,10 +103,10 @@ func (t *Thermostat) cool() error {
 }
 
 func (t *Thermostat) heat() error {
-	if err := t.Chiller.Off(); err != nil {
+	if err := t.chiller.Off(); err != nil {
 		return err
 	}
-	if err := t.Heater.On(); err != nil {
+	if err := t.heater.On(); err != nil {
 		return err
 	}
 	t.State = HEATING
@@ -112,10 +114,10 @@ func (t *Thermostat) heat() error {
 }
 
 func (t *Thermostat) off() error {
-	if err := t.Chiller.Off(); err != nil {
+	if err := t.chiller.Off(); err != nil {
 		return err
 	}
-	if err := t.Heater.Off(); err != nil {
+	if err := t.heater.Off(); err != nil {
 		return err
 	}
 	t.State = OFF

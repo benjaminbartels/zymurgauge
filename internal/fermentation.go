@@ -6,8 +6,8 @@ import "time"
 type Fermentation struct {
 	ID            uint64    `json:"id"`
 	Beer          Beer      `json:"beer"`
-	CurrentStep   int       `json:"currentStep"`
-	StartTime     time.Time `json:"startTime"`
-	CompletedTime time.Time `json:"completedTime"`
+	CurrentStep   int       `json:"currentStep,omitempty"`
+	StartTime     time.Time `json:"startTime,omitempty"`
+	CompletedTime time.Time `json:"completedTime,omitempty"`
 	ModTime       time.Time `json:"modTime"`
 }

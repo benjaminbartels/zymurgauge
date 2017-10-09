@@ -86,11 +86,11 @@ func (r *ChamberRepo) Save(c *internal.Chamber) error {
 }
 
 // Delete permanently removes a Chamber
-func (r *ChamberRepo) Delete(id uint64) error {
+func (r *ChamberRepo) Delete(mac string) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Chambers"))
-		if err := bu.Delete(itob(id)); err != nil {
-			return errors.Wrapf(err, "Could not delete Chamber %d", id)
+		if err := bu.Delete([]byte(mac)); err != nil {
+			return errors.Wrapf(err, "Could not delete Chamber %s", mac)
 		}
 		return nil
 	})

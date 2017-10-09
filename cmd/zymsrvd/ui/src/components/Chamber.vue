@@ -1,10 +1,14 @@
 <template>
   <v-container>
     <div v-if="chamber">
-      <v-form v-model="valid">
-        <v-text-field label="Name" v-model="chamber.name" required></v-text-field>
+      <v-form v-model="valid" ref="form" lazy-validation>
+        <v-text-field label="Name" v-model="chamber.name" :rules="nameRules"></v-text-field>
         <v-text-field label="Mac Address" v-model="chamber.macAddress" disabled></v-text-field>
-        <v-btn @click="submit">submit</v-btn>
+        <v-text-field label="Thermometer ID" v-model="chamber.thermostat.thermometerId"></v-text-field>
+        <v-text-field label="Cooler Pin" v-model="chamber.thermostat.chillerPin"></v-text-field>
+        <v-text-field label="Heater Pin" v-model="chamber.thermostat.heaterPin"></v-text-field>
+        <v-btn @click="save" :disabled="!valid">save</v-btn>
+        <v-btn @click="remove">remove</v-btn>
       </v-form>
     </div>
 
@@ -28,18 +32,15 @@ export default {
     chamber: null,
     errors: [],
     loading: false,
-    valid: false,
-    nameRules: [(v) => !!v || 'Name is required']
+    valid: true,
+    nameRules: [(v) => !!v || 'Name is required'],
+    pinRules: [(v) => isNaN(v) || 'Pin must be numeric']
   }),
 
   props: ['macAddress'],
 
   created () {
-    if (!this.create) {
-      this.fetch()
-    } else {
-      this.chamber = {}
-    }
+    this.fetch()
   },
 
   watch: {
@@ -65,10 +66,21 @@ export default {
     addSchedule () {
       this.chamber.schedule.push({})
     },
-    submit () {
-      HTTP.post('chambers', this.chamber)
+    save () {
+      if (this.$refs.form.validate()) {
+        HTTP.post('chambers', this.chamber)
+          .then(response => {
+            this.$router.push({ name: 'chambers' })
+          })
+          .catch(e => {
+            this.errors.push(e)
+          })
+      }
+    },
+    remove () {
+      HTTP.delete('chambers/' + this.chamber.macAddress)
         .then(response => {
-          this.$router.push({ name: 'editChamber', params: { macAddress: this.chamber.macAddress } })
+          this.$router.push({ name: 'chambers' })
         })
         .catch(e => {
           this.errors.push(e)

@@ -16,17 +16,17 @@ type Client struct {
 // NewClient creates a new instance of the HTTP client
 func NewClient(url fmt.Stringer, version string, logger log.Logger) (*Client, error) { // ToDo: Why is url no set
 
-	chamberResource, err := newChamberResource(url.String(), version, logger)
+	chamberResource, err := newChamberResource(url.String()+"/api", version, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	beerResource, err := newBeerResource(url.String(), version)
+	beerResource, err := newBeerResource(url.String()+"/api", version)
 	if err != nil {
 		return nil, err
 	}
 
-	fermentationResource, err := newFermentationResource(url.String(), version)
+	fermentationResource, err := newFermentationResource(url.String()+"/api", version)
 	if err != nil {
 		return nil, err
 	}
