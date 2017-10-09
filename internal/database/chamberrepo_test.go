@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
 )
 
 func TestChamberService_Save_New(t *testing.T) {
@@ -20,7 +19,7 @@ func TestChamberService_Save_New(t *testing.T) {
 		Name:       "My Chamber",
 		MacAddress: mac,
 		Thermostat: &internal.Thermostat{
-			Thermometer: &ds18b20.Thermometer{ID: "blah"},
+			ThermometerID: "blah",
 		},
 		CurrentFermentation: &internal.Fermentation{
 			Beer: internal.Beer{
