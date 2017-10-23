@@ -108,9 +108,7 @@ func (h *ChamberHandler) handleGetEvents(w http.ResponseWriter, mac string) {
 		}
 		msg := fmt.Sprintf("data: %s\n", c)
 		fmt.Fprint(w, msg)
-
 		h.logger.Printf("Sending: %s\n", msg)
-
 		f.Flush()
 	}
 }

@@ -31,7 +31,7 @@ func newFermentationResource(base string, version string) (*FermentationResource
 // Get returns a fermentation by id
 func (r *FermentationResource) Get(id uint64) (*internal.Fermentation, error) {
 
-	resp, err := http.Get(r.url.String() + url.QueryEscape(strconv.FormatUint(id, 10)))
+	resp, err := http.Get(r.url.String() + url.QueryEscape(strconv.FormatUint(id, 10))) //ToDo: use path?
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not GET Fermentation %d", id)
 	}
@@ -67,6 +67,29 @@ func (r *FermentationResource) Save(f *internal.Fermentation) error {
 
 	if err := json.NewDecoder(resp.Body).Decode(&f); err != nil {
 		return errors.Wrapf(err, "Could not decode Fermentation %s", f.ID)
+	}
+
+	return nil
+}
+
+// SaveTemperatureChange creates or updates the stored temperature change
+func (r *FermentationResource) SaveTemperatureChange(t *internal.TemperatureChange) error {
+
+	reqBody, err := json.Marshal(t)
+	if err != nil {
+		return errors.Wrapf(err, "Could not marshal TemperatureChange %d", t.ID)
+	}
+
+	resp, err := http.Post(r.url.String()+url.QueryEscape(strconv.FormatUint(t.FermentationID, 10))+"/temperaturechanges",
+		"application/json", bytes.NewReader(reqBody))
+	if err != nil {
+		return errors.Wrapf(err, "Could not POST TemperatureChange %d", t.ID)
+	}
+
+	defer safeclose.Close(resp.Body, &err)
+
+	if err := json.NewDecoder(resp.Body).Decode(&t); err != nil {
+		return errors.Wrapf(err, "Could not decode TemperatureChange %s", t.ID)
 	}
 
 	return nil

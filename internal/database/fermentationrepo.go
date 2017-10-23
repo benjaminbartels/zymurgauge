@@ -52,10 +52,10 @@ func (r *FermentationRepo) Get(id uint64) (*internal.Fermentation, error) {
 
 // GetAll returns all Fermentations
 func (r *FermentationRepo) GetAll() ([]internal.Fermentation, error) {
-	var fermentations []internal.Fermentation
+	fermentations := []internal.Fermentation{} // ToDo: init all array this way in repos
 	err := r.db.View(func(tx *bolt.Tx) error {
-		v := tx.Bucket([]byte("Fermentations"))
-		return v.ForEach(func(k, v []byte) error {
+		bu := tx.Bucket([]byte("Fermentations"))
+		return bu.ForEach(func(k, v []byte) error {
 			var f internal.Fermentation
 			if err := json.Unmarshal(v, &f); err != nil {
 				return err
@@ -65,10 +65,8 @@ func (r *FermentationRepo) GetAll() ([]internal.Fermentation, error) {
 		})
 
 	})
-	if err != nil {
-		return []internal.Fermentation{}, err
-	}
-	return fermentations, nil
+
+	return fermentations, err
 }
 
 // Save creates or updates a Fermentation

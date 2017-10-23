@@ -7,21 +7,22 @@ a {
 
 <template>
   <v-container>
-    <h3>Chambers</h3>
+    <h3>Fermentations</h3>
     <v-container grid-list-md>
       <v-layout row wrap>
-        <v-flex xs12 sm5 md3 v-for="chamber of chambers" :key="chamber.macAddress">
+        <v-flex  xs12 sm5 md3 v-for="fermentation of fermentations" :key="fermentation.id">
           <v-card class="grid">
-            <router-link :to="{ name: 'editChamber', params: { macAddress: chamber.macAddress }} ">
+            <router-link :to="{ name: 'editFermentation', params: { id: fermentation.id }} ">
               <v-card-title primary-title class="headline">
-                {{chamber.name}}
+                {{fermentation.chamber.name}}
               </v-card-title>
-              <v-card-text>{{chamber.macAddress}}</v-card-text>
+              <v-card-text>{{fermentation.beer.name}}</v-card-text>
             </router-link>
           </v-card>
         </v-flex>
       </v-layout>
     </v-container>
+    <v-btn :to="{ name: 'createFermentation', params: { create: true }} ">add</v-btn>
     <ul v-if=" errors && errors.length ">
       <li v-for="error of errors " :key="error.message ">
         {{error.message}}
@@ -34,15 +35,16 @@ a {
 import { HTTP } from '../http-common'
 
 export default {
+
   data: () => ({
-    chambers: [],
+    fermentations: [],
     errors: []
   }),
 
   created () {
-    HTTP.get('chambers')
+    HTTP.get('fermentations')
       .then(response => {
-        this.chambers = response.data
+        this.fermentations = response.data
       })
       .catch(e => {
         this.errors.push(e)

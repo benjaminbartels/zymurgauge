@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"gobot.io/x/gobot/platforms/raspi"
+
 	"github.com/alecthomas/kingpin"
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
@@ -17,13 +19,37 @@ import (
 
 // ToDo: Remove global vars
 var (
-	currentChamber *internal.Chamber
-	logger         *log.Logger
+	logger *log.Logger
+	//basePath string
+	chamber   *internal.Chamber
+	status    *internal.ThermostatStatus
+	zymClient *client.Client
 )
 
 func main() {
 
 	logger = log.New(os.Stderr, "", log.LstdFlags)
+
+	// var err error
+	// basePath, err = ioutil.TempDir("", "zymurgauge")
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
+	// defer os.RemoveAll(basePath)
+
+	// fmt.Println(basePath)
+
+	// id := "28-000006285484"
+	// mockData := "af 01 4b 46 7f ff 01 10 bc : crc=bc YES\naf 01 4b 46 7f ff 01 10 bc t=26937\n"
+
+	// err = os.MkdirAll(filepath.Join(basePath, id), 0777)
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
+
+	// if err = ioutil.WriteFile(filepath.Join(basePath, id, "w1_slave"), []byte(mockData), 0777); err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// Setup graceful exit
 	sig := make(chan os.Signal, 2)
@@ -33,16 +59,17 @@ func main() {
 		os.Exit(1)
 	}()
 
-	address := kingpin.Flag("address", "Url of Zymurgauge server").Default("http://localhost:3000").Short('u').String()
+	address := kingpin.Flag("address", "Url of Zymurgauge server").Default("http://localhost:3000").Short('a').String()
 
 	kingpin.Parse()
 
+	var err error
 	addr, err := url.Parse(*address)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	c, err := client.NewClient(addr, "v1", logger)
+	zymClient, err = client.NewClient(addr, "v1", logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -56,14 +83,16 @@ func main() {
 
 	for {
 
-		var chamber *internal.Chamber
-		chamber, err = c.ChamberResource.Get(mac)
+		var cham *internal.Chamber
+		cham, err = zymClient.ChamberResource.Get(mac)
 		if err != nil {
 			logger.Fatal(err)
 		}
 
-		if chamber != nil {
-			processChamber(chamber)
+		if cham != nil {
+			if err = processChamber(cham); err != nil {
+				logger.Fatal(err)
+			}
 			break
 		}
 
@@ -72,7 +101,7 @@ func main() {
 		time.Sleep(5 * time.Second)
 	}
 
-	err = c.ChamberResource.Subscribe(mac, ch)
+	err = zymClient.ChamberResource.Subscribe(mac, ch)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -80,22 +109,78 @@ func main() {
 	for {
 		logger.Println("Waiting for ChamberService updates")
 		c := <-ch
-		processChamber(&c)
+		if err = processChamber(&c); err != nil {
+			logger.Fatal(err)
+		}
 	}
-
 }
 
-func processChamber(c *internal.Chamber) {
-	logger.Println("processChamber called")
+func processChamber(c *internal.Chamber) error {
+	logger.Println("Processing Chamber:", c.Name, c.MacAddress)
 
-	currentChamber = c
+	if chamber == nil {
+		chamber = c
+	} else {
+		c.Thermostat.Off()
+	}
 
-	logger.Println(currentChamber)
+	chamber.Thermostat.SetLogger(logger)
+
+	//ds18b20.DevicePath = basePath
+	if err := c.Thermostat.InitThermometer(); err != nil {
+		return err
+	}
+
+	chamber.Thermostat.InitRelays(raspi.NewAdaptor())
 
 	//Check for updated fermentation
-	if currentChamber.CurrentFermentation != nil {
-		currentChamber.Thermostat.Set(c.CurrentFermentation.Beer.Schedule[0].TargetTemp)
+	if chamber.CurrentFermentationID != nil {
+
+		ferm, err := zymClient.FermentationResource.Get(*chamber.CurrentFermentationID)
+		if err != nil {
+			return err
+		}
+
+		if ferm != nil {
+
+			chamber.Thermostat.Set(ferm.Beer.Schedule[0].TargetTemp)
+			ch := chamber.Thermostat.On()
+
+			go func() {
+
+				last := 0.0
+				for {
+					s := <-ch
+					logger.Printf("State: %v, Error: %s\n", s.State, s.Error)
+
+					if s.CurrentTemperature != nil && *s.CurrentTemperature != last {
+						last = *s.CurrentTemperature
+						change := &internal.TemperatureChange{
+							FermentationID: ferm.ID,
+							InsertTime:     time.Now(),
+							Chamber:        chamber.Name,
+							Beer:           ferm.Beer.Name,
+							Thermometer:    chamber.Thermostat.ThermometerID,
+							Temperature:    *s.CurrentTemperature,
+						}
+						if err := zymClient.FermentationResource.SaveTemperatureChange(change); err != nil {
+							logger.Println(err)
+						}
+					}
+
+				}
+
+			}()
+
+		} else {
+			logger.Println("Could not find Fermentation")
+		}
+
+	} else {
+		logger.Println("No Current Fermentation")
 	}
+
+	return nil
 }
 
 // getMacAddress returns the first Mac Address of the first network interface found

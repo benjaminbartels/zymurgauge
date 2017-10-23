@@ -82,8 +82,6 @@ func (r ChamberResource) Subscribe(mac string, ch chan internal.Chamber) error {
 
 	r.url.Path = r.url.Path + url.QueryEscape(mac) + "/events"
 
-	r.logger.Println(r.url.String())
-
 	req, err := http.NewRequest("GET", r.url.String(), nil)
 	if err != nil {
 		return errors.Wrapf(err, "Could not GET Chamber events for %s", mac)

@@ -47,6 +47,11 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	temperatureChangeRepo, err := database.NewTemperatureChangeRepo(db)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	uiFS, err := fs.New()
 	if err != nil {
 		logger.Fatal(err)
@@ -55,7 +60,8 @@ func main() {
 	routes := []app.Route{
 		app.Route{Path: "chambers", Handler: handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)},
 		app.Route{Path: "beers", Handler: handlers.NewBeerHandler(beerRepo, logger)},
-		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo, logger)},
+		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo,
+			temperatureChangeRepo, logger)},
 	}
 
 	app := app.New(routes, uiFS, logger)
@@ -68,10 +74,8 @@ func main() {
 	requestLogger := middleware.NewRequestLogger(logger)
 
 	server := http.Server{
-		Addr:         ":3000",
-		Handler:      app.Handler(requestLogger.Handler, cors.New(options).Handler),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Addr:    ":3000",
+		Handler: app.Handler(requestLogger.Handler, cors.New(options).Handler),
 	}
 
 	var wg sync.WaitGroup

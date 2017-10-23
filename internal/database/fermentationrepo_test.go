@@ -20,8 +20,8 @@ func TestFermentationService_Save_New(t *testing.T) {
 			Name:    "My Beer",
 			ModTime: now,
 		},
-		StartTime:     now,
-		CompletedTime: now,
+		StartTime:     &now,
+		CompletedTime: &now,
 	}
 
 	if err := testDB.fermentationRepo.Save(&f); err != nil {
@@ -50,8 +50,8 @@ func TestFermentationService_Save_Existing(t *testing.T) {
 			Name:    "My Beer 1",
 			ModTime: now,
 		},
-		StartTime:     now,
-		CompletedTime: now,
+		StartTime:     &now,
+		CompletedTime: &now,
 	}
 
 	f2 := &internal.Fermentation{
@@ -59,8 +59,8 @@ func TestFermentationService_Save_Existing(t *testing.T) {
 			Name:    "My Beer 2",
 			ModTime: now,
 		},
-		StartTime:     now,
-		CompletedTime: now,
+		StartTime:     &now,
+		CompletedTime: &now,
 	}
 
 	if err := testDB.fermentationRepo.Save(f1); err != nil {

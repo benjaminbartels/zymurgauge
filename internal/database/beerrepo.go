@@ -53,11 +53,9 @@ func (r *BeerRepo) Get(id uint64) (*internal.Beer, error) {
 // GetAll returns all Beers
 func (r *BeerRepo) GetAll() ([]internal.Beer, error) {
 	var beers []internal.Beer
-
 	err := r.db.View(func(tx *bolt.Tx) error {
-
-		v := tx.Bucket([]byte("Beers"))
-		return v.ForEach(func(k, v []byte) error {
+		bu := tx.Bucket([]byte("Beers"))
+		return bu.ForEach(func(k, v []byte) error {
 			var b internal.Beer
 			if err := json.Unmarshal(v, &b); err != nil {
 				return err
@@ -65,7 +63,6 @@ func (r *BeerRepo) GetAll() ([]internal.Beer, error) {
 			beers = append(beers, b)
 			return nil
 		})
-
 	})
 	if err != nil {
 		return []internal.Beer{}, err
@@ -76,16 +73,12 @@ func (r *BeerRepo) GetAll() ([]internal.Beer, error) {
 // Save creates or updates a Beer
 func (r *BeerRepo) Save(b *internal.Beer) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
-
 		bu := tx.Bucket([]byte("Beers"))
-
 		if v := bu.Get(itob(b.ID)); v == nil {
 			seq, _ := bu.NextSequence()
 			b.ID = seq
 		}
-
 		b.ModTime = time.Now()
-
 		if v, err := json.Marshal(b); err != nil {
 			return errors.Wrapf(err, "Could not marshal Beer %d", b.ID)
 		} else if err := bu.Put(itob(b.ID), v); err != nil {

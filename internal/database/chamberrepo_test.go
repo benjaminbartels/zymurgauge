@@ -2,7 +2,6 @@ package database_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 )
@@ -10,7 +9,6 @@ import (
 func TestChamberService_Save_New(t *testing.T) {
 
 	mac := "00:11:22:33:44:55"
-	now := time.Now()
 
 	testDB := createTestDB()
 	defer func() { testDB.Close() }()
@@ -20,15 +18,6 @@ func TestChamberService_Save_New(t *testing.T) {
 		MacAddress: mac,
 		Thermostat: &internal.Thermostat{
 			ThermometerID: "blah",
-		},
-		CurrentFermentation: &internal.Fermentation{
-			Beer: internal.Beer{
-				Name:    "My Beer",
-				ModTime: now,
-			},
-			StartTime:     now,
-			CompletedTime: now,
-			ModTime:       now,
 		},
 	}
 

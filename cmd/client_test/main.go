@@ -54,20 +54,23 @@ func updateChamber(c *client.ChamberResource) error {
 
 	logger.Println("Saving Chamber...")
 
-	mac, err := getMacAddress()
-	if err != nil {
-		panic(err)
-	}
+	// mac, err := getMacAddress()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	// mac := "b8:27:eb:8e:d1:75"
+	mac := "b8:27:eb:8e:d1:75"
 
-	err = c.Save(&internal.Chamber{
+	var currentFermentationID uint64 = 7
+
+	err := c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
 		Thermostat: &internal.Thermostat{
 			ThermometerID: "28-000006285484",
-			ChillerPin:    "17",
+			ChillerPin:    "11",
 		},
+		CurrentFermentationID: &currentFermentationID,
 	})
 
 	return err

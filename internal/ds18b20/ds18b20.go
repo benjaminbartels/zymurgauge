@@ -3,39 +3,28 @@ package ds18b20
 import (
 	"bufio"
 	"errors"
+	"os"
 	"path"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
-	"github.com/spf13/afero"
 )
 
 const (
-	devicePath = "/sys/bus/w1/devices/"
-	prefix     = "28-"
-	slave      = "w1_slave"
+	prefix = "28-"
+	slave  = "w1_slave"
 )
 
-// ThermometerGroup is the group of Thermometers on the system
-type ThermometerGroup struct {
-	fs afero.Fs
-}
-
-// New returns a ThermometerGroup using the specified FileSystem
-func New(fs afero.Fs) *ThermometerGroup {
-	return &ThermometerGroup{
-		fs: fs,
-	}
-}
+// DevicePath is the location of the thermometer data on teh file system
+var DevicePath = "/sys/bus/w1/devices/"
 
 // GetThermometers returns a list of all Thermometers on the bus
-func (t *ThermometerGroup) GetThermometers() ([]Thermometer, error) {
+func GetThermometers() ([]Thermometer, error) {
 	var thermometers []Thermometer
 
-	dir, err := t.fs.Open(devicePath)
+	dir, err := os.Open(DevicePath)
 	if err != nil {
 		return nil, err
 	}
@@ -49,9 +38,8 @@ func (t *ThermometerGroup) GetThermometers() ([]Thermometer, error) {
 		if strings.HasPrefix(info.Name(), prefix) {
 
 			term := Thermometer{
-				ID:    info.Name(),
-				fs:    t.fs,
-				mutex: &sync.Mutex{},
+				ID:   info.Name(),
+				path: DevicePath,
 			}
 
 			thermometers = append(thermometers, term)
@@ -61,33 +49,27 @@ func (t *ThermometerGroup) GetThermometers() ([]Thermometer, error) {
 }
 
 // GetThermometer returns a Thermometer by id
-func (t *ThermometerGroup) GetThermometer(id string) (*Thermometer, error) {
-
-	_, err := t.fs.Stat(path.Join(devicePath, id))
+func GetThermometer(id string) (*Thermometer, error) {
+	_, err := os.Stat(path.Join(DevicePath, id))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Thermometer{
-		ID:    id,
-		fs:    t.fs,
-		mutex: &sync.Mutex{},
+		ID:   id,
+		path: DevicePath,
 	}, nil
 }
 
 // Thermometer is a GPIO temperature probe
 type Thermometer struct {
-	ID    string
-	fs    afero.Fs
-	mutex *sync.Mutex
+	ID   string
+	path string
 }
 
 // ReadTemperature read the current temperature of the Thermometer
 func (t *Thermometer) ReadTemperature() (*float64, error) {
-	t.mutex.Lock()
-	defer t.mutex.Unlock()
-
-	file, err := t.fs.Open(path.Join(devicePath, t.ID, slave))
+	file, err := os.Open(path.Join(DevicePath, t.ID, slave))
 	if err != nil {
 		return nil, err
 	}
@@ -119,5 +101,4 @@ func (t *Thermometer) ReadTemperature() (*float64, error) {
 	temp = temp / 1000
 
 	return &temp, nil
-
 }

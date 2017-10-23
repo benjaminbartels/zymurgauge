@@ -1,3 +1,10 @@
+<style scoped>
+a {
+  color: #FFB90D;
+  text-decoration: none;
+}
+</style>
+
 <template>
   <v-container>
     <h3>Beers</h3>
@@ -6,7 +13,7 @@
         <v-flex xs12 sm5 md3 v-for="beer of beers" :key="beer.id">
           <v-card class="grid">
             <router-link :to="{ name: 'editBeer', params: { id: beer.id }} ">
-              <v-card-title primary-title>
+              <v-card-title primary-title class="headline">
                 {{beer.name}}
               </v-card-title>
               <v-card-text>{{beer.style}}</v-card-text>
