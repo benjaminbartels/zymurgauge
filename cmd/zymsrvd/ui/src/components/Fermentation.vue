@@ -63,7 +63,7 @@ export default {
           ticks: {fontColor: '#ffffff'},
           time: {
             unit: 'second',
-            unitStepSize: 200
+            unitStepSize: 1000
           }
         }],
         yAxes: [{

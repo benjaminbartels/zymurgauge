@@ -123,21 +123,6 @@ func (t *Thermostat) eval(temperature float64) {
 
 func (t *Thermostat) cool() error {
 	if t.chiller != nil {
-		if err := t.chiller.On(); err != nil {
-			return err
-		}
-	}
-	if t.heater != nil {
-		if err := t.heater.Off(); err != nil {
-			return err
-		}
-	}
-	t.State = COOLING
-	return nil
-}
-
-func (t *Thermostat) heat() error {
-	if t.chiller != nil {
 		if err := t.chiller.Off(); err != nil {
 			return err
 		}
@@ -147,18 +132,33 @@ func (t *Thermostat) heat() error {
 			return err
 		}
 	}
+	t.State = COOLING
+	return nil
+}
+
+func (t *Thermostat) heat() error {
+	if t.chiller != nil {
+		if err := t.chiller.On(); err != nil {
+			return err
+		}
+	}
+	if t.heater != nil {
+		if err := t.heater.Off(); err != nil {
+			return err
+		}
+	}
 	t.State = HEATING
 	return nil
 }
 
 func (t *Thermostat) off() error {
 	if t.chiller != nil {
-		if err := t.chiller.Off(); err != nil {
+		if err := t.chiller.On(); err != nil {
 			return err
 		}
 	}
 	if t.heater != nil {
-		if err := t.heater.Off(); err != nil {
+		if err := t.heater.On(); err != nil {
 			return err
 		}
 	}
