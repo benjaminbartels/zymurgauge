@@ -1,128 +1,88 @@
 package spi
 
 import (
-	"fmt"
-	"time"
-
-	xspi "golang.org/x/exp/io/spi"
+	"periph.io/x/periph/conn/physic"
+	xspi "periph.io/x/periph/conn/spi"
+	xsysfs "periph.io/x/periph/host/sysfs"
 )
 
 const (
-	// BusNotInitialized is the initial value for a bus
-	BusNotInitialized = -1
+	// NotInitialized is the initial value for a bus/chip
+	NotInitialized = -1
 )
 
-type SPIOperations interface {
+// Operations are the wrappers around the actual functions used by the SPI device interface
+type Operations interface {
 	Close() error
-	SetBitOrder(o xspi.Order) error
-	SetBitsPerWord(bits int) error
-	SetCSChange(leaveEnabled bool) error
-	SetDelay(t time.Duration) error
-	SetMaxSpeed(speed int) error
-	SetMode(mode xspi.Mode) error
 	Tx(w, r []byte) error
-}
-
-// SPIDevice is the interface to a specific spi bus
-type SPIDevice interface {
-	SPIOperations
 }
 
 // Connector lets Adaptors provide the interface for Drivers
 // to get access to the SPI buses on platforms that support SPI.
 type Connector interface {
-	// GetConnection returns a connection to device at the specified bus.
+	// GetSpiConnection returns a connection to a SPI device at the specified bus and chip.
 	// Bus numbering starts at index 0, the range of valid buses is
-	// platform specific.
-	GetSpiConnection(busNum, mode int, maxSpeed int64) (device Connection, err error)
+	// platform specific. Same with chip numbering.
+	GetSpiConnection(busNum, chip, mode, bits int, maxSpeed int64) (device Connection, err error)
 
-	// GetDefaultBus returns the default SPI bus index
+	// GetSpiDefaultBus returns the default SPI bus index
 	GetSpiDefaultBus() int
+
+	// GetSpiDefaultChip returns the default SPI chip index
+	GetSpiDefaultChip() int
 
 	// GetDefaultMode returns the default SPI mode (0/1/2/3)
 	GetSpiDefaultMode() int
+
+	// GetDefaultMode returns the default SPI number of bits (8)
+	GetSpiDefaultBits() int
 
 	// GetSpiDefaultMaxSpeed returns the max SPI speed
 	GetSpiDefaultMaxSpeed() int64
 }
 
-// Connection is a connection to an SPI device with a specified address
-// on a specific bus. Used as an alternative to the SPI interface.
-// Implements SPIOperations to talk to the device, wrapping the
-// calls in SetAddress to always target the specified device.
-// Provided by an Adaptor by implementing the SPIConnector interface.
-type Connection SPIOperations
+// Connection is a connection to a SPI device with a specific bus/chip.
+// Provided by an Adaptor, usually just by calling the spi package's GetSpiConnection() function.
+type Connection Operations
 
+// SpiConnection is the implementation of the SPI interface using the periph.io
+// sysfs implementation for Linux.
 type SpiConnection struct {
-	bus      SPIDevice
+	Operations
+	port     xspi.PortCloser
+	dev      xspi.Conn
+	bus      int
+	chip     int
+	bits     int
 	mode     int
 	maxSpeed int64
 }
 
 // NewConnection creates and returns a new connection to a specific
-// spi device on a bus and address
-func NewConnection(bus SPIDevice) (connection *SpiConnection) {
-	return &SpiConnection{bus: bus}
+// spi device on a bus/chip using the periph.io interface.
+func NewConnection(port xspi.PortCloser, conn xspi.Conn) (connection *SpiConnection) {
+	return &SpiConnection{port: port, dev: conn}
 }
 
+// Close the SPI connection.
 func (c *SpiConnection) Close() error {
-	return c.bus.Close()
+	return c.port.Close()
 }
 
-func (c *SpiConnection) SetBitOrder(o xspi.Order) error {
-	return c.bus.SetBitOrder(o)
-}
-
-func (c *SpiConnection) SetBitsPerWord(bits int) error {
-	return c.bus.SetBitsPerWord(bits)
-}
-
-func (c *SpiConnection) SetCSChange(leaveEnabled bool) error {
-	return c.bus.SetCSChange(leaveEnabled)
-}
-
-func (c *SpiConnection) SetDelay(t time.Duration) error {
-	return c.bus.SetDelay(t)
-}
-
-func (c *SpiConnection) SetMaxSpeed(speed int) error {
-	return c.bus.SetMaxSpeed(speed)
-}
-
-func (c *SpiConnection) SetMode(mode xspi.Mode) error {
-	return c.bus.SetMode(mode)
-}
-
+// Tx uses the SPI device to send/receive data.
 func (c *SpiConnection) Tx(w, r []byte) error {
-	return c.bus.Tx(w, r)
+	return c.dev.Tx(w, r)
 }
 
-// GetSPIBus is a helper to return a SPI bus
-func GetSpiBus(busNum, mode int, maxSpeed int64) (spiDevice SPIDevice, err error) {
-	var spiMode xspi.Mode
-	switch mode {
-	case 0:
-		spiMode = xspi.Mode0
-	case 1:
-		spiMode = xspi.Mode1
-	case 2:
-		spiMode = xspi.Mode2
-	case 3:
-		spiMode = xspi.Mode3
-	default:
-		spiMode = xspi.Mode0
-	}
-	dev := fmt.Sprintf("/dev/spidev0.%d", busNum)
-	devfs := &xspi.Devfs{
-		Dev:      dev,
-		Mode:     spiMode,
-		MaxSpeed: maxSpeed,
-	}
-	bus, err := xspi.Open(devfs)
+// GetSpiConnection is a helper to return a SPI device.
+func GetSpiConnection(busNum, chipNum, mode, bits int, maxSpeed int64) (Connection, error) {
+	p, err := xsysfs.NewSPI(busNum, chipNum)
 	if err != nil {
 		return nil, err
 	}
-	spiDevice = NewConnection(bus)
-
-	return
+	c, err := p.Connect(physic.Frequency(maxSpeed)*physic.Hertz, xspi.Mode(mode), bits)
+	if err != nil {
+		return nil, err
+	}
+	return NewConnection(p, c), nil
 }

@@ -2,81 +2,140 @@
 
 
 [[projects]]
+  digest = "1:c06d9e11d955af78ac3bbb26bd02e01d2f61f689e1a3bce2ef6fb683ef8a7f2d"
   name = "github.com/alecthomas/kingpin"
   packages = ["."]
+  pruneopts = "UT"
   revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
   version = "v2.2.6"
 
 [[projects]]
   branch = "master"
+  digest = "1:315c5f2f60c76d89b871c73f9bd5fe689cad96597afd50fb9992228ef80bdd34"
   name = "github.com/alecthomas/template"
   packages = [
     ".",
-    "parse"
+    "parse",
   ]
+  pruneopts = "UT"
   revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
 
 [[projects]]
   branch = "master"
+  digest = "1:c198fdc381e898e8fb62b8eb62758195091c313ad18e52a3067366e1dda2fb3c"
   name = "github.com/alecthomas/units"
   packages = ["."]
+  pruneopts = "UT"
   revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
 
 [[projects]]
+  digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
   name = "github.com/boltdb/bolt"
   packages = ["."]
+  pruneopts = "UT"
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
   version = "v1.3.1"
 
 [[projects]]
   branch = "master"
-  name = "github.com/hashicorp/errwrap"
+  digest = "1:4bb62fc65684e6b6be3005a1bebbc400c3b397d1732c921b94252fbf381174ec"
+  name = "github.com/felixge/pidctrl"
   packages = ["."]
-  revision = "7554cd9344cec97297fa6649b055a8c98c2a1e55"
+  pruneopts = "UT"
+  revision = "7b13bcae7243fe17bbeb7dd5cd8b26675c8db048"
 
 [[projects]]
   branch = "master"
-  name = "github.com/hashicorp/go-multierror"
-  packages = ["."]
-  revision = "b7773ae218740a7be65057fc60b366a49b538a44"
+  digest = "1:62c57507df491b657e9ae2645f30958d9964c8eeb380600469eedc951ebb3a0e"
+  name = "github.com/golang/freetype"
+  packages = [
+    "raster",
+    "truetype",
+  ]
+  pruneopts = "UT"
+  revision = "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4"
 
 [[projects]]
+  branch = "master"
+  digest = "1:d1971637b21871ec2033a44ca87c99c5608a7340cb34ec75fab8d2ab503276c9"
+  name = "github.com/hashicorp/errwrap"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "d6c0cd88035724dd42e0f335ae30161c20575ecc"
+
+[[projects]]
+  branch = "master"
+  digest = "1:46fb6a9f1b9667f32ac93e08b1da118b2c666991424ea12e848b05d4fe5155ef"
+  name = "github.com/hashicorp/go-multierror"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3d5d8f294aa03d8e98859feac328afbdf1ae0703"
+
+[[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
   name = "github.com/pkg/errors"
   packages = ["."]
+  pruneopts = "UT"
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:bc91590d3e20673d5e33267fc140e7dadddde0b84f2e9030547ba86859d2d13e"
   name = "github.com/rakyll/statik"
   packages = ["fs"]
-  revision = "fd36b3595eb2ec8da4b8153b107f7ea08504899d"
-  version = "v0.1.1"
+  pruneopts = "UT"
+  revision = "d5ad23bc79e541d7dbff7f7a7cc8f583c15fc384"
+  version = "v0.1.2"
 
 [[projects]]
+  digest = "1:0b8dd7447e420afff0260179dc892711e837edd1d446bc78dab924624a3c3c81"
   name = "github.com/rs/cors"
   packages = ["."]
-  revision = "feef513b9575b32f84bafa580aad89b011259019"
-  version = "v1.3.0"
+  pruneopts = "UT"
+  revision = "3fb1b69b103a84de38a19c3c6ec073dd6caa4d3f"
+  version = "v1.5.0"
 
 [[projects]]
+  digest = "1:757b110984b77e820e01c60d3ac03a376a0fdb05c990dd9d6bd4f9ba0d606261"
   name = "github.com/rs/xid"
   packages = ["."]
-  revision = "02dd45c33376f85d1064355dc790dcc4850596b1"
-  version = "v1.1"
+  pruneopts = "UT"
+  revision = "2c7e97ce663ff82c49656bca3048df0fdd83c5f9"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:fe592bd048ffa30b699fbccadade6bf60b747c7d4b888cc41fce3726af17b157"
   name = "github.com/sigurn/crc8"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e55481d6f45c5a8f040343bace9013571dae103e"
 
 [[projects]]
   branch = "master"
+  digest = "1:9af7525086446bbd8be2f3f11fb3c056da67f216e1b12700616b6c6327ece095"
   name = "github.com/sigurn/utils"
   packages = ["."]
+  pruneopts = "UT"
   revision = "f19e41f79f8f006116f682c1af454591bc278ad4"
 
 [[projects]]
+  digest = "1:cf762a0ce01d48d8ac03f717aa41f66b655abea67c616d89994ce091a2cc6831"
+  name = "github.com/wcharczuk/go-chart"
+  packages = [
+    ".",
+    "drawing",
+    "matrix",
+    "roboto",
+    "seq",
+    "util",
+  ]
+  pruneopts = "UT"
+  revision = "7c3982fe3d8ab0c9eea9ab5d2aced51e45d447bc"
+  version = "v2.0.1"
+
+[[projects]]
+  digest = "1:663d903a2e4f5d71325b775e922afc3b55d624e6e3364bd6615c7fd326036866"
   name = "gobot.io/x/gobot"
   packages = [
     ".",
@@ -84,29 +143,70 @@
     "drivers/i2c",
     "drivers/spi",
     "platforms/raspi",
-    "sysfs"
+    "sysfs",
   ]
-  revision = "59aaba08eba8b081a9541f77aed19aba919437ac"
-  version = "v1.9.0"
+  pruneopts = "UT"
+  revision = "c1d0e3ce485df0b45076d1d93b7d9240b770d5fc"
+  version = "1.11.1"
 
 [[projects]]
   branch = "master"
-  name = "golang.org/x/exp"
+  digest = "1:c46a80735d879b1b808686638e0a5c0a356ed4edc0981971dab4dad93d8c20cc"
+  name = "golang.org/x/image"
   packages = [
-    "io/spi",
-    "io/spi/driver"
+    "draw",
+    "font",
+    "math/f64",
+    "math/fixed",
   ]
-  revision = "83bc9a11ae1a00a79c4e59fc5d965d21fe14e6bb"
+  pruneopts = "UT"
+  revision = "c73c2afc3b812cdd6385de5a50616511c4a3d458"
 
 [[projects]]
   branch = "master"
+  digest = "1:8742e6e73627b2877c3f723bc1823d5667ec59011242480309dc90fa862512aa"
   name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
+  packages = [
+    "unix",
+    "windows",
+  ]
+  pruneopts = "UT"
+  revision = "bd9dbc187b6e1dacfdd2722a87e83093c2d7bd6e"
+
+[[projects]]
+  digest = "1:20d3dd09b00eecaf135cdbebfe9d13269c834891f7463d1714fabb056297687f"
+  name = "periph.io/x/periph"
+  packages = [
+    ".",
+    "conn",
+    "conn/gpio",
+    "conn/gpio/gpioreg",
+    "conn/i2c",
+    "conn/i2c/i2creg",
+    "conn/physic",
+    "conn/pin",
+    "conn/spi",
+    "conn/spi/spireg",
+    "host/fs",
+    "host/sysfs",
+  ]
+  pruneopts = "UT"
+  revision = "000523f7fa26b78f012b93221c94434ac5b18e37"
+  version = "v3.0.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cc12145d193c54816df8dc92b3ac611ecfc45ed9df6edae00bc400baf55e7266"
+  input-imports = [
+    "github.com/alecthomas/kingpin",
+    "github.com/boltdb/bolt",
+    "github.com/felixge/pidctrl",
+    "github.com/pkg/errors",
+    "github.com/rakyll/statik/fs",
+    "github.com/rs/cors",
+    "github.com/rs/xid",
+    "github.com/wcharczuk/go-chart",
+    "gobot.io/x/gobot/platforms/raspi",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
