@@ -4,13 +4,16 @@
 [[projects]]
   name = "github.com/alecthomas/kingpin"
   packages = ["."]
-  revision = "1087e65c9441605df944fb12c33f0fe7072d18ca"
-  version = "v2.2.5"
+  revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
+  version = "v2.2.6"
 
 [[projects]]
   branch = "master"
   name = "github.com/alecthomas/template"
-  packages = [".","parse"]
+  packages = [
+    ".",
+    "parse"
+  ]
   revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
 
 [[projects]]
@@ -35,7 +38,7 @@
   branch = "master"
   name = "github.com/hashicorp/go-multierror"
   packages = ["."]
-  revision = "83588e72410abfbe4df460eeb6f30841ae47d4c4"
+  revision = "b7773ae218740a7be65057fc60b366a49b538a44"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -52,8 +55,8 @@
 [[projects]]
   name = "github.com/rs/cors"
   packages = ["."]
-  revision = "7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6"
-  version = "v1.2"
+  revision = "feef513b9575b32f84bafa580aad89b011259019"
+  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/rs/xid"
@@ -74,32 +77,36 @@
   revision = "f19e41f79f8f006116f682c1af454591bc278ad4"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/spf13/afero"
-  packages = [".","mem"]
-  revision = "ee1bd8ee15a1306d1f9201acc41ef39cd9f99a1b"
+  name = "gobot.io/x/gobot"
+  packages = [
+    ".",
+    "drivers/gpio",
+    "drivers/i2c",
+    "drivers/spi",
+    "platforms/raspi",
+    "sysfs"
+  ]
+  revision = "59aaba08eba8b081a9541f77aed19aba919437ac"
+  version = "v1.9.0"
 
 [[projects]]
-  name = "gobot.io/x/gobot"
-  packages = [".","drivers/gpio","drivers/i2c","platforms/raspi","sysfs"]
-  revision = "ca421efda6b51dab319a63da0285003c5bc8cf36"
-  version = "v1.6.1"
+  branch = "master"
+  name = "golang.org/x/exp"
+  packages = [
+    "io/spi",
+    "io/spi/driver"
+  ]
+  revision = "83bc9a11ae1a00a79c4e59fc5d965d21fe14e6bb"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "314a259e304ff91bd6985da2a7149bbf91237993"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/text"
-  packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
-  revision = "1cbadb444a806fd9430d14ad08967ed91da4fa0a"
+  revision = "8c0ece68c28377f4c326d85b94f8df0dace46f80"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "56eb96a3a41047739b413bbdd86f884a638a913ad5b31a4a9f5a8582f2f7aa6b"
+  inputs-digest = "cc12145d193c54816df8dc92b3ac611ecfc45ed9df6edae00bc400baf55e7266"
   solver-name = "gps-cdcl"
   solver-version = 1

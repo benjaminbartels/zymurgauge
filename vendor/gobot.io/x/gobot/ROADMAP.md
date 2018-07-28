@@ -36,7 +36,6 @@ https://github.com/hybridgroup/gobot/issues
 
 - ensure that SMBUS operations are working as expected.
 - add support for the following i2c devices:
-   - ADXL345
    - HMC5883L
    - LSM303DLHC
    - MAG3110
@@ -45,10 +44,6 @@ https://github.com/hybridgroup/gobot/issues
    - T5403
    - TMP006
    - VCNL4000
-
-## spi
-
-- add support for spidev.
 
 ## 1-wire
 

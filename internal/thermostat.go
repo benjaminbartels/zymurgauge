@@ -1,174 +1,286 @@
 package internal
 
 import (
-	"fmt"
+	"errors"
+	"math"
+	"sync"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
-	"gobot.io/x/gobot/drivers/gpio"
+	"github.com/felixge/pidctrl"
 )
 
-const interval time.Duration = 5 * time.Second
-
-// Thermostat regulates temperature by activating a cooling or heating device when the temperature strays
-// from a target
 type Thermostat struct {
-	ThermometerID string          `json:"thermometerId"`
-	ChillerPin    string          `json:"chillerPin,omitempty"`
-	HeaterPin     string          `json:"heaterPin,omitempty"`
-	State         ThermostatState `json:"-"`
-	thermometer   *ds18b20.Thermometer
-	chiller       *gpio.RelayDriver
-	heater        *gpio.RelayDriver
-	target        float64
-	isOn          bool
-	quit          chan bool
-	statusCh      chan ThermostatStatus
+	pidController *pidctrl.PIDController
+	thermometer   Thermometer
+	chiller       Actuator
+	heater        Actuator
+	interval      time.Duration
+	minChill      time.Duration
+	minHeat       time.Duration
 	logger        log.Logger
+	status        ThermostatStatus
+	isOn          AtomBool
+	quit          chan bool
+	subs          map[string]func(s ThermostatStatus)
+	lastCheck     time.Time
+	mux           sync.Mutex
 }
 
-// On turns the Thermostat On
-func (t *Thermostat) On() chan ThermostatStatus {
-	if t.statusCh == nil {
-		t.statusCh = make(chan ThermostatStatus)
+func NewThermostat(pidController *pidctrl.PIDController, thermometer Thermometer, chiller, heater Actuator,
+	options ...func(*Thermostat) error) (*Thermostat, error) {
+	t := &Thermostat{
+		pidController: pidController,
+		thermometer:   thermometer,
+		chiller:       chiller,
+		heater:        heater,
+		interval:      10 * time.Minute,
+		minChill:      1 * time.Minute,
+		minHeat:       1 * time.Minute,
+		quit:          make(chan bool),
+		subs:          make(map[string]func(s ThermostatStatus)),
+		lastCheck:     time.Now(),
 	}
 
-	if !t.isOn {
+	for _, option := range options {
+		err := option(t)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return t, nil
+}
+
+func Interval(interval time.Duration) func(*Thermostat) error {
+	return func(t *Thermostat) error {
+		t.interval = interval
+		return nil
+	}
+}
+
+func MinimumChill(min time.Duration) func(*Thermostat) error {
+	return func(t *Thermostat) error {
+		t.minChill = min
+		return nil
+	}
+}
+
+func MinimumHeat(min time.Duration) func(*Thermostat) error {
+	return func(t *Thermostat) error {
+		t.minHeat = min
+		return nil
+	}
+}
+
+func Logger(logger log.Logger) func(*Thermostat) error {
+	return func(t *Thermostat) error {
+		t.logger = logger
+		return nil
+	}
+}
+
+func (t *Thermostat) On() {
+	if !t.isOn.Get() {
 		go func() {
-			t.checkTemperature()
+			t.isOn.Set(true)
+
 			for {
+
+				var action ThermostatState
+				var duration time.Duration
+
+				temperature, err := t.thermometer.Read()
+				if temperature == nil {
+					err = errors.New("Could not read temperature")
+				} else {
+					action, duration = t.getNextAction(*temperature)
+					if action == COOLING {
+						err = t.cool()
+					} else if action == HEATING {
+						err = t.heat()
+					}
+
+				}
+
+				if err != nil {
+					t.log(err.Error())
+					t.updateStatus(ERROR, nil, err)
+					if err := t.off(); err != nil {
+						t.log(err.Error())
+					}
+					return
+				} else {
+					t.updateStatus(action, temperature, nil)
+				}
+
 				select {
 				case <-t.quit:
+					if err := t.off(); err != nil {
+						t.updateStatus(ERROR, nil, err)
+						t.log(err.Error())
+					} else {
+						t.updateStatus(OFF, temperature, nil)
+					}
 					return
-				case <-time.After(interval):
-					t.checkTemperature()
+				case <-time.After(t.interval):
+					t.logf("Acted for entire interval of %v", t.interval)
+				case <-time.After(duration):
+					t.logf("Acted for only %v", duration)
+					if err := t.off(); err != nil {
+						t.updateStatus(ERROR, nil, err)
+						t.log(err.Error())
+					} else {
+						t.updateStatus(OFF, temperature, nil)
+					}
+					t.logf("Waiting for remaining interval time %v", t.interval-duration)
+					<-time.After(t.interval - duration)
 				}
 			}
 		}()
-	}
-	return t.statusCh
-}
-
-func (t *Thermostat) checkTemperature() {
-	if v, err := t.thermometer.ReadTemperature(); err != nil {
-		t.statusCh <- ThermostatStatus{ERROR, v, err}
-	} else if v != nil {
-		t.eval(*v)
 	}
 }
 
 // Off turns the Thermostat Off
 func (t *Thermostat) Off() {
 	t.quit <- true
-	t.isOn = false
+	t.isOn.Set(false)
 }
 
 // Set sets TemperatureController to the specified temperature
 func (t *Thermostat) Set(temp float64) {
-	t.log(fmt.Sprintf("Setting thermostat to %f", temp))
-	t.target = temp
+	t.pidController.Set(temp)
 }
 
-// SetLogger sets the logger
-func (t *Thermostat) SetLogger(logger log.Logger) {
-	t.logger = logger
+func (t *Thermostat) GetStatus() ThermostatStatus {
+	return t.status
 }
 
-// InitThermometer initializes the thermometer
-func (t *Thermostat) InitThermometer() error {
-	thermometer, err := ds18b20.GetThermometer(t.ThermometerID)
-	t.thermometer = thermometer
-	return err
+func (t *Thermostat) Subscribe(key string, f func(s ThermostatStatus)) {
+	t.subs[key] = f
 }
 
-// InitRelays initializes the cooler and heater relays
-func (t *Thermostat) InitRelays(w gpio.DigitalWriter) {
-	if t.ChillerPin != "" {
-		t.chiller = gpio.NewRelayDriver(w, t.ChillerPin)
-	}
+func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.Duration) {
 
-	if t.HeaterPin != "" {
-		t.heater = gpio.NewRelayDriver(w, t.HeaterPin)
-	}
-}
+	now := time.Now()
 
-func (t *Thermostat) eval(temperature float64) {
+	elapsedTime := now.Sub(t.lastCheck)
 
-	var err error
+	output := t.pidController.UpdateDuration(temperature, elapsedTime)
 
-	if temperature > t.target {
-		t.log(fmt.Sprintf("Temperature above Target. Current: %f Target: %f", temperature, t.target))
-		if t.State != COOLING {
-			err = t.cool()
-		}
-	} else if temperature < t.target {
-		t.log(fmt.Sprintf("Temperature below Target. Current: %f Target: %f", temperature, t.target))
-		if t.State != HEATING {
-			err = t.heat()
-		}
+	_, max := t.pidController.OutputLimits()
+
+	percent := math.Abs(math.Round((output/max)/.01) * .01)
+
+	duration := time.Duration(float64(t.interval.Nanoseconds()) * percent)
+
+	action := OFF
+
+	if output < 0 {
+		action = COOLING
+		// if duration > 0 {
+		// 	if duration < t.minChill {
+		// 		duration = t.minChill
+		// 	}
+		// }
+	} else if output > 0 {
+		action = HEATING
+		// if duration > 0 {
+		// 	if duration < t.minHeat {
+		// 		duration = t.minHeat
+		// 	}
+		// }
 	} else {
-		t.log(fmt.Sprintf("Temperature equals Target. Current: %f Target: %f", temperature, t.target))
-		if t.State != OFF {
-			err = t.off()
+		duration = t.interval
+	}
+
+	t.logf("getNextAction - lastCheck: %v, elapsedTime: %v, in: %.3f, out: %.3f, %.f%%, %s, %v",
+		t.lastCheck.Format("2006/01/02 15:04:05"), elapsedTime, temperature, output, percent*100,
+		action, duration)
+
+	t.lastCheck = now
+
+	return action, duration
+}
+
+func (t *Thermostat) updateStatus(state ThermostatState, temperature *float64, err error) {
+	t.status = ThermostatStatus{state, temperature, err}
+
+	for _, f := range t.subs {
+		if f != nil {
+			f(t.status)
 		}
 	}
-
-	if err != nil {
-		t.State = ERROR
-	}
-
-	t.statusCh <- ThermostatStatus{t.State, &temperature, err}
 }
 
 func (t *Thermostat) cool() error {
 	if t.chiller != nil {
-		if err := t.chiller.Off(); err != nil {
-			return err
+		if t.status.State != COOLING {
+			if err := t.chiller.On(); err != nil {
+				return err
+			}
 		}
 	}
 	if t.heater != nil {
-		if err := t.heater.On(); err != nil {
-			return err
+		if t.status.State == HEATING {
+			if err := t.heater.Off(); err != nil {
+				return err
+			}
 		}
 	}
-	t.State = COOLING
+
 	return nil
 }
 
 func (t *Thermostat) heat() error {
 	if t.chiller != nil {
-		if err := t.chiller.On(); err != nil {
-			return err
+		if t.status.State == COOLING {
+			if err := t.chiller.Off(); err != nil {
+				return err
+			}
 		}
 	}
 	if t.heater != nil {
-		if err := t.heater.Off(); err != nil {
-			return err
+		if t.status.State != HEATING {
+			if err := t.heater.On(); err != nil {
+				return err
+			}
 		}
 	}
-	t.State = HEATING
+
 	return nil
 }
 
 func (t *Thermostat) off() error {
+
 	if t.chiller != nil {
-		if err := t.chiller.On(); err != nil {
-			return err
+		if t.status.State == COOLING {
+			if err := t.chiller.Off(); err != nil {
+				return err
+			}
 		}
 	}
 	if t.heater != nil {
-		if err := t.heater.On(); err != nil {
-			return err
+		if t.status.State == HEATING {
+			if err := t.heater.Off(); err != nil {
+				return err
+			}
 		}
 	}
-	t.State = OFF
+
 	return nil
 }
 
 func (t *Thermostat) log(s string) {
 	if t.logger != nil {
 		t.logger.Println(s)
+	}
+}
+
+func (t *Thermostat) logf(s string, a ...interface{}) {
+	//t.log(fmt.Sprintf(s, a))
+	if t.logger != nil {
+		t.logger.Printf(s, a...)
 	}
 }
 

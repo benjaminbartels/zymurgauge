@@ -5,7 +5,7 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/ix29evnbdrhkr7ud/branch/dev?svg=true)](https://ci.appveyor.com/project/deadprogram/gobot/branch/dev)
 [![Coverage Status](https://codecov.io/gh/hybridgroup/gobot/branch/dev/graph/badge.svg)](https://codecov.io/gh/hybridgroup/gobot)
 [![Go Report Card](https://goreportcard.com/badge/hybridgroup/gobot)](https://goreportcard.com/report/hybridgroup/gobot)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/hybridgroup/gobot/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/hybridgroup/gobot/blob/master/LICENSE.txt)
 [![GoDoc](https://godoc.org/gobot.io/x/gobot?status.svg)](https://godoc.org/gobot.io/x/gobot)
 
 Gobot (http://gobot.io/) is a framework using the Go programming language (http://golang.org/) for robotics, physical computing, and the Internet of Things.
@@ -187,13 +187,15 @@ Gobot has a extensible system for connecting to hardware devices. The following 
 
 - [Arduino](http://www.arduino.cc/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/firmata)
 - Audio <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/audio)
-- [Beaglebone Black](http://beagleboard.org/Products/BeagleBone+Black/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/beaglebone)
+- [Beaglebone Black](http://beagleboard.org/boards) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/beaglebone)
+- [Beaglebone PocketBeagle](http://beagleboard.org/pocket/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/beaglebone)
 - [Bluetooth LE](https://www.bluetooth.com/what-is-bluetooth-technology/bluetooth-technology-basics/low-energy) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/ble)
 - [C.H.I.P](http://www.nextthing.co/pages/chip) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/chip)
 - [C.H.I.P Pro](https://docs.getchip.com/chip_pro.html) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/chip)
 - [Digispark](http://digistump.com/products/1) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/digispark)
 - [DragonBoard](https://developer.qualcomm.com/hardware/dragonboard-410c) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/dragonboard)
 - [ESP8266](http://esp8266.net/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/firmata)
+- [GoPiGo 3](https://www.dexterindustries.com/gopigo3/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/dexter/gopigo3)
 - [Intel Curie](https://www.intel.com/content/www/us/en/products/boards-kits/curie.html) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/intel-iot/curie)
 - [Intel Edison](http://www.intel.com/content/www/us/en/do-it-yourself/edison.html) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/intel-iot/edison)
 - [Intel Joule](http://intel.com/joule/getstarted) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/intel-iot/joule)
@@ -215,8 +217,10 @@ Gobot has a extensible system for connecting to hardware devices. The following 
 - [Raspberry Pi](http://www.raspberrypi.org/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/raspi)
 - [Sphero](http://www.sphero.com/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/sphero)
 - [Sphero BB-8](http://www.sphero.com/bb8) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/sphero/bb8)
-- [Sphero Ollie](http://www.sphero.com/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/sphero/ollie)
+- [Sphero Ollie](http://www.sphero.com/ollie) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/sphero/ollie)
+- [Sphero SPRK+](http://www.sphero.com/sprk-plus) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/sphero/sprkplus)
 - [Tinker Board](https://www.asus.com/us/Single-Board-Computer/Tinker-Board/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/tinkerboard)
+- [UP2](http://www.up-board.org/upsquared/) <=> [Package](https://github.com/hybridgroup/gobot/tree/master/platforms/upboard/up2)
 
 Support for many devices that use General Purpose Input/Output (GPIO) have
 a shared set of drivers provided using the `gobot/drivers/gpio` package:
@@ -238,6 +242,8 @@ a shared set of drivers provided using the `gobot/drivers/gpio` package:
 	- Relay
 	- RGB LED
 	- Servo
+	- Stepper Motor
+	- TM1638 LED Controller
 
 Support for many devices that use Analog Input/Output (AIO) have
 a shared set of drivers provided using the `gobot/drivers/aio` package:
@@ -257,6 +263,8 @@ drivers provided using the `gobot/drivers/i2c` package:
 	- Adafruit Motor Hat
 	- ADS1015 Analog to Digital Converter
 	- ADS1115 Analog to Digital Converter
+	- ADXL345 Digital Accelerometer
+	- BH1750 Digital Luminosity/Lux/Light Sensor
 	- BlinkM LED
 	- BME280 Barometric Pressure/Temperature/Altitude/Humidity Sensor
 	- BMP180 Barometric Pressure/Temperature/Altitude Sensor
@@ -278,6 +286,19 @@ drivers provided using the `gobot/drivers/i2c` package:
 	- SSD1306 OLED Display Controller
 	- TSL2561 Digital Luminosity/Lux/Light Sensor
 	- Wii Nunchuck Controller
+
+Support for devices that use Serial Peripheral Interface (SPI) have
+a shared set of drivers provided using the `gobot/drivers/spi` package:
+
+- [SPI](https://en.wikipedia.org/wiki/Serial_Peripheral_Interface_Bus) <=> [Drivers](https://github.com/hybridgroup/gobot/tree/master/drivers/spi)
+	- APA102 Programmable LEDs
+	- MCP3002 Analog/Digital Converter
+	- MCP3004 Analog/Digital Converter
+	- MCP3008 Analog/Digital Converter
+	- MCP3202 Analog/Digital Converter
+	- MCP3204 Analog/Digital Converter
+	- MCP3208 Analog/Digital Converter
+	- MCP3304 Analog/Digital Converter
 
 More platforms and drivers are coming soon...
 
@@ -310,7 +331,7 @@ Gobot uses the Gort [http://gort.io](http://gort.io) Command Line Interface (CLI
 Gobot also has its own CLI to generate new platforms, adaptors, and drivers. You can check it out in the `/cli` directory.
 
 ## Documentation
-We're busy adding documentation to our web site at http://gobot.io/ please check there as we continue to work on Gobot
+We're always adding documentation to our web site at http://gobot.io/ please check there as we continue to work on Gobot
 
 Thank you!
 
@@ -327,6 +348,6 @@ For our contribution guidelines, please go to [https://github.com/hybridgroup/go
 Gobot is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms. [You can read about it here](https://github.com/hybridgroup/gobot/tree/master/CODE_OF_CONDUCT.md).
 
 ## License
-Copyright (c) 2013-2017 The Hybrid Group. Licensed under the Apache 2.0 license.
+Copyright (c) 2013-2018 The Hybrid Group. Licensed under the Apache 2.0 license.
 
 The Contributor Covenant is released under the Creative Commons Attribution 4.0 International Public License, which requires that attribution be included.

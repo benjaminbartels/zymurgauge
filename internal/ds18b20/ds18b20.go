@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -17,47 +16,22 @@ const (
 	slave  = "w1_slave"
 )
 
-// DevicePath is the location of the thermometer data on teh file system
-var DevicePath = "/sys/bus/w1/devices/"
+// defaultDevicePath is the location of the thermometer data on the file system
+const defaultDevicePath = "/sys/bus/w1/devices/"
 
-// GetThermometers returns a list of all Thermometers on the bus
-func GetThermometers() ([]Thermometer, error) {
-	var thermometers []Thermometer
-
-	dir, err := os.Open(DevicePath)
-	if err != nil {
-		return nil, err
-	}
-	infos, err := dir.Readdir(-1)
-	defer safeclose.Close(dir, &err)
-	if err != nil {
-		return nil, err
-	}
-	sort.Slice(infos, func(i, j int) bool { return infos[i].Name() < infos[j].Name() })
-	for _, info := range infos {
-		if strings.HasPrefix(info.Name(), prefix) {
-
-			term := Thermometer{
-				ID:   info.Name(),
-				path: DevicePath,
-			}
-
-			thermometers = append(thermometers, term)
-		}
-	}
-	return thermometers, nil
+func New(id string) (*Thermometer, error) {
+	return NewWithDevicePath(id, defaultDevicePath)
 }
 
-// GetThermometer returns a Thermometer by id
-func GetThermometer(id string) (*Thermometer, error) {
-	_, err := os.Stat(path.Join(DevicePath, id))
+func NewWithDevicePath(id, devicePath string) (*Thermometer, error) {
+	_, err := os.Stat(path.Join(devicePath, id))
 	if err != nil {
 		return nil, err
 	}
 
 	return &Thermometer{
 		ID:   id,
-		path: DevicePath,
+		path: devicePath,
 	}, nil
 }
 
@@ -69,7 +43,7 @@ type Thermometer struct {
 
 // ReadTemperature read the current temperature of the Thermometer
 func (t *Thermometer) ReadTemperature() (*float64, error) {
-	file, err := os.Open(path.Join(DevicePath, t.ID, slave))
+	file, err := os.Open(path.Join(t.path, t.ID, slave))
 	if err != nil {
 		return nil, err
 	}

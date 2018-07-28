@@ -15,3 +15,8 @@
 
 # Project specificall
 .cover
+
+# Extentionless binaries in cmd directories
+/cmd/zymsrvd/zymsrvd
+/fermmond/fermmond
+/client_test/client_test

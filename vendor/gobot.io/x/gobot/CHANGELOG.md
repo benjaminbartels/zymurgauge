@@ -1,3 +1,106 @@
+1.9.0
+---
+* **beaglebone**
+  * update pin naming, docs, and examples for the latest Debian OS releases
+* **opencv**
+  * update build settings needed to build OpenCV/GoCV as part of test suite
+  * deps for latest GoCV v0.9.0
+* **build**
+  * update Travis build to use very latest Go versions
+* **docs**
+  * add references to new drivers for ADXL345, BH1750, and TM1638.
+  * improve docs for installation and use of OpenCV/GoCV from Gobot
+  * update copyright date to 2018
+* **gpio**
+  * Initial support for TM1638 modules
+* **i2c**
+  * Added basic driver for BH1750 (light sensor), board GY-302
+  * support for accel ADXL345
+* **bb8/ollie/sprkplus**
+  * add Boost command
+  * add Set Back LED Output command
+  * add Set Raw Motor Values command
+  * add Set Rotation Rate command
+  * add Set Stabilization command
+* **test** 
+  * Refactor TestAdaptorDigitalPinConcurrency test
+
+1.8.0
+---
+* **sysfs** 
+  * pause briefly to allow udev rules to apply when exporting PWMPin
+* **beaglebone** 
+  * correct uboot installation instructions
+  * add SPI support
+  * no more slots, add docs on configuring u-boot overlays
+  * handle gpio pinmux without relying on specific pre-existing setup
+* **pocketbeagle** 
+  * add support for PocketBeagle
+  * use universal io cape manager to initialize board setup
+  * improve docs for latest Debian OS
+* **build** 
+  * Add dep, change how tests run in CI
+  * update dependencies to latest GoCV version
+* **spi** 
+  * Add MCP3002, MCP3202, MCP3204, MCP3208, MCP3304, MCP3004, and MCP3008 A/D converter drivers
+  * adding initial support for APA102 LEDs, thanks to code sample from @rakyll
+  * extract shared SPI init code into spi package
+* **up2** 
+  * initial work on support for UP2 board
+* **gopigo3**
+  * fixed set/get bug with motor dps
+* **gpio**
+  * Adding stepper motor module
+* **firmata** 
+  * handle cases where out of sync data is read from serial port on first connecting
+* **i2c**
+  * Change init payload sequence within jhd1313m1 driver Start() func.
+
+1.7.1
+---
+* **sprkplus**
+  * add new platform for Sphero SPRK+
+* **firmata** 
+  * correct problem where last analog pin(s) were being ignored from capabilities query
+* **ble** 
+  * use go-ble/ble fork for BLE interactions
+* **build** 
+  * update to use latest OpenCV version
+  * update to use latest Golang versions
+
+1.7.0
+---
+* **curie**
+  * Add Linux specific step to Intel Curie docs
+* **mqtt**
+  * Added SetCleanSession
+* **build**
+  * add go1.9 to versions tested in Travis CI
+  * add missing OpenCV lib dependency
+  * Update build to use latest Golang versions
+  * Travis build will now require sudo to install due to OpenCV
+* **docs**
+  * some helpful edits for the initial spi implementation
+* **gopigo3**
+  * integration of recent GoPiGo3 contributions
+  * Added grove support, and more gopigo3 examples
+* **gpio**
+  * Add ButtonDriver.DefaultState to allow for 'reverse' buttons (ones that go from HIGH to LOW)
+* **holystone**
+  * Add initial support for HS-200
+* **i2c**
+  * SSD1306.WithDisplayHeight() and SSD1306.WithDisplayWidth() for SSD1306 that use different display ratios
+* **joystick**
+  * add CLI utilty to scan display events to make it easier to add new joyticks
+  * update README to address #441
+* **opencv**
+  * Switchover to use GoCV and OpenCV 3.3
+  * Switch to use custom domain for GoCV package
+  * all examples using new GoCV based code
+  * correct formatting in face detect example
+  * OpenCV face detector that is much more concurrent
+  * update interface and examples to indicate multipurpose
+
 1.6.0
 ---
 * **core**

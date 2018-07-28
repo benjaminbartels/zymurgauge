@@ -22,6 +22,7 @@ type Logger interface {
 
 	// Fatalln is equivalent to Println() followed by a call to os.Exit(1).
 	Fatalln(v ...interface{})
+
 	// Panic is equivalent to Print() followed by a call to panic().
 	Panic(v ...interface{})
 
