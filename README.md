@@ -9,3 +9,5 @@ Homebrewing automation system
 [![Test Coverage](https://codeclimate.com/github/benjaminbartels/zymurgauge/badges/coverage.svg)](https://codeclimate.com/github/benjaminbartels/zymurgauge/coverage)
 
 [![Issue Count](https://codeclimate.com/github/benjaminbartels/zymurgauge/badges/issue_count.svg)](https://codeclimate.com/github/benjaminbartels/zymurgauge)
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/benjaminbartels/zymurgauge)](https://goreportcard.com/report/github.com/benjaminbartels/zymurgauge)
