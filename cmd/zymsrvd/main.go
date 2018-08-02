@@ -11,15 +11,12 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/handlers"
-	_ "github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/statik"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/boltdb/bolt"
-	"github.com/rakyll/statik/fs"
-	"github.com/rs/cors"
+
+	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
 func main() {
@@ -32,50 +29,23 @@ func main() {
 	}
 	defer safeclose.Close(db, &err)
 
-	chamberRepo, err := database.NewChamberRepo(db)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
 	beerRepo, err := database.NewBeerRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	fermentationRepo, err := database.NewFermentationRepo(db)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	temperatureChangeRepo, err := database.NewTemperatureChangeRepo(db)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	uiFS, err := fs.New()
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	routes := []app.Route{
-		app.Route{Path: "chambers", Handler: handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)},
-		app.Route{Path: "beers", Handler: handlers.NewBeerHandler(beerRepo, logger)},
-		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo,
-			temperatureChangeRepo, logger)},
-	}
-
-	app := app.New(routes, uiFS, logger)
-
-	options := cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"},
-	}
+	beerHandler := handlers.NewBeerHandler(beerRepo)
 
 	requestLogger := middleware.NewRequestLogger(logger)
 
+	app := web.NewApp(logger, requestLogger.Log)
+
+	app.Register("GET", "/beer", beerHandler.GetAll)
+	app.Register("GET", "/beer/:id", beerHandler.GetOne)
+
 	server := http.Server{
 		Addr:    ":3000",
-		Handler: app.Handler(requestLogger.Handler, cors.New(options).Handler),
+		Handler: app,
 	}
 
 	var wg sync.WaitGroup

@@ -1,10 +1,10 @@
-package internal
+package atomic
 
 import "sync/atomic"
 
-type AtomBool struct{ flag int32 }
+type Bool struct{ flag int32 }
 
-func (b *AtomBool) Set(value bool) {
+func (b *Bool) Set(value bool) {
 	var i int32 = 0
 	if value {
 		i = 1
@@ -12,7 +12,7 @@ func (b *AtomBool) Set(value bool) {
 	atomic.StoreInt32(&(b.flag), int32(i))
 }
 
-func (b *AtomBool) Get() bool {
+func (b *Bool) Get() bool {
 	if atomic.LoadInt32(&(b.flag)) != 0 {
 		return true
 	}

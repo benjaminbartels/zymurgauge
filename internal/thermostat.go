@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/platform/atomic"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/felixge/pidctrl"
 )
@@ -20,7 +21,7 @@ type Thermostat struct {
 	minHeat       time.Duration
 	logger        log.Logger
 	status        ThermostatStatus
-	isOn          AtomBool
+	isOn          atomic.Bool
 	quit          chan bool
 	subs          map[string]func(s ThermostatStatus)
 	lastCheck     time.Time

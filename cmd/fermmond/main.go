@@ -125,7 +125,7 @@ func processChamber(c *internal.Chamber) error {
 	}
 
 	chamber.Thermostat.SetLogger(logger)
-	
+
 	//ds18b20.DevicePath = basePath
 	if err := c.Thermostat.InitThermometer(); err != nil {
 		return err
