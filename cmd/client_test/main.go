@@ -11,8 +11,8 @@ import (
 
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/cmd/fermmond/client"
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/client"
 )
 
 var logger *log.Logger

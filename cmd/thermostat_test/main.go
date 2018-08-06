@@ -34,7 +34,7 @@ func main() {
 		internal.MinimumChill(1*time.Second),
 		internal.MinimumHeat(1*time.Second),
 		internal.Interval(1*time.Second), // 1sec = 10min
-		internal.Factor(600),
+		// internal.Factor(600),
 		// internal.Interval(10*time.Second), // 10sec = 10min
 		// internal.Factor(60),               // 10sec = 10min
 		internal.Logger(logger),

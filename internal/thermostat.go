@@ -6,12 +6,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/atomic"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/felixge/pidctrl"
+	"gobot.io/x/gobot/drivers/gpio"
 )
 
 type Thermostat struct {
+	ThermometerID string `json:"thermometerId"`
+	ChillerPin    string `json:"chillerPin,omitempty"`
+	HeaterPin     string `json:"heaterPin,omitempty"`
 	pidController *pidctrl.PIDController
 	thermometer   Thermometer
 	chiller       Actuator
@@ -78,6 +83,33 @@ func Logger(logger log.Logger) func(*Thermostat) error {
 	return func(t *Thermostat) error {
 		t.logger = logger
 		return nil
+	}
+}
+
+// SetLogger sets the logger
+func (t *Thermostat) SetLogger(logger log.Logger) {
+	t.logger = logger
+}
+
+// InitThermometer initializes the thermometer
+func (t *Thermostat) InitThermometer() error {
+
+	if t.ThermometerID != "" {
+		thermometer, err := ds18b20.New(t.ThermometerID)
+		t.thermometer = thermometer
+		return err
+	}
+	return nil
+}
+
+// InitActuators initializes the cooler and heater actuators
+func (t *Thermostat) InitActuators(w gpio.DigitalWriter) {
+	if t.ChillerPin != "" {
+		t.chiller = gpio.NewRelayDriver(w, t.ChillerPin)
+	}
+
+	if t.HeaterPin != "" {
+		t.heater = gpio.NewRelayDriver(w, t.HeaterPin)
 	}
 }
 

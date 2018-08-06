@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/pkg/errors"
 )
 
@@ -39,7 +39,7 @@ func (r *FermentationResource) Get(id uint64) (*internal.Fermentation, error) {
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, app.ErrNotFound
+		return nil, web.ErrNotFound
 	}
 
 	var fermentation *internal.Fermentation

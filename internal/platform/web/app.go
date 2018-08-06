@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -30,19 +29,25 @@ type Handler func(context.Context, http.ResponseWriter, *http.Request, map[strin
 type App struct {
 	*httptreemux.TreeMux
 	logger      log.Logger
-	ui          http.FileSystem
 	middlewares []MiddlewareFunc
 }
 
 // NewApp creates a new App
-func NewApp(logger log.Logger, ui http.FileSystem, mw ...MiddlewareFunc) *App {
+func NewApp(logger log.Logger, uiFS http.FileSystem, mw ...MiddlewareFunc) *App {
 	a := &App{
 		TreeMux:     httptreemux.New(),
 		logger:      logger,
 		middlewares: mw,
 	}
-	// a.registerNotFound()
-	// a.ServeFiles("/*filepath", ui)
+	a.registerNotFound()
+
+	fsHandler := http.FileServer(uiFS)
+
+	h := func(w http.ResponseWriter, r *http.Request, p map[string]string) {
+		fsHandler.ServeHTTP(w, r)
+	}
+	a.TreeMux.Handle("GET", "/", h)
+	a.TreeMux.Handle("GET", "/static/*path", h) // ToDo: I hate this
 	return a
 }
 
@@ -53,15 +58,14 @@ func (a *App) Register(method, path string, handler Handler) {
 	handler = wrap(handler, a.middlewares)
 
 	// Handler function that adds the app specific values to the request context, then calls the wrapped handler
-	h := func(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	h := func(w http.ResponseWriter, r *http.Request, p map[string]string) {
 		// Add app specific values to the request context
 		ctx := context.WithValue(r.Context(), CtxValuesKey, &CtxValues{StartTime: time.Now()})
 
 		// Calls the wrapped handler
-		if err := handler(ctx, w, r, params); err != nil {
+		if err := handler(ctx, w, r, p); err != nil {
 			// This is called when the error handler middleware doesn't handle the error, which is never
-			//Error(ctx, w, err)
-			fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!")
+			a.logger.Printf("ERROR : %v\n", err)
 		}
 	}
 
@@ -70,31 +74,26 @@ func (a *App) Register(method, path string, handler Handler) {
 }
 
 // registerNotFound mounts a handler that is used when a path cannot be found
-// func (a *App) registerNotFound() {
+func (a *App) registerNotFound() {
 
-// 	// Create the handler and wrap with middlewares
-// 	f := func(ctx context.Context, w http.ResponseWriter, r *http.Request, p Params) error {
-// 		return Error(ctx, w, ErrNotFound)
-// 	}
-// 	handler := wrap(f, a.middlewares)
+	// Create the handler and wrap with middlewares
+	f := func(ctx context.Context, w http.ResponseWriter, r *http.Request, p map[string]string) error {
+		return Error(ctx, w, ErrNotFound)
+	}
+	handler := wrap(f, a.middlewares)
 
-// 	// Handler function that adds the app specific values to the request context, then calls the wrapped handler
-// 	h := func(w http.ResponseWriter, r *http.Request) {
+	// Handler function that adds the app specific values to the request context, then calls the wrapped handler
+	h := func(w http.ResponseWriter, r *http.Request) {
 
-// 		// Add app specific values to the request context
-// 		ctx := context.WithValue(r.Context(), CtxValuesKey, &CtxValues{StartTime: time.Now()})
+		// Add app specific values to the request context
+		ctx := context.WithValue(r.Context(), CtxValuesKey, &CtxValues{StartTime: time.Now()})
+		// Calls the wrapped handler
+		if err := handler(ctx, w, r, nil); err != nil {
+			// This is called when the error handler middleware doesn't handle the error, which is never
+			a.logger.Printf("ERROR : %v\n", err)
 
-// 		// Get params from context
-// 		params := httprouter.ParamsFromContext(ctx)
+		}
+	}
 
-// 		// Calls the wrapped handler
-// 		if err := handler(ctx, w, r, params); err != nil {
-// 			if respErr := Error(ctx, w, err); err != nil {
-// 				// ToDo: if error processing Error
-// 				a.logger.Print(respErr)
-// 			}
-// 		}
-// 	}
-
-// 	a.Router.NotFound = http.HandlerFunc(h)
-// }
+	a.NotFoundHandler = h
+}

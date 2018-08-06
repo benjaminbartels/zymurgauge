@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/pkg/errors"
 )
@@ -37,7 +37,7 @@ func (r *BeerResource) Get(id uint64) (*internal.Beer, error) {
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, app.ErrNotFound
+		return nil, web.ErrNotFound
 	}
 
 	var beer *internal.Beer

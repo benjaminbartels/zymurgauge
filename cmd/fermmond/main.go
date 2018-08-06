@@ -13,8 +13,8 @@ import (
 	"gobot.io/x/gobot/platforms/raspi"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/benjaminbartels/zymurgauge/cmd/fermmond/client"
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/client"
 )
 
 // ToDo: Remove global vars
@@ -24,6 +24,7 @@ var (
 	chamber   *internal.Chamber
 	status    *internal.ThermostatStatus
 	zymClient *client.Client
+	last      = 0.0
 )
 
 func main() {
@@ -131,7 +132,7 @@ func processChamber(c *internal.Chamber) error {
 		return err
 	}
 
-	chamber.Thermostat.InitRelays(raspi.NewAdaptor())
+	chamber.Thermostat.InitActuators(raspi.NewAdaptor())
 
 	//Check for updated fermentation
 	if chamber.CurrentFermentationID != nil {
@@ -143,34 +144,27 @@ func processChamber(c *internal.Chamber) error {
 
 		if ferm != nil {
 
-			chamber.Thermostat.Set(ferm.Beer.Schedule[0].TargetTemp)
-			ch := chamber.Thermostat.On()
+			chamber.Thermostat.Subscribe("test_key", func(s internal.ThermostatStatus) {
+				logger.Printf("State: %v, Error: %s\n", s.State, s.Error)
 
-			go func() {
-
-				last := 0.0
-				for {
-					s := <-ch
-					logger.Printf("State: %v, Error: %s\n", s.State, s.Error)
-
-					if s.CurrentTemperature != nil && *s.CurrentTemperature != last {
-						last = *s.CurrentTemperature
-						change := &internal.TemperatureChange{
-							FermentationID: ferm.ID,
-							InsertTime:     time.Now(),
-							Chamber:        chamber.Name,
-							Beer:           ferm.Beer.Name,
-							Thermometer:    chamber.Thermostat.ThermometerID,
-							Temperature:    *s.CurrentTemperature,
-						}
-						if err := zymClient.FermentationResource.SaveTemperatureChange(change); err != nil {
-							logger.Println(err)
-						}
+				if s.CurrentTemperature != nil && *s.CurrentTemperature != last {
+					last = *s.CurrentTemperature
+					change := &internal.TemperatureChange{
+						FermentationID: ferm.ID,
+						InsertTime:     time.Now(),
+						Chamber:        chamber.Name,
+						Beer:           ferm.Beer.Name,
+						Thermometer:    chamber.Thermostat.ThermometerID,
+						Temperature:    *s.CurrentTemperature,
 					}
-
+					if err := zymClient.FermentationResource.SaveTemperatureChange(change); err != nil {
+						logger.Println(err)
+					}
 				}
+			})
 
-			}()
+			chamber.Thermostat.Set(ferm.Beer.Schedule[0].TargetTemp)
+			chamber.Thermostat.On()
 
 		} else {
 			logger.Println("Could not find Fermentation")
@@ -182,6 +176,7 @@ func processChamber(c *internal.Chamber) error {
 
 	return nil
 }
+
 
 // getMacAddress returns the first Mac Address of the first network interface found
 func getMacAddress() (string, error) {

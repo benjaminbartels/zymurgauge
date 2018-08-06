@@ -67,18 +67,18 @@ func main() {
 
 	app := web.NewApp(logger, uiFS, requestLogger.Log, errorHandler.HandleError)
 
-	app.Register("GET", "/beer", beerHandler.GetAll)
-	app.Register("GET", "/beer/:id", beerHandler.GetOne)
-	app.Register("POST", "/beer", beerHandler.Post)
-	app.Register("DELETE", "/beer", beerHandler.Delete)
-	app.Register("GET", "/chamber", chamberHandler.GetAll)
-	app.Register("GET", "/chamber/:mac", chamberHandler.GetOne)
-	app.Register("POST", "/chamber", chamberHandler.Post)
-	app.Register("DELETE", "/chamber", chamberHandler.Delete)
-	app.Register("GET", "/fermentation", fermentationHandler.GetAll)
-	app.Register("GET", "/fermentation/:id", fermentationHandler.GetOne)
-	app.Register("GET", "/fermentation/:id/temperaturechanges", temperatureHandler.GetRange)
-	app.Register("POST", "/fermentation/:id/temperaturechanges", temperatureHandler.Post)
+	app.Register("GET", "/api/v1/beers", beerHandler.GetAll)
+	app.Register("GET", "/api/v1/beers/:id", beerHandler.GetOne)
+	app.Register("POST", "/api/v1/beers", beerHandler.Post)
+	app.Register("DELETE", "/api/v1/beers", beerHandler.Delete)
+	app.Register("GET", "/api/v1/chambers", chamberHandler.GetAll)
+	app.Register("GET", "/api/v1/chambers/:mac", chamberHandler.GetOne)
+	app.Register("POST", "/api/v1/chambers", chamberHandler.Post)
+	app.Register("DELETE", "/api/v1/chambers", chamberHandler.Delete)
+	app.Register("GET", "/api/v1/fermentations", fermentationHandler.GetAll)
+	app.Register("GET", "/api/v1/fermentations/:id", fermentationHandler.GetOne)
+	app.Register("GET", "/api/v1/fermentations/:id/temperaturechanges", temperatureHandler.GetRange)
+	app.Register("POST", "/api/v1/fermentations/:id/temperaturechanges", temperatureHandler.Post)
 
 	server := http.Server{
 		Addr:    ":3000",

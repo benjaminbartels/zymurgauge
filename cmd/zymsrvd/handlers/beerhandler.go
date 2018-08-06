@@ -30,7 +30,6 @@ func (h *BeerHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http
 	} else {
 		return web.Respond(ctx, w, beers, http.StatusOK)
 	}
-	return nil
 }
 
 // GetOne handles a GET request for a specific Beer whose ID matched the provided ID

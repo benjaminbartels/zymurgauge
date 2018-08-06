@@ -8,7 +8,7 @@ import (
 	"net/url"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/pkg/errors"
@@ -44,7 +44,7 @@ func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, app.ErrNotFound
+		return nil, web.ErrNotFound
 	}
 
 	var chamber *internal.Chamber
