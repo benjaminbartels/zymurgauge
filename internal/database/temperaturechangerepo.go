@@ -33,7 +33,7 @@ func NewTemperatureChangeRepo(db *bolt.DB) (*TemperatureChangeRepo, error) {
 	}, nil
 }
 
-// GetRangeByFermentationID returns a all temperature changes for the given fermentation id for teh given range
+// GetRangeByFermentationID returns a all temperature changes for the given fermentation id for the given range
 func (r *TemperatureChangeRepo) GetRangeByFermentationID(fermentationID uint64, start,
 	end time.Time) ([]internal.TemperatureChange, error) {
 	temperatureChanges := []internal.TemperatureChange{}

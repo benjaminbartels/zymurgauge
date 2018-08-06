@@ -11,3 +11,25 @@ Homebrewing automation system
 [![Issue Count](https://codeclimate.com/github/benjaminbartels/zymurgauge/badges/issue_count.svg)](https://codeclimate.com/github/benjaminbartels/zymurgauge)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/benjaminbartels/zymurgauge)](https://goreportcard.com/report/github.com/benjaminbartels/zymurgauge)
+
+## Project Structure
+
+* cmd
+  * fermmond - *connects to http server*
+    * http - client (counter part to handler in server)
+  * zymsrvd - *invokes http servers*
+    * handlers
+* docker
+* internal
+  * *model hierarchy*
+  * middleware
+    * logger
+    * metrics
+    * auth
+  * platform - kit
+    * log - logger interface
+    * bolt - boltdb interaction layer
+    * web
+      * app.go - *contains App struct w/ wrapped handle func*
+      * middleware.go - *wrapMiddleware func*
+      * response.go - *response func, errors, etc*

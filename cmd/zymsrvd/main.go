@@ -11,10 +11,13 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/handlers"
+	_ "github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/statik"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/boltdb/bolt"
+	"github.com/rakyll/statik/fs"
 
+	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
@@ -34,14 +37,48 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	chamberRepo, err := database.NewChamberRepo(db)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	fermentationRepo, err := database.NewFermentationRepo(db)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	temperatureRepo, err := database.NewTemperatureChangeRepo(db)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	beerHandler := handlers.NewBeerHandler(beerRepo)
+	chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
+	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo)
+	temperatureHandler := handlers.NewTemperatureChangeHandler(temperatureRepo)
 
 	requestLogger := middleware.NewRequestLogger(logger)
+	errorHandler := middleware.NewErrorHandler(logger)
 
-	app := web.NewApp(logger, requestLogger.Log)
+	uiFS, err := fs.New()
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	app := web.NewApp(logger, uiFS, requestLogger.Log, errorHandler.HandleError)
 
 	app.Register("GET", "/beer", beerHandler.GetAll)
 	app.Register("GET", "/beer/:id", beerHandler.GetOne)
+	app.Register("POST", "/beer", beerHandler.Post)
+	app.Register("DELETE", "/beer", beerHandler.Delete)
+	app.Register("GET", "/chamber", chamberHandler.GetAll)
+	app.Register("GET", "/chamber/:mac", chamberHandler.GetOne)
+	app.Register("POST", "/chamber", chamberHandler.Post)
+	app.Register("DELETE", "/chamber", chamberHandler.Delete)
+	app.Register("GET", "/fermentation", fermentationHandler.GetAll)
+	app.Register("GET", "/fermentation/:id", fermentationHandler.GetOne)
+	app.Register("GET", "/fermentation/:id/temperaturechanges", temperatureHandler.GetRange)
+	app.Register("POST", "/fermentation/:id/temperaturechanges", temperatureHandler.Post)
 
 	server := http.Server{
 		Addr:    ":3000",

@@ -19,14 +19,10 @@ func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, code 
 		w.WriteHeader(code)
 		return nil
 	}
-	
+
 	// Marshal into a JSON
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		if respErr := respondError(ctx, w, err, http.StatusInternalServerError); respErr != nil {
-			return respErr
-		}
-
 		return err
 	}
 
@@ -51,14 +47,15 @@ type errorResponse struct {
 
 // Error converts application error to http error code then passes it RespondError
 func Error(ctx context.Context, w http.ResponseWriter, err error) error {
+
+	var code int
+
 	switch errors.Cause(err) {
 	case ErrNotFound:
-		return respondError(ctx, w, err, http.StatusNotFound)
+		code = http.StatusNotFound
+	default:
+		code = http.StatusInternalServerError
 	}
-	return respondError(ctx, w, err, http.StatusInternalServerError)
-}
 
-// respondError sends the JSON error response to the client
-func respondError(ctx context.Context, w http.ResponseWriter, err error, code int) error {
 	return Respond(ctx, w, errorResponse{Err: err.Error()}, code)
 }

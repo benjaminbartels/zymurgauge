@@ -17,7 +17,6 @@ func TestRespond(t *testing.T) {
 	t.Run("StatusNoContent", testRespond_StatusNoContent)
 	t.Run("WriteError", testRespond_WriteError)
 	t.Run("MarshalError", testRespond_MarshalError)
-	t.Run("MarshalErrorThenWriteError", testRespond_MarshalErrorThenWriteError)
 }
 
 func testRespond_OK(t *testing.T) {
@@ -123,20 +122,6 @@ func testRespond_WriteError(t *testing.T) {
 func testRespond_MarshalError(t *testing.T) {
 	rw := &responseWriterMock{}
 
-	var code int
-
-	rw.HeaderFn = func() http.Header {
-		return make(map[string][]string)
-	}
-
-	rw.WriteFn = func(bytes []byte) (int, error) {
-		return len(bytes), nil
-	}
-
-	rw.WriteHeaderFn = func(statusCode int) {
-		code = statusCode
-	}
-
 	bogusData := make(chan int)
 
 	r, _ := http.NewRequest(http.MethodGet, "/beer/1", nil)
@@ -145,51 +130,12 @@ func testRespond_MarshalError(t *testing.T) {
 
 	if _, ok := err.(*json.UnsupportedTypeError); !ok {
 		t.Errorf("Unexpected Error %v", err)
-	} else if !rw.HeaderInvoked {
-		t.Fatal("Header not invoked")
-	} else if !rw.WriteInvoked {
-		t.Fatal("Write not invoked")
-	} else if !rw.WriteHeaderInvoked {
-		t.Fatal("WriteHeader not invoked")
-	} else if code != http.StatusInternalServerError {
-		t.Fatalf("Unexpected StatusCode %d", code)
-	}
-}
-
-func testRespond_MarshalErrorThenWriteError(t *testing.T) {
-	rw := &responseWriterMock{}
-
-	var code int
-	var writeError = errors.New("write error occurred")
-
-	rw.HeaderFn = func() http.Header {
-		return make(map[string][]string)
-	}
-
-	rw.WriteFn = func(bytes []byte) (int, error) {
-		return 0, writeError
-	}
-
-	rw.WriteHeaderFn = func(statusCode int) {
-		code = statusCode
-	}
-
-	bogusData := make(chan int)
-
-	r, _ := http.NewRequest(http.MethodGet, "/beer/1", nil)
-	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err := web.Respond(ctx, rw, bogusData, http.StatusOK)
-
-	if err != writeError {
-		t.Errorf("Unexpected Error %v", err)
-	} else if !rw.HeaderInvoked {
-		t.Fatal("Header not invoked")
-	} else if !rw.WriteInvoked {
-		t.Fatal("Write not invoked")
-	} else if !rw.WriteHeaderInvoked {
-		t.Fatal("WriteHeader not invoked")
-	} else if code != http.StatusInternalServerError {
-		t.Fatalf("Unexpected StatusCode %d", code)
+	} else if rw.HeaderInvoked {
+		t.Fatal("Header invoked")
+	} else if rw.WriteInvoked {
+		t.Fatal("Write invoked")
+	} else if rw.WriteHeaderInvoked {
+		t.Fatal("WriteHeader invoked")
 	}
 }
 
