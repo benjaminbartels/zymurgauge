@@ -37,7 +37,9 @@ var (
 	// ErrNotFound is returned when an entity is not found
 	ErrNotFound = errors.New("not found")
 	// ErrInternal is returned when an internal error has occurred
-	ErrInternal = errors.New("internal error")
+	ErrInternal         = errors.New("internal error")
+	ErrBadRequest       = errors.New("bad request")
+	ErrMethodNotAllowed = errors.New("method not allowed")
 )
 
 // errorResponse is the response sent to the client in the event of a error
@@ -53,6 +55,10 @@ func Error(ctx context.Context, w http.ResponseWriter, err error) error {
 	switch errors.Cause(err) {
 	case ErrNotFound:
 		code = http.StatusNotFound
+	case ErrBadRequest: //ToDO: what was bad?
+		code = http.StatusBadRequest
+	case ErrMethodNotAllowed:
+		code = http.StatusMethodNotAllowed
 	default:
 		code = http.StatusInternalServerError
 	}

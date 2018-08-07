@@ -21,7 +21,7 @@ func NewErrorHandler(logger log.Logger) *ErrorHandler {
 func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 
 	// Create the handler that will be attached in the middleware chain.
-	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request, params map[string]string) error {
+	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 		v := ctx.Value(web.CtxValuesKey).(*web.CtxValues)
 
 		// In the event of a panic, we want to capture it here so we can send an
@@ -43,7 +43,7 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 			}
 		}()
 
-		if err := next(ctx, w, r, params); err != nil {
+		if err := next(ctx, w, r); err != nil {
 
 			// Indicate this request had an error.
 			v.HasError = true

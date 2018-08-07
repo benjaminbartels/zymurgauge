@@ -17,7 +17,6 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/rakyll/statik/fs"
 
-	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
@@ -37,25 +36,25 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	chamberRepo, err := database.NewChamberRepo(db)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	// chamberRepo, err := database.NewChamberRepo(db)
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
 
-	fermentationRepo, err := database.NewFermentationRepo(db)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	// fermentationRepo, err := database.NewFermentationRepo(db)
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
 
-	temperatureRepo, err := database.NewTemperatureChangeRepo(db)
-	if err != nil {
-		logger.Fatal(err)
-	}
+	// temperatureRepo, err := database.NewTemperatureChangeRepo(db)
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
 
 	beerHandler := handlers.NewBeerHandler(beerRepo)
-	chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
-	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo)
-	temperatureHandler := handlers.NewTemperatureChangeHandler(temperatureRepo)
+	// chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
+	// fermentationHandler := handlers.NewFermentationHandler(fermentationRepo)
+	// temperatureHandler := handlers.NewTemperatureChangeHandler(temperatureRepo)
 
 	requestLogger := middleware.NewRequestLogger(logger)
 	errorHandler := middleware.NewErrorHandler(logger)
@@ -65,20 +64,26 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	app := web.NewApp(logger, uiFS, requestLogger.Log, errorHandler.HandleError)
+	api := web.NewAPI("v1", logger, requestLogger.Log, errorHandler.HandleError)
+	api.Register("beers", beerHandler.Handle)
+	api.Register("chambers", chamberHandler.Handle)
 
-	app.Register("GET", "/api/v1/beers", beerHandler.GetAll)
-	app.Register("GET", "/api/v1/beers/:id", beerHandler.GetOne)
-	app.Register("POST", "/api/v1/beers", beerHandler.Post)
-	app.Register("DELETE", "/api/v1/beers", beerHandler.Delete)
-	app.Register("GET", "/api/v1/chambers", chamberHandler.GetAll)
-	app.Register("GET", "/api/v1/chambers/:mac", chamberHandler.GetOne)
-	app.Register("POST", "/api/v1/chambers", chamberHandler.Post)
-	app.Register("DELETE", "/api/v1/chambers", chamberHandler.Delete)
-	app.Register("GET", "/api/v1/fermentations", fermentationHandler.GetAll)
-	app.Register("GET", "/api/v1/fermentations/:id", fermentationHandler.GetOne)
-	app.Register("GET", "/api/v1/fermentations/:id/temperaturechanges", temperatureHandler.GetRange)
-	app.Register("POST", "/api/v1/fermentations/:id/temperaturechanges", temperatureHandler.Post)
+	//app := web.NewApp(logger, uiFS, requestLogger.Log, errorHandler.HandleError)
+
+	app := web.NewApp(api, uiFS)
+
+	// app.Register("GET", "/api/v1/beers", beerHandler.GetAll)
+	// app.Register("GET", "/api/v1/beers/:id", beerHandler.GetOne)
+	// app.Register("POST", "/api/v1/beers", beerHandler.Post)
+	// app.Register("DELETE", "/api/v1/beers", beerHandler.Delete)
+	// app.Register("GET", "/api/v1/chambers", chamberHandler.GetAll)
+	// app.Register("GET", "/api/v1/chambers/:mac", chamberHandler.GetOne)
+	// app.Register("POST", "/api/v1/chambers", chamberHandler.Post)
+	// app.Register("DELETE", "/api/v1/chambers", chamberHandler.Delete)
+	// app.Register("GET", "/api/v1/fermentations", fermentationHandler.GetAll)
+	// app.Register("GET", "/api/v1/fermentations/:id", fermentationHandler.GetOne)
+	// app.Register("GET", "/api/v1/fermentations/:id/temperaturechanges", temperatureHandler.GetRange)
+	// app.Register("POST", "/api/v1/fermentations/:id/temperaturechanges", temperatureHandler.Post)
 
 	server := http.Server{
 		Addr:    ":3000",

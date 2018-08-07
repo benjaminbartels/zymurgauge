@@ -23,8 +23,34 @@ func NewBeerHandler(repo *database.BeerRepo) *BeerHandler {
 	}
 }
 
-// GetAll handles a GET request for all Beers
-func (h *BeerHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request, p map[string]string) error {
+func (h *BeerHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	switch r.Method {
+	case web.GET:
+		return h.handleGet(ctx, w, r)
+	case web.POST:
+		return h.handlePost(ctx,w, r)
+	case web.DELETE:
+		return h.handleDelete(ctx,w, r)
+	default:
+		return web.ErrMethodNotAllowed
+	}
+}
+
+func (h *BeerHandler) handleGet(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var head string
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
+	if head == "" {
+		return h.handleGetAll(ctx, w)
+	} else {
+		if id, err := strconv.ParseUint(head, 10, 64); err != nil {
+			return err
+		} else {
+			return h.handleGetOne(ctx, w, id)
+		}
+	}
+}
+
+func (h *BeerHandler) handleGetAll(ctx context.Context, w http.ResponseWriter) error {
 	if beers, err := h.repo.GetAll(); err != nil {
 		return err
 	} else {
@@ -32,60 +58,42 @@ func (h *BeerHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http
 	}
 }
 
-// GetOne handles a GET request for a specific Beer whose ID matched the provided ID
-func (h *BeerHandler) GetOne(ctx context.Context, w http.ResponseWriter, r *http.Request, p map[string]string) error {
-	id := p["id"]
-	beerID, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return err //ToDo: error InvalidID
-	}
-
-	beer, err := h.repo.Get(beerID)
-
-	if err != nil {
+func (h *BeerHandler) handleGetOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
+	if beer, err := h.repo.Get(id); err != nil {
 		return err
 	} else if beer == nil {
-		err = web.ErrNotFound
-		return err
+		return web.ErrNotFound
+	} else {
+		return web.Respond(ctx, w, beer, http.StatusOK)
 	}
-
-	return web.Respond(ctx, w, beer, http.StatusOK)
-	//return nil
 }
 
-// Post handles the POST request to create or update a Beer
-func (h *BeerHandler) Post(ctx context.Context, w http.ResponseWriter, r *http.Request, p map[string]string) error {
+func (h *BeerHandler) handlePost(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	beer, err := parseBeer(r)
 	if err != nil {
 		return err
 	}
-
 	if err := h.repo.Save(&beer); err != nil {
 		return err
+	} else {
+		return web.Respond(ctx, w, beer, http.StatusOK)
 	}
-
-	return web.Respond(ctx, w, beer, http.StatusOK)
-	//return nil
-
 }
 
-// Delete handles the DELETE request to delete a Beer
-func (h *BeerHandler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request, p map[string]string) error {
-	id := p["id"]
-	beerID, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return err //ToDo: error InvalidID
+func (h *BeerHandler) handleDelete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if r.URL.Path == "" {
+		return web.ErrBadRequest
 	}
-
-	if err := h.repo.Delete(beerID); err != nil {
+	if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
 		return err
+	} else {
+		if err := h.repo.Delete(id); err != nil {
+			return err
+		}
 	}
-
-	return web.Respond(ctx, w, nil, http.StatusOK)
-	//return nil
+	return nil
 }
 
-// parseBeer decodes the specified Beer into JSON
 func parseBeer(r *http.Request) (internal.Beer, error) {
 	var beer internal.Beer
 	err := json.NewDecoder(r.Body).Decode(&beer)

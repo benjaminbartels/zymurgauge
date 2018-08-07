@@ -22,8 +22,8 @@ func NewRequestLogger(logger log.Logger) *RequestLogger {
 // Log is a MiddlewareFunc that logs out request details including app specific context values
 func (l *RequestLogger) Log(next web.Handler) web.Handler {
 
-	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request, p map[string]string) error {
-		err := next(ctx, w, r, p)
+	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+		err := next(ctx, w, r)
 
 		v := ctx.Value(web.CtxValuesKey).(*web.CtxValues)
 
