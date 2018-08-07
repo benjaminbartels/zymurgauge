@@ -1,6 +1,7 @@
-package mock
+package simulation
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
@@ -13,6 +14,7 @@ type Chamber struct {
 	beerThermometer         *Thermometer
 	chiller                 *Actuator
 	heater                  *Actuator
+	lastUpdate              time.Time
 	logger                  log.Logger
 	factor                  int
 	wallTemp                float64
@@ -35,7 +37,7 @@ type Chamber struct {
 }
 
 func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
-	chiller, heater *Actuator, factor int, logger log.Logger) *Chamber {
+	chiller, heater *Actuator, logger log.Logger) *Chamber {
 	c := &Chamber{
 		Thermostat:      thermostat,
 		beerThermometer: beerThermometer,
@@ -46,9 +48,13 @@ func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
 		beerTemp:        beerThermometer.currentTemp,
 		environmentTemp: 20.0,
 		heaterTemp:      20.0,
-		factor:          factor,
 		logger:          logger,
 	}
+
+	c.chiller.update = c.update
+	c.chiller.log = c.log
+	c.heater.update = c.update
+	c.heater.log = c.log
 
 	c.beerCapacity = 4.2 * 1.0 * 20       // heat capacity water * density of water * 20L volume (in kJ per kelvin).
 	c.airCapacity = 1.005 * 1.225 * 0.200 // heat capacity of dry air * density of air * 200L volume (in kJ per kelvin).
@@ -67,26 +73,12 @@ func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
 	c.heaterToBeer = 0.0 // ratio of heater transferred directly to beer instead of fridge air
 	c.heaterToAir = 1.0 - c.heaterToBeer
 
-	c.chiller.Chamber = c
-	c.heater.Chamber = c
-	c.beerThermometer.Chamber = c
-
 	return c
 }
 
-func (c *Chamber) update(onTime time.Duration, t ActuatorType) {
+func (c *Chamber) update() {
 
-	// fmt.Println("!!!!!! onTime", onTime)
-
-	factoredDuration := onTime * time.Duration(c.factor)
-
-	// fmt.Println("!!!!!! factoredDuration", factoredDuration)
-
-	ticks := int(factoredDuration.Seconds())
-
-	// fmt.Println("!!!!!! updating temp", ticks, "times")
-
-	for i := 0; i < ticks; i++ {
+	for i := 0; i < 600; i++ {
 
 		beerTempNew := c.beerTemp
 		airTempNew := c.airTemp
@@ -95,9 +87,9 @@ func (c *Chamber) update(onTime time.Duration, t ActuatorType) {
 
 		beerTempNew += (c.airTemp - c.beerTemp) * c.airBeerTransfer / c.beerCapacity
 
-		if t == Chiller {
+		if c.chiller.isOn {
 			wallTempNew -= c.coolerPower / c.wallCapacity
-		} else if t == Heater {
+		} else if c.heater.isOn {
 			heaterTempNew += c.heaterPower / c.heaterCapacity
 		}
 
@@ -122,6 +114,8 @@ func (c *Chamber) update(onTime time.Duration, t ActuatorType) {
 
 		c.beerThermometer.currentTemp = c.beerTemp
 
+		c.lastUpdate = time.Now()
+
 	}
 }
 
@@ -132,7 +126,6 @@ func (c *Chamber) log(s string) {
 }
 
 type Thermometer struct {
-	Chamber     *Chamber
 	currentTemp float64
 }
 
@@ -144,56 +137,25 @@ func NewThermometer(startingTemp float64) *Thermometer {
 }
 
 func (t *Thermometer) Read() (*float64, error) {
-
-	c := t.Chamber
-
-	if c.chiller.isOn {
-		elapsed := time.Now().Sub(c.chiller.startTime)
-		c.update(elapsed, Chiller)
-		c.chiller.startTime = time.Now()
-	}
-
-	if c.heater.isOn {
-		elapsed := time.Now().Sub(c.heater.startTime)
-		c.update(elapsed, Heater)
-		c.heater.startTime = time.Now()
-	}
-
 	return &t.currentTemp, nil
 }
 
 type Actuator struct {
-	Chamber      *Chamber
-	ActuatorType ActuatorType
-	isOn         bool
-	startTime    time.Time
+	Name   string
+	isOn   bool
+	update func()
+	log    func(s string)
 }
 
-type ActuatorType int
-
-const (
-	Chiller ActuatorType = 0
-	Heater  ActuatorType = 1
-)
-
 func (a *Actuator) On() error {
-
-	if !a.isOn {
-		a.isOn = true
-		a.startTime = time.Now()
-	}
+	a.log(fmt.Sprintf("%s On", a.Name))
+	a.isOn = true
+	a.update()
 	return nil
 }
 
 func (a *Actuator) Off() error {
-
-	if a.isOn {
-
-		elapsed := time.Now().Sub(a.startTime)
-
-		a.Chamber.update(elapsed, a.ActuatorType)
-
-		a.isOn = false
-	}
+	a.log(fmt.Sprintf("%s Off", a.Name))
+	a.isOn = false
 	return nil
 }

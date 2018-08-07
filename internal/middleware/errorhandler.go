@@ -10,14 +10,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ToDo: Make ErrorHandler a HandlerFunc itself
+
+// ErrorHandler provides a MiddlewareFunc that handles errors from handlers
 type ErrorHandler struct {
 	logger log.Logger
 }
 
+// NewErrorHandler creates a new ErrorHandler
 func NewErrorHandler(logger log.Logger) *ErrorHandler {
 	return &ErrorHandler{logger: logger}
 }
 
+// HandleError is a MiddlewareFunc that handles errors from handlers
 func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 
 	// Create the handler that will be attached in the middleware chain.
@@ -36,7 +41,9 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 				e.logger.Printf("ERROR : Panic Caught : %s\n", r)
 
 				// Respond with the error.
-				web.Error(ctx, w, errors.New("unhandled"))
+				if err := web.Error(ctx, w, errors.New("unhandled")); err != nil {
+					e.logger.Printf("ERROR : %s", errors.Wrap(err, "Could not send error to client")) // ToDo: Check this
+				}
 
 				// Print out the stack.
 				e.logger.Printf("ERROR : Stacktrace\n%s\n", debug.Stack())
@@ -55,9 +62,9 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 			e.logger.Printf("ERROR : %v\n", err)
 
 			// Respond with the error.
-			web.Error(ctx, w, err)
+			err = web.Error(ctx, w, err) // ToDo:  Make sure that returning err to caller is ok
 
-			return nil
+			return err
 		}
 
 		return nil

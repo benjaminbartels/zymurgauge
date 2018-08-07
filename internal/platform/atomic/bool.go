@@ -2,19 +2,19 @@ package atomic
 
 import "sync/atomic"
 
+// Bool is a atomic boolean value
 type Bool struct{ flag int32 }
 
+// Set sets the boolean
 func (b *Bool) Set(value bool) {
-	var i int32 = 0
+	var i int32
 	if value {
 		i = 1
 	}
-	atomic.StoreInt32(&(b.flag), int32(i))
+	atomic.StoreInt32(&(b.flag), i)
 }
 
+// Get returns the boolean
 func (b *Bool) Get() bool {
-	if atomic.LoadInt32(&(b.flag)) != 0 {
-		return true
-	}
-	return false
+	return atomic.LoadInt32(&(b.flag)) != 0
 }

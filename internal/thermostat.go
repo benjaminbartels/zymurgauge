@@ -3,7 +3,6 @@ package internal
 import (
 	"errors"
 	"math"
-	"sync"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
@@ -13,6 +12,11 @@ import (
 	"gobot.io/x/gobot/drivers/gpio"
 )
 
+// ToDo: Determine in Factored thermostat is needed.
+
+// Thermostat regulates the temperature of Chamber by monitoring the temperature that is read from a Thermometer and
+// switching on and off a heater and cooler Actuators.  It determines when to switching Actuators on and off by feeding
+// inputs into a PIDController and reading the outputs
 type Thermostat struct {
 	ThermometerID string `json:"thermometerId"`
 	ChillerPin    string `json:"chillerPin,omitempty"`
@@ -30,9 +34,9 @@ type Thermostat struct {
 	quit          chan bool
 	subs          map[string]func(s ThermostatStatus)
 	lastCheck     time.Time
-	mux           sync.Mutex
 }
 
+// NewThermostat creates a new Thermostat from the given PIDController, Thermometer and chiller/heater Actuators
 func NewThermostat(pidController *pidctrl.PIDController, thermometer Thermometer, chiller, heater Actuator,
 	options ...func(*Thermostat) error) (*Thermostat, error) {
 	t := &Thermostat{
@@ -58,6 +62,7 @@ func NewThermostat(pidController *pidctrl.PIDController, thermometer Thermometer
 	return t, nil
 }
 
+// Interval sets the interval in which the Thermostat checks the temperature.  Default is 10 minutes.
 func Interval(interval time.Duration) func(*Thermostat) error {
 	return func(t *Thermostat) error {
 		t.interval = interval
@@ -65,6 +70,8 @@ func Interval(interval time.Duration) func(*Thermostat) error {
 	}
 }
 
+// MinimumChill set the minimum duration in which the Thermostat will leave the Cooler Actuator On.  This is to prevent
+// excessive cycling.  Default is 1 minute.
 func MinimumChill(min time.Duration) func(*Thermostat) error {
 	return func(t *Thermostat) error {
 		t.minChill = min
@@ -72,6 +79,8 @@ func MinimumChill(min time.Duration) func(*Thermostat) error {
 	}
 }
 
+// MinimumHeat set the minimum duration in which the Thermostat will leave the Heater Actuator On.  This is to prevent
+// excessive cycling. Default is 1 minute.
 func MinimumHeat(min time.Duration) func(*Thermostat) error {
 	return func(t *Thermostat) error {
 		t.minHeat = min
@@ -79,12 +88,15 @@ func MinimumHeat(min time.Duration) func(*Thermostat) error {
 	}
 }
 
+// Logger sets the logger to be used.  If not set, nothing is logged.
 func Logger(logger log.Logger) func(*Thermostat) error {
 	return func(t *Thermostat) error {
 		t.logger = logger
 		return nil
 	}
 }
+
+// ToDo: Break up Thermostat into REST obtained Thermostat and fermmond Thermostat
 
 // SetLogger sets the logger
 func (t *Thermostat) SetLogger(logger log.Logger) {
@@ -113,7 +125,8 @@ func (t *Thermostat) InitActuators(w gpio.DigitalWriter) {
 	}
 }
 
-func (t *Thermostat) On() {
+// On turns the Thermostat on and allows to being monitoring
+func (t *Thermostat) On() { // ToDo: Refactor this
 	if !t.isOn.Get() {
 		go func() {
 			t.isOn.Set(true)
@@ -143,9 +156,9 @@ func (t *Thermostat) On() {
 						t.log(err.Error())
 					}
 					return
-				} else {
-					t.updateStatus(action, temperature, nil)
 				}
+
+				t.updateStatus(action, temperature, nil)
 
 				select {
 				case <-t.quit:
@@ -185,14 +198,17 @@ func (t *Thermostat) Set(temp float64) {
 	t.pidController.Set(temp)
 }
 
+// GetStatus return the current status of the Thermostat
 func (t *Thermostat) GetStatus() ThermostatStatus {
 	return t.status
 }
 
+// Subscribe allows a caller to subscribe to ThermostatStatus updates.
 func (t *Thermostat) Subscribe(key string, f func(s ThermostatStatus)) {
 	t.subs[key] = f
 }
 
+//
 func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.Duration) {
 
 	now := time.Now()

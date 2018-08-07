@@ -9,6 +9,8 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
+// ToDo: Make RequestLogger a HandlerFunc itself
+
 // RequestLogger provides a MiddlewareFunc that logs out request details
 type RequestLogger struct {
 	logger log.Logger

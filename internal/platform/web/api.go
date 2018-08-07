@@ -23,6 +23,7 @@ type CtxValues struct {
 	HasError   bool
 }
 
+// Handler extends the http.HandlerFunc buy adding context param and an error
 type Handler func(context.Context, http.ResponseWriter, *http.Request) error
 
 const (
@@ -34,6 +35,9 @@ const (
 	DELETE string = "DELETE"
 )
 
+// API implements http.HandlerFunc and represents a REST API.  It hosts a collection of routes (path and Handler pairs)
+// that are used to route a request url path to the appropriate handler. Handlers are wrapped in the provided
+// middleware.
 type API struct {
 	version     string
 	routes      map[string]http.HandlerFunc
@@ -41,6 +45,7 @@ type API struct {
 	middlewares []MiddlewareFunc
 }
 
+// NewAPI creates a new API withe the given version and middlewares
 func NewAPI(version string, logger log.Logger, mw ...MiddlewareFunc) *API {
 	return &API{
 		version:     version,
@@ -50,6 +55,7 @@ func NewAPI(version string, logger log.Logger, mw ...MiddlewareFunc) *API {
 	}
 }
 
+// ServeHTTP calls f(w, r).
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	handled := false
@@ -71,24 +77,14 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// handled := false
-	// for _, route := range a.routes {
-	// 	if strings.HasPrefix(r.URL.Path, route.Path+"/") {
-	// 		handled = true
-	// 		http.StripPrefix(route.Path+"/", route.Handler).ServeHTTP(w, r)
-	// 	} else if r.URL.Path == route.Path {
-	// 		handled = true
-	// 		http.StripPrefix(route.Path, route.Handler).ServeHTTP(w, r)
-	// 	}
-	// }
-
 	if !handled {
 		w.WriteHeader(http.StatusNotFound)
+		// ToDo: Wrap in middleware so 404 is logged out
 	}
 
 }
 
-// Register mounts the provided handler to the provided path
+// Register mounts the provided handler to the provided path creating a route
 func (a *API) Register(path string, handler Handler) {
 
 	// Wrap handler with middlewares

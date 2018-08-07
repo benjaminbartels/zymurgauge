@@ -17,12 +17,12 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 )
 
-// ToDo: Remove global vars
+// ToDo: Refactor
 var (
 	logger *log.Logger
 	//basePath string
-	chamber   *internal.Chamber
-	status    *internal.ThermostatStatus
+	chamber *internal.Chamber
+	//status    *internal.ThermostatStatus
 	zymClient *client.Client
 	last      = 0.0
 )
@@ -176,7 +176,6 @@ func processChamber(c *internal.Chamber) error {
 
 	return nil
 }
-
 
 // getMacAddress returns the first Mac Address of the first network interface found
 func getMacAddress() (string, error) {

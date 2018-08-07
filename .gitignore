@@ -24,6 +24,7 @@
 
 # BoltDB Databases
 cmd/zymsrvd/zymurgaugedb
+cmd/zymsrvd/zymurgaugedb.lock
 
 # Other junk
 .vscode

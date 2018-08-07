@@ -37,8 +37,10 @@ var (
 	// ErrNotFound is returned when an entity is not found
 	ErrNotFound = errors.New("not found")
 	// ErrInternal is returned when an internal error has occurred
-	ErrInternal         = errors.New("internal error")
-	ErrBadRequest       = errors.New("bad request")
+	ErrInternal = errors.New("internal error")
+	// ErrBadRequest is returned when the request is invalid
+	ErrBadRequest = errors.New("bad request")
+	// ErrMethodNotAllowed is returned when the request method (GET, POST, etc.) is not allowed
 	ErrMethodNotAllowed = errors.New("method not allowed")
 )
 

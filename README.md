@@ -12,24 +12,10 @@ Homebrewing automation system
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/benjaminbartels/zymurgauge)](https://goreportcard.com/report/github.com/benjaminbartels/zymurgauge)
 
-## Project Structure
+## ToDo
 
-* cmd
-  * fermmond - *connects to http server*
-    * http - client (counter part to handler in server)
-  * zymsrvd - *invokes http servers*
-    * handlers
-* docker
-* internal
-  * *model hierarchy*
-  * middleware
-    * logger
-    * metrics
-    * auth
-  * platform - kit
-    * log - logger interface
-    * bolt - boltdb interaction layer
-    * web
-      * app.go - *contains App struct w/ wrapped handle func*
-      * middleware.go - *wrapMiddleware func*
-      * response.go - *response func, errors, etc*
+- Add linting to TravisCI
+  
+- Add optional config Funcs to constructors
+
+- Review error handling and separation (https://www.ardanlabs.com/blog/2017/02/package-oriented-design.html)

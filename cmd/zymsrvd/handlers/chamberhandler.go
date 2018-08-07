@@ -30,41 +30,42 @@ func NewChamberHandler(repo *database.ChamberRepo, pubSub *pubsub.PubSub, logger
 	}
 }
 
+// Handle handles the incoming http request
 func (h *ChamberHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	switch r.Method {
 	case web.GET:
-		return h.handleGet(ctx, w, r)
+		return h.get(ctx, w, r)
 	case web.POST:
-		return h.handlePost(ctx, w, r)
+		return h.post(ctx, w, r)
 	case web.DELETE:
-		return h.handleDelete(ctx, w, r)
+		return h.delete(ctx, w, r)
 	default:
 		return web.ErrMethodNotAllowed
 	}
 }
 
-func (h *ChamberHandler) handleGet(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *ChamberHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var head string
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "" {
-		return h.handleGetAll(ctx, w)
-	} else {
-		mac, err := url.QueryUnescape(head)
-		if err != nil {
-			return web.ErrBadRequest
-		}
-		head, r.URL.Path = web.ShiftPath(r.URL.Path)
-		if head == "events" {
-			return h.handleGetEvents(ctx, w, mac)
-		} else if head == "" {
-			return h.handleGetOne(ctx, w, mac)
-		} else {
-			return web.ErrBadRequest
-		}
+		return h.getAll(ctx, w)
 	}
+	mac, err := url.QueryUnescape(head)
+	if err != nil {
+		return web.ErrBadRequest
+	}
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
+	if head == "events" {
+		return h.getEvents(ctx, w, mac)
+	} else if head == "" {
+		return h.getOne(ctx, w, mac)
+	} else {
+		return web.ErrBadRequest
+	}
+
 }
 
-func (h *ChamberHandler) handleGetOne(ctx context.Context, w http.ResponseWriter, mac string) error {
+func (h *ChamberHandler) getOne(ctx context.Context, w http.ResponseWriter, mac string) error {
 	if chamber, err := h.repo.Get(mac); err != nil {
 		return err
 	} else if chamber == nil {
@@ -74,16 +75,16 @@ func (h *ChamberHandler) handleGetOne(ctx context.Context, w http.ResponseWriter
 	}
 }
 
-func (h *ChamberHandler) handleGetAll(ctx context.Context, w http.ResponseWriter) error {
-	if chambers, err := h.repo.GetAll(); err != nil {
+func (h *ChamberHandler) getAll(ctx context.Context, w http.ResponseWriter) error {
+	chambers, err := h.repo.GetAll()
+	if err != nil {
 		return err
-	} else {
-		return web.Respond(ctx, w, chambers, http.StatusOK)
 	}
+	return web.Respond(ctx, w, chambers, http.StatusOK)
 }
 
-func (h *ChamberHandler) handleGetEvents(ctx context.Context, w http.ResponseWriter, mac string) error {
-	f, ok := w.(http.Flusher)
+func (h *ChamberHandler) getEvents(ctx context.Context, w http.ResponseWriter, mac string) error {
+	f, ok := w.(http.Flusher) //ToDo: comment this mess
 	if !ok {
 		return web.ErrInternal
 	}
@@ -104,14 +105,16 @@ func (h *ChamberHandler) handleGetEvents(ctx context.Context, w http.ResponseWri
 			break
 		}
 		msg := fmt.Sprintf("data: %s\n", c)
-		fmt.Fprint(w, msg)
+		if _, err := fmt.Fprint(w, msg); err != nil {
+			return err // ToDo: Test this
+		}
 		h.logger.Printf("Sending: %s\n", msg)
 		f.Flush()
 	}
 	return nil
 }
 
-func (h *ChamberHandler) handlePost(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *ChamberHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	chamber, err := parseChamber(r)
 	if err != nil {
 		return err
@@ -124,24 +127,24 @@ func (h *ChamberHandler) handlePost(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 	h.pubSub.Send(chamber.MacAddress, b)
-	if _, err = w.Write(b); err != nil {
-		return err
-	}
-	return nil
+	_, err = w.Write(b) 
+	return err
 }
 
-func (h *ChamberHandler) handleDelete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *ChamberHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	if r.URL.Path == "" {
 		return web.ErrBadRequest
 	}
 
-	if mac, err := url.QueryUnescape(r.URL.Path); err != nil {
+	mac, err := url.QueryUnescape(r.URL.Path)
+	if err != nil {
 		return err
-	} else {
-		if err := h.repo.Delete(mac); err != nil {
-			return err
-		}
 	}
+
+	if err := h.repo.Delete(mac); err != nil {
+		return err
+	}
+
 	return nil
 }
 

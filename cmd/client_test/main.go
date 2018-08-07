@@ -15,6 +15,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 )
 
+// ToDo: make this a command line tool
 var logger *log.Logger
 
 func main() {
@@ -54,16 +55,16 @@ func updateChamber(c *client.ChamberResource) error {
 
 	logger.Println("Saving Chamber...")
 
-	// mac, err := getMacAddress()
-	// if err != nil {
-	// 	panic(err)
-	// }
+	mac, err := getMacAddress()
+	if err != nil {
+		panic(err)
+	}
 
-	mac := "b8:27:eb:8e:d1:75"
+	//mac := "b8:27:eb:8e:d1:75" //ToDo:  make parameter
 
 	var currentFermentationID uint64 = 7
 
-	err := c.Save(&internal.Chamber{
+	err = c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
 		Thermostat: &internal.Thermostat{

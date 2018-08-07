@@ -23,42 +23,42 @@ func NewBeerHandler(repo *database.BeerRepo) *BeerHandler {
 	}
 }
 
+// Handle handles the incoming http request
 func (h *BeerHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	switch r.Method {
 	case web.GET:
-		return h.handleGet(ctx, w, r)
+		return h.get(ctx, w, r)
 	case web.POST:
-		return h.handlePost(ctx,w, r)
+		return h.post(ctx, w, r)
 	case web.DELETE:
-		return h.handleDelete(ctx,w, r)
+		return h.delete(ctx, w, r)
 	default:
 		return web.ErrMethodNotAllowed
 	}
 }
 
-func (h *BeerHandler) handleGet(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *BeerHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var head string
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "" {
-		return h.handleGetAll(ctx, w)
-	} else {
-		if id, err := strconv.ParseUint(head, 10, 64); err != nil {
-			return err
-		} else {
-			return h.handleGetOne(ctx, w, id)
-		}
+		return h.getAll(ctx, w)
 	}
-}
-
-func (h *BeerHandler) handleGetAll(ctx context.Context, w http.ResponseWriter) error {
-	if beers, err := h.repo.GetAll(); err != nil {
+	id, err := strconv.ParseUint(head, 10, 64)
+	if err != nil {
 		return err
-	} else {
-		return web.Respond(ctx, w, beers, http.StatusOK)
 	}
+	return h.getOne(ctx, w, id)
 }
 
-func (h *BeerHandler) handleGetOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
+func (h *BeerHandler) getAll(ctx context.Context, w http.ResponseWriter) error {
+	beers, err := h.repo.GetAll()
+	if err != nil {
+		return err
+	}
+	return web.Respond(ctx, w, beers, http.StatusOK)
+}
+
+func (h *BeerHandler) getOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
 	if beer, err := h.repo.Get(id); err != nil {
 		return err
 	} else if beer == nil {
@@ -68,28 +68,28 @@ func (h *BeerHandler) handleGetOne(ctx context.Context, w http.ResponseWriter, i
 	}
 }
 
-func (h *BeerHandler) handlePost(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *BeerHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	beer, err := parseBeer(r)
 	if err != nil {
 		return err
 	}
-	if err := h.repo.Save(&beer); err != nil {
+	err = h.repo.Save(&beer)
+	if err != nil {
 		return err
-	} else {
-		return web.Respond(ctx, w, beer, http.StatusOK)
 	}
+	return web.Respond(ctx, w, beer, http.StatusOK)
 }
 
-func (h *BeerHandler) handleDelete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *BeerHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	if r.URL.Path == "" {
 		return web.ErrBadRequest
 	}
-	if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
+	id, err := strconv.ParseUint(r.URL.Path, 10, 64)
+	if err != nil {
 		return err
-	} else {
-		if err := h.repo.Delete(id); err != nil {
-			return err
-		}
+	}
+	if err := h.repo.Delete(id); err != nil {
+		return err
 	}
 	return nil
 }

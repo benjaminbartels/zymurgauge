@@ -27,55 +27,55 @@ func NewFermentationHandler(fermRepo *database.FermentationRepo,
 	}
 }
 
+// Handle handles the incoming http request
 func (h *FermentationHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	switch r.Method {
 	case web.GET:
-		return h.handleGet(ctx, w, r)
+		return h.get(ctx, w, r)
 	case web.POST:
-		return h.handlePost(ctx, w, r)
+		return h.post(ctx, w, r)
 	case web.DELETE:
-		return h.handleDelete(ctx, w, r)
+		return h.delete(ctx, w, r)
 	default:
 		return web.ErrMethodNotAllowed
 	}
 }
 
-func (h *FermentationHandler) handleGet(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *FermentationHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var head string
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "" {
-		return h.handleGetAll(ctx, w)
-	} else {
-		if id, err := strconv.ParseUint(head, 10, 64); err != nil {
-			return web.ErrBadRequest
-		} else {
-			head, r.URL.Path = web.ShiftPath(r.URL.Path)
-			if head == "temperaturechanges" {
-				start := time.Time{}
-				end := time.Unix(1<<63-62135596801, 999999999).UTC()
-				if startParam, ok := r.URL.Query()["start"]; ok {
-					start, err = time.Parse(time.RFC3339, startParam[0])
-					if err != nil {
-						return err
-					}
-				}
-				if endParam, ok := r.URL.Query()["end"]; ok {
-					end, err = time.Parse(time.RFC3339, endParam[0])
-					if err != nil {
-						return err
-					}
-				}
-				return h.handleGetTemperatureChanges(ctx, w, id, start, end)
-			} else if head == "" {
-				return h.handleGetOne(ctx, w, id)
-			} else {
-				return web.ErrBadRequest
+		return h.getAll(ctx, w)
+	}
+	id, err := strconv.ParseUint(head, 10, 64)
+	if err != nil {
+		return web.ErrBadRequest
+	}
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
+	if head == "temperaturechanges" {
+		start := time.Time{}
+		end := time.Unix(1<<63-62135596801, 999999999).UTC()
+		if startParam, ok := r.URL.Query()["start"]; ok {
+			start, err = time.Parse(time.RFC3339, startParam[0])
+			if err != nil {
+				return err
 			}
 		}
+		if endParam, ok := r.URL.Query()["end"]; ok {
+			end, err = time.Parse(time.RFC3339, endParam[0])
+			if err != nil {
+				return err
+			}
+		}
+		return h.getTemperatureChanges(ctx, w, id, start, end)
+	} else if head == "" {
+		return h.getOne(ctx, w, id)
+	} else {
+		return web.ErrBadRequest
 	}
 }
 
-func (h *FermentationHandler) handleGetOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
+func (h *FermentationHandler) getOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
 	if fermentation, err := h.fermRepo.Get(id); err != nil {
 		return err
 	} else if fermentation == nil {
@@ -85,83 +85,79 @@ func (h *FermentationHandler) handleGetOne(ctx context.Context, w http.ResponseW
 	}
 }
 
-func (h *FermentationHandler) handleGetAll(ctx context.Context, w http.ResponseWriter) error {
-	if fermentations, err := h.fermRepo.GetAll(); err != nil {
+func (h *FermentationHandler) getAll(ctx context.Context, w http.ResponseWriter) error {
+	fermentations, err := h.fermRepo.GetAll()
+	if err != nil {
 		return err
-	} else {
-		return web.Respond(ctx, w, fermentations, http.StatusOK)
 	}
+	return web.Respond(ctx, w, fermentations, http.StatusOK)
 }
 
-func (h *FermentationHandler) handleGetTemperatureChanges(ctx context.Context, w http.ResponseWriter, id uint64,
+func (h *FermentationHandler) getTemperatureChanges(ctx context.Context, w http.ResponseWriter, id uint64,
 	start, end time.Time) error {
-	if changes, err := h.changeRepo.GetRangeByFermentationID(id, start, end); err != nil {
+	changes, err := h.changeRepo.GetRangeByFermentationID(id, start, end)
+	if err != nil {
 		return err
-	} else {
-		return web.Respond(ctx, w, changes, http.StatusOK)
 	}
+	return web.Respond(ctx, w, changes, http.StatusOK)
 }
 
-func (h *FermentationHandler) handlePost(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *FermentationHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var head string
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "" {
-		return h.handlePostFermentation(ctx, w, r)
-	} else {
-		if _, err := strconv.ParseUint(head, 10, 64); err != nil {
-			return web.ErrBadRequest
-		} else {
-			head, r.URL.Path = web.ShiftPath(r.URL.Path)
-			if head == "temperaturechanges" {
-				return h.handlePostTemperatureChange(ctx, w, r)
-			} else {
-				return web.ErrBadRequest
-			}
-		}
+		return h.postFermentation(ctx, w, r)
 	}
+	_, err := strconv.ParseUint(head, 10, 64)
+	if err != nil {
+		return web.ErrBadRequest
+	}
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
+	if head == "temperaturechanges" {
+		return h.postTemperatureChange(ctx, w, r)
+	}
+	return web.ErrBadRequest
 }
 
-func (h *FermentationHandler) handlePostFermentation(ctx context.Context, w http.ResponseWriter,
+func (h *FermentationHandler) postFermentation(ctx context.Context, w http.ResponseWriter,
 	r *http.Request) error {
 	fermentation, err := parseFermentation(r)
 	if err != nil {
 		return err
 	}
-	if err := h.fermRepo.Save(&fermentation); err != nil {
+	err = h.fermRepo.Save(&fermentation)
+	if err != nil {
 		return err
-	} else {
-		return web.Respond(ctx, w, fermentation, http.StatusOK)
 	}
+	return web.Respond(ctx, w, fermentation, http.StatusOK)
 }
 
-func (h *FermentationHandler) handlePostTemperatureChange(ctx context.Context, w http.ResponseWriter,
+func (h *FermentationHandler) postTemperatureChange(ctx context.Context, w http.ResponseWriter,
 	r *http.Request) error {
 	change, err := parseTemperatureChange(r)
 	if err != nil {
 		return err
 	}
-	if err := h.changeRepo.Save(&change); err != nil {
+	err = h.changeRepo.Save(&change)
+	if err != nil {
 		return err
-	} else {
-		return web.Respond(ctx, w, change, http.StatusOK)
 	}
+	return web.Respond(ctx, w, change, http.StatusOK)
 }
 
-func (h *FermentationHandler) handleDelete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *FermentationHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	if r.URL.Path == "" {
 		return web.ErrBadRequest
 	}
 
-	if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
+	id, err := strconv.ParseUint(r.URL.Path, 10, 64)
+	if err != nil {
 		return web.ErrBadRequest
-	} else {
-		if err := h.fermRepo.Delete(id); err != nil {
-			return err
-		}
-
-		// ToDo: delete temperaturechanges
-
 	}
+	if err := h.fermRepo.Delete(id); err != nil {
+		return err
+	}
+	// ToDo: delete temperaturechanges
 	return nil
 }
 
