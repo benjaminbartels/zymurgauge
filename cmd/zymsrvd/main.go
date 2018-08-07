@@ -17,6 +17,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/rakyll/statik/fs"
 
+	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
@@ -46,15 +47,14 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	temperatureRepo, err := database.NewTemperatureChangeRepo(db)
+	temperatureChangeRepo, err := database.NewTemperatureChangeRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	beerHandler := handlers.NewBeerHandler(beerRepo)
 	chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
-	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo)
-	temperatureHandler := handlers.NewTemperatureChangeHandler(temperatureRepo)
+	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo, temperatureChangeRepo)
 
 	requestLogger := middleware.NewRequestLogger(logger)
 	errorHandler := middleware.NewErrorHandler(logger)
@@ -67,6 +67,7 @@ func main() {
 	api := web.NewAPI("v1", logger, requestLogger.Log, errorHandler.HandleError)
 	api.Register("beers", beerHandler.Handle)
 	api.Register("chambers", chamberHandler.Handle)
+	api.Register("fermentations", fermentationHandler.Handle)
 
 	//app := web.NewApp(logger, uiFS, requestLogger.Log, errorHandler.HandleError)
 
