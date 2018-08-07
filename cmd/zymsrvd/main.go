@@ -36,25 +36,25 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	// chamberRepo, err := database.NewChamberRepo(db)
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
+	chamberRepo, err := database.NewChamberRepo(db)
+	if err != nil {
+		logger.Fatal(err)
+	}
 
-	// fermentationRepo, err := database.NewFermentationRepo(db)
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
+	fermentationRepo, err := database.NewFermentationRepo(db)
+	if err != nil {
+		logger.Fatal(err)
+	}
 
-	// temperatureRepo, err := database.NewTemperatureChangeRepo(db)
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
+	temperatureRepo, err := database.NewTemperatureChangeRepo(db)
+	if err != nil {
+		logger.Fatal(err)
+	}
 
 	beerHandler := handlers.NewBeerHandler(beerRepo)
-	// chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
-	// fermentationHandler := handlers.NewFermentationHandler(fermentationRepo)
-	// temperatureHandler := handlers.NewTemperatureChangeHandler(temperatureRepo)
+	chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
+	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo)
+	temperatureHandler := handlers.NewTemperatureChangeHandler(temperatureRepo)
 
 	requestLogger := middleware.NewRequestLogger(logger)
 	errorHandler := middleware.NewErrorHandler(logger)
