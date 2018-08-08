@@ -66,7 +66,7 @@ func (r *FermentationResource) Save(f *internal.Fermentation) error {
 	defer safeclose.Close(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&f); err != nil {
-		return errors.Wrapf(err, "Could not decode Fermentation %s", f.ID)
+		return errors.Wrapf(err, "Could not decode Fermentation %d", f.ID)
 	}
 
 	return nil
@@ -89,7 +89,7 @@ func (r *FermentationResource) SaveTemperatureChange(t *internal.TemperatureChan
 	defer safeclose.Close(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&t); err != nil {
-		return errors.Wrapf(err, "Could not decode TemperatureChange %s", t.ID)
+		return errors.Wrapf(err, "Could not decode TemperatureChange %d", t.ID)
 	}
 
 	return nil

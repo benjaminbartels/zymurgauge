@@ -64,7 +64,7 @@ func (r *BeerResource) Save(b *internal.Beer) error {
 	defer safeclose.Close(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&b); err != nil {
-		return errors.Wrapf(err, "Could not decode Beer %s", b.ID)
+		return errors.Wrapf(err, "Could not decode Beer %d", b.ID)
 	}
 
 	return nil
