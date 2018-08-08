@@ -146,11 +146,7 @@ type PinIn interface {
 	// In setups a pin as an input.
 	//
 	// If WaitForEdge() is planned to be called, make sure to use one of the Edge
-<<<<<<< HEAD
 	// value. Otherwise, use None to not generated unneeded hardware interrupts.
-=======
-	// value. Otherwise, use NoEdge to not generated unneeded hardware interrupts.
->>>>>>> parent of 6f82aa8... use go mod, delete vendor
 	//
 	// Calling In() will try to empty the accumulated edges but it cannot be 100%
 	// reliable due to the OS (linux) and its driver. It is possible that on a
@@ -169,11 +165,7 @@ type PinIn interface {
 	// occurred since the last call.
 	//
 	// Only waits for the kind of edge as specified in a previous In() call.
-<<<<<<< HEAD
 	// Behavior is undefined if In() with a value other than None wasn't called
-=======
-	// Behavior is undefined if In() with a value other than NoEdge wasn't called
->>>>>>> parent of 6f82aa8... use go mod, delete vendor
 	// before.
 	//
 	// Returns true if an edge was detected during or before this call. Return

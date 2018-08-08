@@ -48,11 +48,7 @@ func main() {
 	// We can use the Contains helpers to check if an error contains
 	// another error. It is safe to do this with a nil error, or with
 	// an error that doesn't even use the errwrap package.
-<<<<<<< HEAD
 	if errwrap.Contains(err, "does not exist") {
-=======
-	if errwrap.Contains(err, ErrNotExist) {
->>>>>>> parent of 6f82aa8... use go mod, delete vendor
 		// Do something
 	}
 	if errwrap.ContainsType(err, new(os.PathError)) {
