@@ -1327,6 +1327,10 @@ func Getpgrp() (pid int) {
 //sys	read(fd int, p []byte) (n int, err error)
 //sys	Removexattr(path string, attr string) (err error)
 //sys	Renameat(olddirfd int, oldpath string, newdirfd int, newpath string) (err error)
+<<<<<<< HEAD
+=======
+//sys	Renameat2(olddirfd int, oldpath string, newdirfd int, newpath string, flags uint) (err error)
+>>>>>>> parent of 6f82aa8... use go mod, delete vendor
 //sys	RequestKey(keyType string, description string, callback string, destRingid int) (id int, err error)
 //sys	Setdomainname(p []byte) (err error)
 //sys	Sethostname(p []byte) (err error)

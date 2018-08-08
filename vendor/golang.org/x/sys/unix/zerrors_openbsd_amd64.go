@@ -472,6 +472,10 @@ const (
 	F_GETLK                           = 0x7
 	F_GETOWN                          = 0x5
 	F_ISATTY                          = 0xb
+<<<<<<< HEAD
+=======
+	F_OK                              = 0x0
+>>>>>>> parent of 6f82aa8... use go mod, delete vendor
 	F_RDLCK                           = 0x1
 	F_SETFD                           = 0x2
 	F_SETFL                           = 0x4

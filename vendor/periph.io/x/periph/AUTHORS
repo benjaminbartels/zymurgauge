@@ -8,5 +8,9 @@ Fractal Industries, Inc
 Google Inc.
 Matt Aimonetti <mattaimonetti@gmail.com>
 Max Ekman <max@looplab.se>
+<<<<<<< HEAD
+=======
+Rifiniti, Inc
+>>>>>>> parent of 6f82aa8... use go mod, delete vendor
 Stephan Sperber
 Thorsten von Eicken <tve@voneicken.com>

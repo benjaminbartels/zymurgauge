@@ -31,9 +31,16 @@ import (
 
 func main() {
     host.Init()
+<<<<<<< HEAD
     for l := gpio.Low; ; l = !l {
         rpi.P1_33.Out(l)
         time.Sleep(500 * time.Millisecond)
+=======
+    t := time.NewTicker(500 * time.Millisecond)
+    for l := gpio.Low; ; l = !l {
+        rpi.P1_33.Out(l)
+        <-t.C
+>>>>>>> parent of 6f82aa8... use go mod, delete vendor
     }
 }
 ~~~

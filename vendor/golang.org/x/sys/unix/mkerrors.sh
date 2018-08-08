@@ -175,6 +175,10 @@ struct ltchars {
 #include <linux/magic.h>
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netlink.h>
+<<<<<<< HEAD
+=======
+#include <linux/net_namespace.h>
+>>>>>>> parent of 6f82aa8... use go mod, delete vendor
 #include <linux/perf_event.h>
 #include <linux/random.h>
 #include <linux/reboot.h>
@@ -260,6 +264,10 @@ includes_OpenBSD='
 #include <sys/sysctl.h>
 #include <sys/termios.h>
 #include <sys/ttycom.h>
+<<<<<<< HEAD
+=======
+#include <sys/unistd.h>
+>>>>>>> parent of 6f82aa8... use go mod, delete vendor
 #include <sys/wait.h>
 #include <net/bpf.h>
 #include <net/if.h>
@@ -405,7 +413,11 @@ ccflags="$@"
 		$2 ~ /^LINUX_REBOOT_CMD_/ ||
 		$2 ~ /^LINUX_REBOOT_MAGIC[12]$/ ||
 		$2 !~ "NLA_TYPE_MASK" &&
+<<<<<<< HEAD
 		$2 ~ /^(NETLINK|NLM|NLMSG|NLA|IFA|IFAN|RT|RTC|RTCF|RTN|RTPROT|RTNH|ARPHRD|ETH_P)_/ ||
+=======
+		$2 ~ /^(NETLINK|NLM|NLMSG|NLA|IFA|IFAN|RT|RTC|RTCF|RTN|RTPROT|RTNH|ARPHRD|ETH_P|NETNSA)_/ ||
+>>>>>>> parent of 6f82aa8... use go mod, delete vendor
 		$2 ~ /^SIOC/ ||
 		$2 ~ /^TIOC/ ||
 		$2 ~ /^TCGET/ ||
@@ -439,6 +451,10 @@ ccflags="$@"
 		$2 ~ /^CGROUPSTATS_/ ||
 		$2 ~ /^GENL_/ ||
 		$2 ~ /^STATX_/ ||
+<<<<<<< HEAD
+=======
+		$2 ~ /^RENAME/ ||
+>>>>>>> parent of 6f82aa8... use go mod, delete vendor
 		$2 ~ /^UTIME_/ ||
 		$2 ~ /^XATTR_(CREATE|REPLACE|NO(DEFAULT|FOLLOW|SECURITY)|SHOWCOMPRESSION)/ ||
 		$2 ~ /^ATTR_(BIT_MAP_COUNT|(CMN|VOL|FILE)_)/ ||
