@@ -11,3 +11,11 @@ Homebrewing automation system
 [![Issue Count](https://codeclimate.com/github/benjaminbartels/zymurgauge/badges/issue_count.svg)](https://codeclimate.com/github/benjaminbartels/zymurgauge)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/benjaminbartels/zymurgauge)](https://goreportcard.com/report/github.com/benjaminbartels/zymurgauge)
+
+## ToDo
+
+- Add linting to TravisCI
+  
+- Add optional config Funcs to constructors
+
+- Review error handling and separation (https://www.ardanlabs.com/blog/2017/02/package-oriented-design.html)

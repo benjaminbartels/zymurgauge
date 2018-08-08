@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,14 +9,13 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
 // ChamberHandler is the http handler for API calls to manage Chambers
 type ChamberHandler struct {
-	app.Handler
 	repo   *database.ChamberRepo
 	pubSub *pubsub.PubSub
 	logger log.Logger
@@ -24,71 +24,69 @@ type ChamberHandler struct {
 // NewChamberHandler instantiates a ChamberHandler
 func NewChamberHandler(repo *database.ChamberRepo, pubSub *pubsub.PubSub, logger log.Logger) *ChamberHandler {
 	return &ChamberHandler{
-		Handler: app.Handler{Logger: logger},
-		repo:    repo,
-		pubSub:  pubSub,
-		logger:  logger,
+		repo:   repo,
+		pubSub: pubSub,
+		logger: logger,
 	}
 }
 
-// ServeHTTP calls f(w, r).
-func (h *ChamberHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// Handle handles the incoming http request
+func (h *ChamberHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	switch r.Method {
-	case app.GET:
-		h.handleGet(w, r)
-	case app.POST:
-		h.handlePost(w, r)
-	case app.DELETE:
-		h.handleDelete(w, r)
+	case web.GET:
+		return h.get(ctx, w, r)
+	case web.POST:
+		return h.post(ctx, w, r)
+	case web.DELETE:
+		return h.delete(ctx, w, r)
 	default:
-		h.HandleError(w, app.ErrNotFound)
+		return web.ErrMethodNotAllowed
 	}
 }
 
-func (h *ChamberHandler) handleGet(w http.ResponseWriter, r *http.Request) {
+func (h *ChamberHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var head string
-	head, r.URL.Path = h.ShiftPath(r.URL.Path)
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "" {
-		h.handleGetAll(w)
-	} else {
-		mac, err := url.QueryUnescape(head)
-		if err != nil {
-			h.HandleError(w, app.ErrBadRequest)
-		}
-		head, r.URL.Path = h.ShiftPath(r.URL.Path)
-		if head == "events" {
-			h.handleGetEvents(w, mac)
-		} else if head == "" {
-			h.handleGetOne(w, mac)
-		} else {
-			h.HandleError(w, app.ErrBadRequest)
-		}
+		return h.getAll(ctx, w)
 	}
+	mac, err := url.QueryUnescape(head)
+	if err != nil {
+		return web.ErrBadRequest
+	}
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
+	if head == "events" {
+		return h.getEvents(ctx, w, mac)
+	} else if head == "" {
+		return h.getOne(ctx, w, mac)
+	} else {
+		return web.ErrBadRequest
+	}
+
 }
 
-func (h *ChamberHandler) handleGetOne(w http.ResponseWriter, mac string) {
+func (h *ChamberHandler) getOne(ctx context.Context, w http.ResponseWriter, mac string) error {
 	if chamber, err := h.repo.Get(mac); err != nil {
-		h.HandleError(w, err)
+		return err
 	} else if chamber == nil {
-		h.HandleError(w, app.ErrNotFound)
+		return web.ErrNotFound
 	} else {
-		h.Encode(w, &chamber)
+		return web.Respond(ctx, w, chamber, http.StatusOK)
 	}
 }
 
-func (h *ChamberHandler) handleGetAll(w http.ResponseWriter) {
-	if chambers, err := h.repo.GetAll(); err != nil {
-		h.HandleError(w, err)
-	} else {
-		h.Encode(w, chambers)
+func (h *ChamberHandler) getAll(ctx context.Context, w http.ResponseWriter) error {
+	chambers, err := h.repo.GetAll()
+	if err != nil {
+		return err
 	}
+	return web.Respond(ctx, w, chambers, http.StatusOK)
 }
 
-func (h *ChamberHandler) handleGetEvents(w http.ResponseWriter, mac string) {
-	f, ok := w.(http.Flusher)
+func (h *ChamberHandler) getEvents(ctx context.Context, w http.ResponseWriter, mac string) error {
+	f, ok := w.(http.Flusher) //ToDo: comment this mess
 	if !ok {
-		h.HandleError(w, app.ErrInternal)
-		return
+		return web.ErrInternal
 	}
 	ch := h.pubSub.Subscribe(mac)
 	h.logger.Printf("Added client [%s]\n", mac)
@@ -107,46 +105,47 @@ func (h *ChamberHandler) handleGetEvents(w http.ResponseWriter, mac string) {
 			break
 		}
 		msg := fmt.Sprintf("data: %s\n", c)
-		fmt.Fprint(w, msg)
+		if _, err := fmt.Fprint(w, msg); err != nil {
+			return err // ToDo: Test this
+		}
 		h.logger.Printf("Sending: %s\n", msg)
 		f.Flush()
 	}
+	return nil
 }
 
-func (h *ChamberHandler) handlePost(w http.ResponseWriter, r *http.Request) {
+func (h *ChamberHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	chamber, err := parseChamber(r)
 	if err != nil {
-		h.HandleError(w, err)
-		return
+		return err
 	}
 	if err = h.repo.Save(&chamber); err != nil {
-		h.HandleError(w, err)
-		return
+		return err
 	}
 	b, err := json.Marshal(chamber)
 	if err != nil {
-		h.HandleError(w, err)
-		return
+		return err
 	}
 	h.pubSub.Send(chamber.MacAddress, b)
-	if _, err = w.Write(b); err != nil {
-		h.HandleError(w, err)
-		return
-	}
+	_, err = w.Write(b) 
+	return err
 }
 
-func (h *ChamberHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "" {
-		if mac, err := url.QueryUnescape(r.URL.Path); err != nil {
-			h.HandleError(w, app.ErrBadRequest)
-		} else {
-			if err := h.repo.Delete(mac); err != nil {
-				h.HandleError(w, err)
-			}
-		}
-		return
+func (h *ChamberHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if r.URL.Path == "" {
+		return web.ErrBadRequest
 	}
-	h.HandleError(w, app.ErrBadRequest)
+
+	mac, err := url.QueryUnescape(r.URL.Path)
+	if err != nil {
+		return err
+	}
+
+	if err := h.repo.Delete(mac); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func parseChamber(r *http.Request) (internal.Chamber, error) {

@@ -14,12 +14,12 @@ import (
 	_ "github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/statik"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/boltdb/bolt"
 	"github.com/rakyll/statik/fs"
-	"github.com/rs/cors"
+
+	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
 func main() {
@@ -32,12 +32,12 @@ func main() {
 	}
 	defer safeclose.Close(db, &err)
 
-	chamberRepo, err := database.NewChamberRepo(db)
+	beerRepo, err := database.NewBeerRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	beerRepo, err := database.NewBeerRepo(db)
+	chamberRepo, err := database.NewChamberRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -52,30 +52,30 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	beerHandler := handlers.NewBeerHandler(beerRepo)
+	chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
+	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo, temperatureChangeRepo)
+
+	requestLogger := middleware.NewRequestLogger(logger)
+	errorHandler := middleware.NewErrorHandler(logger)
+
 	uiFS, err := fs.New()
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	routes := []app.Route{
-		app.Route{Path: "chambers", Handler: handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)},
-		app.Route{Path: "beers", Handler: handlers.NewBeerHandler(beerRepo, logger)},
-		app.Route{Path: "fermentations", Handler: handlers.NewFermentationHandler(fermentationRepo,
-			temperatureChangeRepo, logger)},
-	}
+	api := web.NewAPI("v1", logger, requestLogger.Log, errorHandler.HandleError)
+	api.Register("beers", beerHandler.Handle)
+	api.Register("chambers", chamberHandler.Handle)
+	api.Register("fermentations", fermentationHandler.Handle)
 
-	app := app.New(routes, uiFS, logger)
+	//app := web.NewApp(logger, uiFS, requestLogger.Log, errorHandler.HandleError)
 
-	options := cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"},
-	}
-
-	requestLogger := middleware.NewRequestLogger(logger)
+	app := web.NewApp(api, uiFS)
 
 	server := http.Server{
 		Addr:    ":3000",
-		Handler: app.Handler(requestLogger.Handler, cors.New(options).Handler),
+		Handler: app,
 	}
 
 	var wg sync.WaitGroup

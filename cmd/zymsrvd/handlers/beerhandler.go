@@ -1,100 +1,97 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/app"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
 // BeerHandler is the http handler for API calls to manage Beers
 type BeerHandler struct {
-	app.Handler
 	repo *database.BeerRepo
 }
 
 // NewBeerHandler instantiates a BeerHandler
-func NewBeerHandler(repo *database.BeerRepo, logger log.Logger) *BeerHandler {
+func NewBeerHandler(repo *database.BeerRepo) *BeerHandler {
 	return &BeerHandler{
-		Handler: app.Handler{Logger: logger},
-		repo:    repo,
+		repo: repo,
 	}
 }
 
-// ServeHTTP calls f(w, r).
-func (h *BeerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// Handle handles the incoming http request
+func (h *BeerHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	switch r.Method {
-	case app.GET:
-		h.handleGet(w, r)
-	case app.POST:
-		h.handlePost(w, r)
-	case app.DELETE:
-		h.handleDelete(w, r)
+	case web.GET:
+		return h.get(ctx, w, r)
+	case web.POST:
+		return h.post(ctx, w, r)
+	case web.DELETE:
+		return h.delete(ctx, w, r)
 	default:
-		h.HandleError(w, app.ErrNotFound)
+		return web.ErrMethodNotAllowed
 	}
 }
 
-func (h *BeerHandler) handleGet(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "" {
-		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
-			h.HandleError(w, app.ErrBadRequest)
-		} else {
-			h.handleGetOne(w, id)
-		}
-	} else {
-		h.handleGetAll(w)
+func (h *BeerHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var head string
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
+	if head == "" {
+		return h.getAll(ctx, w)
 	}
+	id, err := strconv.ParseUint(head, 10, 64)
+	if err != nil {
+		return err
+	}
+	return h.getOne(ctx, w, id)
 }
 
-func (h *BeerHandler) handleGetOne(w http.ResponseWriter, id uint64) {
+func (h *BeerHandler) getAll(ctx context.Context, w http.ResponseWriter) error {
+	beers, err := h.repo.GetAll()
+	if err != nil {
+		return err
+	}
+	return web.Respond(ctx, w, beers, http.StatusOK)
+}
+
+func (h *BeerHandler) getOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
 	if beer, err := h.repo.Get(id); err != nil {
-		h.HandleError(w, err)
+		return err
 	} else if beer == nil {
-		h.HandleError(w, app.ErrNotFound)
+		return web.ErrNotFound
 	} else {
-		h.Encode(w, &beer)
+		return web.Respond(ctx, w, beer, http.StatusOK)
 	}
 }
 
-func (h *BeerHandler) handleGetAll(w http.ResponseWriter) {
-	if beers, err := h.repo.GetAll(); err != nil {
-		h.HandleError(w, err)
-	} else {
-		h.Encode(w, beers)
-	}
-}
-
-func (h *BeerHandler) handlePost(w http.ResponseWriter, r *http.Request) {
+func (h *BeerHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	beer, err := parseBeer(r)
 	if err != nil {
-		h.HandleError(w, err)
-		return
+		return err
 	}
-
-	if err := h.repo.Save(&beer); err != nil {
-		h.HandleError(w, err)
-	} else {
-		h.Encode(w, &beer)
+	err = h.repo.Save(&beer)
+	if err != nil {
+		return err
 	}
+	return web.Respond(ctx, w, beer, http.StatusOK)
 }
 
-func (h *BeerHandler) handleDelete(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "" {
-		if id, err := strconv.ParseUint(r.URL.Path, 10, 64); err != nil {
-			h.HandleError(w, app.ErrBadRequest)
-		} else {
-			if err := h.repo.Delete(id); err != nil {
-				h.HandleError(w, err)
-			}
-		}
-		return
+func (h *BeerHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	if r.URL.Path == "" {
+		return web.ErrBadRequest
 	}
-	h.HandleError(w, app.ErrBadRequest)
+	id, err := strconv.ParseUint(r.URL.Path, 10, 64)
+	if err != nil {
+		return err
+	}
+	if err := h.repo.Delete(id); err != nil {
+		return err
+	}
+	return nil
 }
 
 func parseBeer(r *http.Request) (internal.Beer, error) {

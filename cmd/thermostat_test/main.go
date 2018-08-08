@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/mock"
+	"github.com/benjaminbartels/zymurgauge/internal/simulation"
 	"github.com/felixge/pidctrl"
 	chart "github.com/wcharczuk/go-chart"
 )
@@ -24,9 +24,9 @@ func main() {
 
 	logger = log.New(os.Stderr, "", log.LstdFlags)
 
-	thermometer := mock.NewThermometer(20)
-	chiller := &mock.Actuator{ActuatorType: mock.Chiller}
-	heater := &mock.Actuator{ActuatorType: mock.Heater}
+	thermometer := simulation.NewThermometer(20)
+	chiller := &simulation.Actuator{ActuatorType: simulation.Chiller}
+	heater := &simulation.Actuator{ActuatorType: simulation.Heater}
 	pidCtrl := pidctrl.NewPIDController(20, 0, 0)
 	pidCtrl.SetOutputLimits(-10, 10)
 
@@ -34,7 +34,7 @@ func main() {
 		internal.MinimumChill(1*time.Second),
 		internal.MinimumHeat(1*time.Second),
 		internal.Interval(1*time.Second), // 1sec = 10min
-		internal.Factor(600),
+		// internal.Factor(600),
 		// internal.Interval(10*time.Second), // 10sec = 10min
 		// internal.Factor(60),               // 10sec = 10min
 		internal.Logger(logger),
@@ -44,7 +44,7 @@ func main() {
 		panic(err)
 	}
 
-	chamber := mock.NewChamber(thermostat, thermometer, chiller, heater, 600, log.New(os.Stderr, "", log.LstdFlags))
+	chamber := simulation.NewChamber(thermostat, thermometer, chiller, heater, 600, log.New(os.Stderr, "", log.LstdFlags))
 	chamber.Thermostat.Subscribe("test", processStatus)
 	chamber.Thermostat.Set(target)
 	chamber.Thermostat.On()
@@ -76,7 +76,7 @@ func processStatus(s internal.ThermostatStatus) {
 
 func createGraph(x []time.Time, y []float64, targets []float64) error {
 
-	for i, _ := range x {
+	for i := range x {
 		fmt.Println(x[i], y[i])
 	}
 
@@ -116,9 +116,6 @@ func createGraph(x []time.Time, y []float64, targets []float64) error {
 	}
 
 	err = ioutil.WriteFile("chart.png", readBuf, 0644)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }

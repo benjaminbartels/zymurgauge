@@ -1,3 +1,5 @@
+## GoLang
+
 # Binaries for programs and plugins
 *.exe
 *.dll
@@ -10,13 +12,21 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
-.glide/
+## Project specific
 
-# Project specificall
+# Code Coverage
 .cover
 
 # Extentionless binaries in cmd directories
 /cmd/zymsrvd/zymsrvd
 /fermmond/fermmond
 /client_test/client_test
+
+# BoltDB Databases
+cmd/zymsrvd/zymurgaugedb
+cmd/zymsrvd/zymurgaugedb.lock
+
+# Other junk
+.vscode
+cmd/thermostat_test/*.png
+coverage.html

@@ -52,7 +52,7 @@ func (r *BeerRepo) Get(id uint64) (*internal.Beer, error) {
 
 // GetAll returns all Beers
 func (r *BeerRepo) GetAll() ([]internal.Beer, error) {
-	var beers []internal.Beer
+	beers := []internal.Beer{}
 	err := r.db.View(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Beers"))
 		return bu.ForEach(func(k, v []byte) error {

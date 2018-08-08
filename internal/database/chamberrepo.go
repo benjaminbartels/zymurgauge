@@ -59,7 +59,7 @@ func (r *ChamberRepo) Get(mac string) (*internal.Chamber, error) {
 	err := r.db.View(func(tx *bolt.Tx) error {
 		if v := tx.Bucket([]byte("Chambers")).Get([]byte(mac)); v != nil {
 			if err := json.Unmarshal(v, &c); err != nil {
-				return errors.Wrapf(err, "Could not unmarshal Chamber %d", mac)
+				return errors.Wrapf(err, "Could not unmarshal Chamber %s", mac)
 			}
 		}
 		return nil

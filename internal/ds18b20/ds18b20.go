@@ -12,17 +12,19 @@ import (
 )
 
 const (
-	prefix = "28-"
-	slave  = "w1_slave"
+	slave = "w1_slave"
 )
 
 // defaultDevicePath is the location of the thermometer data on the file system
 const defaultDevicePath = "/sys/bus/w1/devices/"
 
+// New Create a new ds18b20 Thermometer
 func New(id string) (*Thermometer, error) {
 	return NewWithDevicePath(id, defaultDevicePath)
 }
 
+// NewWithDevicePath creates a new Thermometer using the given devicePath
+// Usually used for testing
 func NewWithDevicePath(id, devicePath string) (*Thermometer, error) {
 	_, err := os.Stat(path.Join(devicePath, id))
 	if err != nil {
@@ -42,7 +44,7 @@ type Thermometer struct {
 }
 
 // ReadTemperature read the current temperature of the Thermometer
-func (t *Thermometer) ReadTemperature() (*float64, error) {
+func (t *Thermometer) Read() (*float64, error) {
 	file, err := os.Open(path.Join(t.path, t.ID, slave))
 	if err != nil {
 		return nil, err
