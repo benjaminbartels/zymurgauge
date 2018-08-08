@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func TestFermentationService_Save_New(t *testing.T) {
+func TestFermentationServiceSaveNew(t *testing.T) {
 
 	testDB := createTestDB()
 	defer func() { testDB.Close() }()
@@ -38,7 +38,7 @@ func TestFermentationService_Save_New(t *testing.T) {
 	// }
 }
 
-func TestFermentationService_Save_Existing(t *testing.T) {
+func TestFermentationServiceSaveExisting(t *testing.T) {
 
 	testDB := createTestDB()
 	defer func() { testDB.Close() }()

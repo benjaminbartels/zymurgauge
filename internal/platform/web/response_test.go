@@ -13,13 +13,13 @@ import (
 )
 
 func TestRespond(t *testing.T) {
-	t.Run("OK", testRespond_OK)
-	t.Run("StatusNoContent", testRespond_StatusNoContent)
-	t.Run("WriteError", testRespond_WriteError)
-	t.Run("MarshalError", testRespond_MarshalError)
+	t.Run("OK", testRespondOK)
+	t.Run("StatusNoContent", testRespondStatusNoContent)
+	t.Run("WriteError", testRespondWriteError)
+	t.Run("MarshalError", testRespondMarshalError)
 }
 
-func testRespond_OK(t *testing.T) {
+func testRespondOK(t *testing.T) {
 	rw := &responseWriterMock{}
 
 	var code int
@@ -58,7 +58,7 @@ func testRespond_OK(t *testing.T) {
 
 }
 
-func testRespond_StatusNoContent(t *testing.T) {
+func testRespondStatusNoContent(t *testing.T) {
 	rw := &responseWriterMock{}
 
 	var code int
@@ -85,7 +85,7 @@ func testRespond_StatusNoContent(t *testing.T) {
 
 }
 
-func testRespond_WriteError(t *testing.T) {
+func testRespondWriteError(t *testing.T) {
 	rw := &responseWriterMock{}
 
 	var writeError = errors.New("write error occurred")
@@ -119,7 +119,7 @@ func testRespond_WriteError(t *testing.T) {
 	}
 }
 
-func testRespond_MarshalError(t *testing.T) {
+func testRespondMarshalError(t *testing.T) {
 	rw := &responseWriterMock{}
 
 	bogusData := make(chan int)
@@ -140,12 +140,12 @@ func testRespond_MarshalError(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
-	t.Run("ErrNotFound", testError_ErrNotFound)
-	t.Run("CatchAll", testError_CatchAll)
-	t.Run("ErrorFromRespond", testError_ErrorFromRespond)
+	t.Run("ErrNotFound", testErrorErrNotFound)
+	t.Run("CatchAll", testErrorCatchAll)
+	t.Run("ErrorFromRespond", testErrorErrorFromRespond)
 }
 
-func testError_ErrNotFound(t *testing.T) {
+func testErrorErrNotFound(t *testing.T) {
 	rw := &responseWriterMock{}
 
 	var code int
@@ -180,7 +180,7 @@ func testError_ErrNotFound(t *testing.T) {
 
 }
 
-func testError_CatchAll(t *testing.T) {
+func testErrorCatchAll(t *testing.T) {
 	rw := &responseWriterMock{}
 
 	var code int
@@ -217,7 +217,7 @@ func testError_CatchAll(t *testing.T) {
 
 }
 
-func testError_ErrorFromRespond(t *testing.T) {
+func testErrorErrorFromRespond(t *testing.T) {
 	rw := &responseWriterMock{}
 
 	var code int

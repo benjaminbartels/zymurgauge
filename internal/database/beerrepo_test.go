@@ -6,7 +6,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 )
 
-func TestBeerService_Save_New(t *testing.T) {
+func TestBeerServiceSaveNew(t *testing.T) {
 
 	testDB := createTestDB()
 	defer func() { testDB.Close() }()
@@ -29,7 +29,7 @@ func TestBeerService_Save_New(t *testing.T) {
 	// }
 }
 
-func TestBeerService_Save_Existing(t *testing.T) {
+func TestBeerServiceSaveExisting(t *testing.T) {
 
 	testDB := createTestDB()
 	defer func() { testDB.Close() }()

@@ -6,7 +6,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 )
 
-func TestChamberService_Save_New(t *testing.T) {
+func TestChamberServiceSaveNew(t *testing.T) {
 
 	mac := "00:11:22:33:44:55"
 
@@ -35,7 +35,7 @@ func TestChamberService_Save_New(t *testing.T) {
 	// }
 }
 
-func TestChamberService_Save_Existing(t *testing.T) {
+func TestChamberServiceSaveExisting(t *testing.T) {
 
 	testDB := createTestDB()
 	defer func() { testDB.Close() }()
