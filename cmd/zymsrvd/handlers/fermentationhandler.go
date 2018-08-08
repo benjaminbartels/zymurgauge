@@ -35,7 +35,7 @@ func (h *FermentationHandler) Handle(ctx context.Context, w http.ResponseWriter,
 	case web.POST:
 		return h.post(ctx, w, r)
 	case web.DELETE:
-		return h.delete(ctx, w, r)
+		return h.delete(r)
 	default:
 		return web.ErrMethodNotAllowed
 	}
@@ -145,7 +145,7 @@ func (h *FermentationHandler) postTemperatureChange(ctx context.Context, w http.
 	return web.Respond(ctx, w, change, http.StatusOK)
 }
 
-func (h *FermentationHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *FermentationHandler) delete(r *http.Request) error {
 	if r.URL.Path == "" {
 		return web.ErrBadRequest
 	}

@@ -31,7 +31,7 @@ func (h *BeerHandler) Handle(ctx context.Context, w http.ResponseWriter, r *http
 	case web.POST:
 		return h.post(ctx, w, r)
 	case web.DELETE:
-		return h.delete(ctx, w, r)
+		return h.delete(r)
 	default:
 		return web.ErrMethodNotAllowed
 	}
@@ -80,7 +80,7 @@ func (h *BeerHandler) post(ctx context.Context, w http.ResponseWriter, r *http.R
 	return web.Respond(ctx, w, beer, http.StatusOK)
 }
 
-func (h *BeerHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *BeerHandler) delete(r *http.Request) error {
 	if r.URL.Path == "" {
 		return web.ErrBadRequest
 	}

@@ -8,9 +8,9 @@ import (
 	"net/url"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/pkg/errors"
 )
 

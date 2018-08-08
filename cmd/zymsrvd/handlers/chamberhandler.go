@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -36,9 +37,9 @@ func (h *ChamberHandler) Handle(ctx context.Context, w http.ResponseWriter, r *h
 	case web.GET:
 		return h.get(ctx, w, r)
 	case web.POST:
-		return h.post(ctx, w, r)
+		return h.post(w, r)
 	case web.DELETE:
-		return h.delete(ctx, w, r)
+		return h.delete(r)
 	default:
 		return web.ErrMethodNotAllowed
 	}
@@ -56,7 +57,7 @@ func (h *ChamberHandler) get(ctx context.Context, w http.ResponseWriter, r *http
 	}
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "events" {
-		return h.getEvents(ctx, w, mac)
+		return h.getEvents(w, mac)
 	} else if head == "" {
 		return h.getOne(ctx, w, mac)
 	} else {
@@ -83,7 +84,7 @@ func (h *ChamberHandler) getAll(ctx context.Context, w http.ResponseWriter) erro
 	return web.Respond(ctx, w, chambers, http.StatusOK)
 }
 
-func (h *ChamberHandler) getEvents(ctx context.Context, w http.ResponseWriter, mac string) error {
+func (h *ChamberHandler) getEvents(w http.ResponseWriter, mac string) error {
 	f, ok := w.(http.Flusher) //ToDo: comment this mess
 	if !ok {
 		return web.ErrInternal
@@ -114,7 +115,7 @@ func (h *ChamberHandler) getEvents(ctx context.Context, w http.ResponseWriter, m
 	return nil
 }
 
-func (h *ChamberHandler) post(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *ChamberHandler) post(w io.Writer, r *http.Request) error {
 	chamber, err := parseChamber(r)
 	if err != nil {
 		return err
@@ -127,11 +128,11 @@ func (h *ChamberHandler) post(ctx context.Context, w http.ResponseWriter, r *htt
 		return err
 	}
 	h.pubSub.Send(chamber.MacAddress, b)
-	_, err = w.Write(b) 
+	_, err = w.Write(b)
 	return err
 }
 
-func (h *ChamberHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h *ChamberHandler) delete(r *http.Request) error {
 	if r.URL.Path == "" {
 		return web.ErrBadRequest
 	}
