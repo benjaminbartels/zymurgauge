@@ -29,8 +29,8 @@ before_script:
 script:
   - ./coverage.sh
   - statik -f -src=cmd/zymsrvd/ui/dist -dest=cmd/zymsrvd
-  - env CGO_ENABLED=0 go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
-  - env GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
+  - env GO111MODULE=on CGO_ENABLED=0 go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
+  - env GO111MODULE=on GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
   - docker build -f ./docker/zymsrv/Dockerfile -t benjaminbartels/zymsrv .
 
 after_script:

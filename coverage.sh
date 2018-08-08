@@ -24,7 +24,7 @@ mkdir "$workdir"
 
 for pkg in $(go list ./... | grep -v /vendor/); do
     f="$workdir/$(echo "$pkg" | tr / -).cover"
-    go test -v -covermode="$mode" -coverprofile="$f" "$pkg"
+    GO111MODULE=on && go test -v -covermode="$mode" -coverprofile="$f" "$pkg"
 done
 
 echo "mode: $mode" >"$profile"
