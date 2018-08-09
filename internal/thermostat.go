@@ -5,8 +5,9 @@ import (
 	"math"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/ds18b20"
+	"github.com/benjaminbartels/zymurgauge/internal/gpio"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/atomic"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/ds18b20"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/felixge/pidctrl"
 )
@@ -113,18 +114,20 @@ func (t *Thermostat) InitThermometer() error {
 	return nil
 }
 
+// InitChiller initializes the Chiller Actuator
 func (t *Thermostat) InitChiller() error {
 	if t.ChillerPin != "" {
-		chiller, err := NewGPIOActuator(t.ChillerPin)
+		chiller, err := gpio.NewActuator(t.ChillerPin)
 		t.chiller = chiller
 		return err
 	}
 	return nil
 }
 
+// InitHeater initializes the Heater Actuator
 func (t *Thermostat) InitHeater() error {
 	if t.HeaterPin != "" {
-		heater, err := NewGPIOActuator(t.HeaterPin)
+		heater, err := gpio.NewActuator(t.HeaterPin)
 		t.heater = heater
 		return err
 	}

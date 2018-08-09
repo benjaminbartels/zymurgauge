@@ -61,7 +61,10 @@ func (r *TemperatureChangeRepo) Save(b *internal.TemperatureChange) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("TemperatureChanges"))
 		if v := bu.Get(itob(b.ID)); v == nil {
-			seq, _ := bu.NextSequence()
+			seq, err := bu.NextSequence()
+			if err != nil {
+				return err
+			}
 			b.ID = seq
 		}
 		if v, err := json.Marshal(b); err != nil {
