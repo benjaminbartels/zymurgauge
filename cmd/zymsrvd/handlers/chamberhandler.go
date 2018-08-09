@@ -142,11 +142,7 @@ func (h *ChamberHandler) delete(r *http.Request) error {
 		return err
 	}
 
-	if err := h.repo.Delete(mac); err != nil {
-		return err
-	}
-
-	return nil
+	return h.repo.Delete(mac)
 }
 
 func parseChamber(r *http.Request) (internal.Chamber, error) {

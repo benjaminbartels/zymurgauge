@@ -75,7 +75,10 @@ func (r *BeerRepo) Save(b *internal.Beer) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Beers"))
 		if v := bu.Get(itob(b.ID)); v == nil {
-			seq, _ := bu.NextSequence()
+			seq, err := bu.NextSequence()
+			if err != nil {
+				return err
+			}
 			b.ID = seq
 		}
 		b.ModTime = time.Now()

@@ -74,7 +74,10 @@ func (r *FermentationRepo) Save(f *internal.Fermentation) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
 		if v := bu.Get(itob(f.ID)); v == nil {
-			seq, _ := bu.NextSequence()
+			seq, err := bu.NextSequence()
+			if err != nil {
+				return err
+			}
 			f.ID = seq
 		}
 		f.ModTime = time.Now()

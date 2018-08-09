@@ -40,9 +40,12 @@ func testRespondOK(t *testing.T) {
 		Name: "Golden Stout",
 	}
 
-	r, _ := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err := web.Respond(ctx, rw, b, http.StatusOK)
+	err = web.Respond(ctx, rw, b, http.StatusOK)
 
 	if err != nil {
 		t.Fatal(err)
@@ -67,9 +70,12 @@ func testRespondStatusNoContent(t *testing.T) {
 		code = statusCode
 	}
 
-	r, _ := http.NewRequest(http.MethodGet, "/beer", nil)
+	r, err := http.NewRequest(http.MethodGet, "/beer", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err := web.Respond(ctx, rw, nil, http.StatusNoContent)
+	err = web.Respond(ctx, rw, nil, http.StatusNoContent)
 
 	if err != nil {
 		t.Fatal(err)
@@ -104,9 +110,12 @@ func testRespondWriteError(t *testing.T) {
 		Name: "Golden Stout",
 	}
 
-	r, _ := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err := web.Respond(ctx, rw, b, http.StatusOK)
+	err = web.Respond(ctx, rw, b, http.StatusOK)
 
 	if err != writeError {
 		t.Fatalf("Expected Error %v was %v", writeError, err)
@@ -124,9 +133,12 @@ func testRespondMarshalError(t *testing.T) {
 
 	bogusData := make(chan int)
 
-	r, _ := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err := web.Respond(ctx, rw, bogusData, http.StatusOK)
+	err = web.Respond(ctx, rw, bogusData, http.StatusOK)
 
 	if _, ok := err.(*json.UnsupportedTypeError); !ok {
 		t.Errorf("Unexpected Error %v", err)
@@ -162,9 +174,12 @@ func testErrorErrNotFound(t *testing.T) {
 		code = statusCode
 	}
 
-	r, _ := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err := web.Error(ctx, rw, web.ErrNotFound)
+	err = web.Error(ctx, rw, web.ErrNotFound)
 
 	if err != nil {
 		t.Fatal(err)
@@ -199,9 +214,12 @@ func testErrorCatchAll(t *testing.T) {
 		code = statusCode
 	}
 
-	r, _ := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err := web.Error(ctx, rw, someError)
+	err = web.Error(ctx, rw, someError)
 
 	if err != nil {
 		t.Fatal(err)
@@ -236,9 +254,12 @@ func testErrorErrorFromRespond(t *testing.T) {
 		code = statusCode
 	}
 
-	r, _ := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err := web.Error(ctx, rw, web.ErrNotFound)
+	err = web.Error(ctx, rw, web.ErrNotFound)
 
 	if err != writeError {
 		t.Fatalf("Expected Error %v was %v", writeError, err)
