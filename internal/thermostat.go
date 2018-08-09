@@ -9,7 +9,6 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/atomic"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/felixge/pidctrl"
-	"gobot.io/x/gobot/drivers/gpio"
 )
 
 // ToDo: Determine in Factored thermostat is needed.
@@ -114,15 +113,22 @@ func (t *Thermostat) InitThermometer() error {
 	return nil
 }
 
-// InitActuators initializes the cooler and heater actuators
-func (t *Thermostat) InitActuators(w gpio.DigitalWriter) {
+func (t *Thermostat) InitChiller() error {
 	if t.ChillerPin != "" {
-		t.chiller = gpio.NewRelayDriver(w, t.ChillerPin)
+		chiller, err := NewGPIOActuator(t.ChillerPin)
+		t.chiller = chiller
+		return err
 	}
+	return nil
+}
 
+func (t *Thermostat) InitHeater() error {
 	if t.HeaterPin != "" {
-		t.heater = gpio.NewRelayDriver(w, t.HeaterPin)
+		heater, err := NewGPIOActuator(t.HeaterPin)
+		t.heater = heater
+		return err
 	}
+	return nil
 }
 
 // On turns the Thermostat on and allows to being monitoring
@@ -253,7 +259,11 @@ func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.D
 }
 
 func (t *Thermostat) updateStatus(state ThermostatState, temperature *float64, err error) {
-	t.status = ThermostatStatus{state, temperature, err}
+	t.status = ThermostatStatus{
+		State:              state,
+		CurrentTemperature: temperature,
+		Error:              err,
+	}
 
 	for _, f := range t.subs {
 		if f != nil {
@@ -347,9 +357,9 @@ const (
 	// OFF means the Thermostat is not heating or cooling
 	OFF ThermostatState = "OFF"
 	// COOLING means the Thermostat is cooling
-	COOLING = "COOLING"
+	COOLING ThermostatState = "COOLING"
 	// HEATING means the Thermostat is heating
-	HEATING = "HEATING"
+	HEATING ThermostatState = "HEATING"
 	// ERROR means the Thermostat has an error
-	ERROR = "ERROR"
+	ERROR ThermostatState = "ERROR"
 )

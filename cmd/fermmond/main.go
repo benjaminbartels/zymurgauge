@@ -10,8 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"gobot.io/x/gobot/platforms/raspi"
-
 	"github.com/alecthomas/kingpin"
 	"github.com/benjaminbartels/zymurgauge/cmd/fermmond/client"
 	"github.com/benjaminbartels/zymurgauge/internal"
@@ -132,7 +130,13 @@ func processChamber(c *internal.Chamber) error {
 		return err
 	}
 
-	chamber.Thermostat.InitActuators(raspi.NewAdaptor())
+	if err := chamber.Thermostat.InitChiller(); err != nil {
+		return err
+	}
+
+	if err := chamber.Thermostat.InitHeater(); err != nil {
+		return err
+	}
 
 	//Check for updated fermentation
 	if chamber.CurrentFermentationID != nil {

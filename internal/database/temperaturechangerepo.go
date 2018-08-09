@@ -14,8 +14,8 @@ type TemperatureChangeRepo struct {
 	db *bolt.DB
 }
 
-// NewTemperatureChangeRepo returns a new TemperatureChange repository using the given bolt database. It also creates the TemperatureChanges
-// bucket if it is not yet created on disk.
+// NewTemperatureChangeRepo returns a new TemperatureChange repository using the given bolt database. It also creates
+// the TemperatureChanges bucket if it is not yet created on disk.
 func NewTemperatureChangeRepo(db *bolt.DB) (*TemperatureChangeRepo, error) {
 	tx, err := db.Begin(true)
 	if err != nil {
