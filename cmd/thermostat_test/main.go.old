@@ -1,5 +1,6 @@
 package main
 
+// ToDo: make this a unit test or part of fermmond
 import (
 	"bytes"
 	"fmt"

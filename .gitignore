@@ -19,8 +19,8 @@
 
 # Extentionless binaries in cmd directories
 /cmd/zymsrvd/zymsrvd
-/fermmond/fermmond
-/client_test/client_test
+/cmd/fermmond/fermmond
+/cmd/client_test/client_test
 
 # BoltDB Databases
 cmd/zymsrvd/zymurgaugedb

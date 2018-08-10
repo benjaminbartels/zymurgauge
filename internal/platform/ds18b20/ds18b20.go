@@ -18,8 +18,8 @@ const (
 // defaultDevicePath is the location of the thermometer data on the file system
 const defaultDevicePath = "/sys/bus/w1/devices/"
 
-// New Create a new ds18b20 Thermometer
-func New(id string) (*Thermometer, error) {
+// NewThermometer Create a new ds18b20 Thermometer
+func NewThermometer(id string) (*Thermometer, error) {
 	return NewWithDevicePath(id, defaultDevicePath)
 }
 

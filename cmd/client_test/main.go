@@ -11,8 +11,8 @@ import (
 
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/cmd/fermmond/client"
 	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/internal/client"
 )
 
 // ToDo: make this a command line tool
@@ -67,11 +67,11 @@ func updateChamber(c *client.ChamberResource) error {
 	err = c.Save(&internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber 1",
-		Thermostat: &internal.Thermostat{
+		Thermostat: internal.Thermostat{
 			ThermometerID: "28-000006285484",
 			ChillerPin:    "11",
 		},
-		CurrentFermentationID: &currentFermentationID,
+		CurrentFermentationID: currentFermentationID,
 	})
 
 	return err

@@ -16,7 +16,7 @@ func TestChamberServiceSaveNew(t *testing.T) {
 	c := internal.Chamber{
 		Name:       "My Chamber",
 		MacAddress: mac,
-		Thermostat: &internal.Thermostat{
+		Thermostat: internal.Thermostat{
 			ThermometerID: "blah",
 		},
 	}
