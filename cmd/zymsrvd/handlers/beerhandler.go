@@ -88,10 +88,7 @@ func (h *BeerHandler) delete(r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if err := h.repo.Delete(id); err != nil {
-		return err
-	}
-	return nil
+	return h.repo.Delete(id)
 }
 
 func parseBeer(r *http.Request) (internal.Beer, error) {
