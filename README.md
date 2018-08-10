@@ -15,7 +15,7 @@ Homebrewing automation system
 ## ToDo
 
 - Add linting to TravisCI
-  
+
 - Add optional config Funcs to constructors
 
-- Review error handling and separation (https://www.ardanlabs.com/blog/2017/02/package-oriented-design.html)
+- Review error handling and separation <http:>https://www.ardanlabs.com/blog/2017/02/package-oriented-design.html</http:>)
