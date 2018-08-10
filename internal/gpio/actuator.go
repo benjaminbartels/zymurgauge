@@ -15,13 +15,13 @@ func NewActuator(pinID uint8) *Actuator {
 }
 
 // On turns the Actuator on by setting the pin to high
-func (a *Actuator) On() error {
-	return a.pin.High()
+func (a *Actuator) On() {
+	a.pin.High()
 }
 
 // Off turns the Actuator on by setting the pin to high
-func (a *Actuator) Off() error {
-	return a.pin.Low()
+func (a *Actuator) Off() {
+	a.pin.Low()
 }
 
 // IsOn returns true if the Actuator is on
