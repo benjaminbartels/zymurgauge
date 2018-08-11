@@ -1,30 +1,40 @@
 package gpio
 
 import (
-	"github.com/stianeikeland/go-rpio"
+	"github.com/pkg/errors"
+	"periph.io/x/periph/conn/gpio"
+	"periph.io/x/periph/conn/gpio/gpioreg"
 )
+
+// ToDo: Make constants for pinID
 
 // Actuator is a device that turns on and off by manipulating a GPIO pin
 type Actuator struct {
-	pin rpio.Pin
+	pin gpio.PinIO
 }
 
-// NewActuator creates a new Actuator assigned to the given pinID
-func NewActuator(pinID uint8) *Actuator {
-	return &Actuator{pin: rpio.Pin(pinID)}
+// NewActuator creates a new Actuator assigned to the give pinID
+func NewActuator(pinID string) (*Actuator, error) {
+
+	pin := gpioreg.ByName(pinID)
+	if pin == nil {
+		return nil, errors.Errorf("Could not open %s", pin)
+	}
+
+	return &Actuator{pin: pin}, nil
 }
 
 // On turns the Actuator on by setting the pin to high
-func (a *Actuator) On() {
-	a.pin.High()
+func (a *Actuator) On() error {
+	return a.pin.Out(gpio.High)
 }
 
 // Off turns the Actuator on by setting the pin to high
-func (a *Actuator) Off() {
-	a.pin.Low()
+func (a *Actuator) Off() error {
+	return a.pin.Out(gpio.Low)
 }
 
 // IsOn returns true if the Actuator is on
 func (a *Actuator) IsOn() bool {
-	return a.pin.Read() == rpio.High
+	return a.pin.Read() == gpio.High
 }
