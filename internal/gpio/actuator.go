@@ -18,7 +18,7 @@ func NewActuator(pinID string) (*Actuator, error) {
 
 	pin := gpioreg.ByName(pinID)
 	if pin == nil {
-		return nil, errors.Errorf("Could not open %s", pin)
+		return nil, errors.Errorf("Could not create new Actuator. Could not open %s", pin)
 	}
 
 	return &Actuator{pin: pin}, nil

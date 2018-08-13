@@ -21,7 +21,7 @@ type BeerResource struct {
 func newBeerResource(base string, version string) (*BeerResource, error) {
 	u, err := url.Parse(base + "/" + version + "/beers/")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Could not create new BeerResource")
 	}
 	return &BeerResource{url: u}, nil
 }
@@ -37,7 +37,7 @@ func (r *BeerResource) Get(id uint64) (*internal.Beer, error) {
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, web.ErrNotFound
+		return nil, errors.Wrapf(web.ErrNotFound, "Could not GET Beer %d", id)
 	}
 
 	var beer *internal.Beer

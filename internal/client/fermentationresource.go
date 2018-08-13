@@ -22,7 +22,7 @@ func newFermentationResource(base string, version string) (*FermentationResource
 
 	u, err := url.Parse(base + "/" + version + "/fermentations/")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Could not create new FermentationResource")
 	}
 
 	return &FermentationResource{url: u}, nil
@@ -39,7 +39,7 @@ func (r *FermentationResource) Get(id uint64) (*internal.Fermentation, error) {
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, web.ErrNotFound
+		return nil, errors.Wrapf(web.ErrNotFound, "Could not GET Fermentation %d", id)
 	}
 
 	var fermentation *internal.Fermentation

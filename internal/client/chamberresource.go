@@ -27,7 +27,7 @@ func newChamberResource(base string, version string, logger log.Logger) (*Chambe
 
 	u, err := url.Parse(base + "/" + version + "/chambers/")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Could not create new ChamberResource")
 	}
 
 	return &ChamberResource{url: u, logger: logger}, nil
@@ -44,7 +44,7 @@ func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, web.ErrNotFound
+		return nil, errors.Wrapf(web.ErrNotFound, "Could not GET Chamber %s", mac)
 	}
 
 	var chamber *internal.Chamber
@@ -92,11 +92,15 @@ func (r ChamberResource) Subscribe(mac string, ch chan internal.Chamber) error {
 		logger: r.logger,
 	}
 
-	return r.stream.open(req)
+	err = r.stream.open(req)
+	if err != nil {
+		return errors.Wrapf(err, "Could not GET Chamber events for %s", mac)
+	}
+	return nil
 }
 
 // Unsubscribe unregisters the caller to receives updates to the given controller
-func (r ChamberResource) Unsubscribe(mac string) {
+func (r ChamberResource) Unsubscribe(mac string) { // ToDo: Does Unsubscribe need to return an error?
 	r.stream.close()
 }
 
@@ -110,7 +114,9 @@ type stream struct {
 
 // open opens the http event stream using the provied http request
 func (s *stream) open(req *http.Request) error {
-	req.Header.Set("Accept", "text/event-stream") // ToDo: Revisit maybe
+
+	// To Do: Does error handling need to be improved?
+	req.Header.Set("Accept", "text/event-stream")
 
 	s.client = &http.Client{}
 
@@ -168,7 +174,7 @@ func (s *stream) close() {
 	err := s.resp.Body.Close()
 	if err != nil {
 		s.logger.Print(err)
-	}
+	} // To Do: Does error need to be returned?
 }
 
 // trimHeader remove the header label from the provided byte array

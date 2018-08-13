@@ -3,14 +3,14 @@ package simulation
 import (
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
-
 	"github.com/benjaminbartels/zymurgauge/internal"
+
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
 
 // Chamber is used to simulate a real Chamber
 type Chamber struct {
-	Thermostat              *internal.Thermostat
+	Thermostat              internal.TemperatureController
 	beerThermometer         *Thermometer
 	chiller                 *Actuator
 	heater                  *Actuator
@@ -36,7 +36,7 @@ type Chamber struct {
 }
 
 // NewChamber creates a new Chamber
-func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
+func NewChamber(thermostat *FactoredThermostat, beerThermometer *Thermometer,
 	chiller, heater *Actuator, factor int, logger log.Logger) *Chamber {
 	c := &Chamber{
 		Thermostat:      thermostat,
@@ -78,15 +78,9 @@ func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
 
 func (c *Chamber) update(onTime time.Duration, t ActuatorType) {
 
-	// fmt.Println("!!!!!! onTime", onTime)
-
 	factoredDuration := onTime * time.Duration(c.factor)
 
-	// fmt.Println("!!!!!! factoredDuration", factoredDuration)
-
 	ticks := int(factoredDuration.Seconds())
-
-	// fmt.Println("!!!!!! updating temp", ticks, "times")
 
 	for i := 0; i < ticks; i++ {
 
@@ -126,13 +120,6 @@ func (c *Chamber) update(onTime time.Duration, t ActuatorType) {
 
 	}
 }
-
-// ToDo: remove if not used
-// func (c *Chamber) log(s string) {
-// 	if c.logger != nil {
-// 		c.logger.Println(s)
-// 	}
-// }
 
 // Thermometer is used to simulate a real Thermometer
 type Thermometer struct {

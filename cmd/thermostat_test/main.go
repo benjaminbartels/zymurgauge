@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/simulation"
 	"github.com/felixge/pidctrl"
 	chart "github.com/wcharczuk/go-chart"
@@ -31,22 +30,29 @@ func main() {
 	pidCtrl := pidctrl.NewPIDController(20, 0, 0)
 	pidCtrl.SetOutputLimits(-10, 10)
 
-	thermostat, err := internal.NewThermostat(pidCtrl, thermometer, chiller, heater,
-		internal.MinimumChill(1*time.Second),
-		internal.MinimumHeat(1*time.Second),
-		internal.Interval(1*time.Second), // 1sec = 10min
+	thermostat := &simulation.FactoredThermostat{
+		ChillerPin:    "1",
+		HeaterPin:     "2",
+		ThermometerID: "test",
+	}
+
+	err := thermostat.Configure(pidCtrl, thermometer, chiller, heater,
+		simulation.MinimumChill(1*time.Second),
+		simulation.MinimumHeat(1*time.Second),
+		simulation.Interval(1*time.Second), // 1sec = 10min
+		simulation.Logger(logger),
 		// internal.Factor(600),
 		// internal.Interval(10*time.Second), // 10sec = 10min
-		// internal.Factor(60),               // 10sec = 10min
-		internal.Logger(logger),
+		simulation.Factor(600), // 10sec = 10min
 	)
-
 	if err != nil {
 		panic(err)
 	}
 
+	thermostat.Subscribe("test", processStatus)
+
 	chamber := simulation.NewChamber(thermostat, thermometer, chiller, heater, 600, log.New(os.Stderr, "", log.LstdFlags))
-	chamber.Thermostat.Subscribe("test", processStatus)
+
 	chamber.Thermostat.Set(target)
 	chamber.Thermostat.On()
 
@@ -63,7 +69,7 @@ func main() {
 	fmt.Println("Bye!")
 }
 
-func processStatus(s internal.ThermostatStatus) {
+func processStatus(s simulation.ThermostatStatus) {
 
 	if s.Error != nil {
 		logger.Fatal(s.Error)
@@ -116,7 +122,11 @@ func createGraph(x []time.Time, y []float64, targets []float64) error {
 		return err
 	}
 
-	err = ioutil.WriteFile("chart.png", readBuf, 0644)
+	filename := "chart_" + time.Now().Format("20060102150405") + ".png"
+
+	fmt.Println(filename)
+
+	err = ioutil.WriteFile(filename, readBuf, 0644)
 
 	return err
 }

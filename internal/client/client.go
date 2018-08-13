@@ -14,7 +14,7 @@ type Client struct {
 }
 
 // NewClient creates a new instance of the HTTP client
-func NewClient(url fmt.Stringer, version string, logger log.Logger) (*Client, error) { // ToDo: Why is url no set
+func NewClient(url fmt.Stringer, version string, logger log.Logger) (*Client, error) {
 
 	chamberResource, err := newChamberResource(url.String()+"/api", version, logger)
 	if err != nil {

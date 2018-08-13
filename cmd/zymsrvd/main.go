@@ -15,6 +15,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/boltdb/bolt"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/rakyll/statik/fs"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
@@ -22,9 +23,22 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
+type config struct {
+	HostAddress  string        `default:"0.0.0.0:3000"`
+	ReadTimeout  time.Duration `default:"5s"`
+	WriteTimeout time.Duration `default:"5s"`
+}
+
 func main() {
 
 	logger := log.New(os.Stderr, "", log.LstdFlags)
+
+	// Process env variables
+	var cfg config
+	err := envconfig.Process("fermmond", &cfg)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
 
 	db, err := bolt.Open("zymurgaugedb", 0666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
@@ -72,8 +86,10 @@ func main() {
 	app := web.NewApp(api, uiFS)
 
 	server := http.Server{
-		Addr:    ":3000",
-		Handler: app,
+		Addr:         cfg.HostAddress,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
+		Handler:      app,
 	}
 
 	var wg sync.WaitGroup

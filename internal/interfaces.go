@@ -1,5 +1,14 @@
 package internal
 
+type TemperatureController interface {
+	// On turns the Thermostat on and allows to being monitoring
+	On()
+	// Off turns the Thermostat Off
+	Off()
+	// Set sets TemperatureController to the specified temperature
+	Set(temp float64)
+}
+
 // Thermometer represents a device that and read temperatures
 type Thermometer interface {
 	Read() (*float64, error)

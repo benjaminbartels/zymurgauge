@@ -38,15 +38,15 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 				v.HasError = true
 
 				// Log the panic.
-				e.logger.Printf("ERROR : Panic Caught : %s\n", r)
+				e.logger.Printf("Error : Panic Caught : %s\n", r)
+
+				// Print out the stack.
+				e.logger.Printf("Error : Stacktrace\n%s\n", debug.Stack())
 
 				// Respond with the error.
 				if err := web.Error(ctx, w, errors.New("unhandled")); err != nil {
-					e.logger.Printf("ERROR : %s", errors.Wrap(err, "Could not send error to client")) // ToDo: Check this
+					e.logger.Printf("Error : %s", errors.Wrap(err, "Could not send error to client")) // ToDo: Check this
 				}
-
-				// Print out the stack.
-				e.logger.Printf("ERROR : Stacktrace\n%s\n", debug.Stack())
 			}
 		}()
 
@@ -59,10 +59,10 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 			err = errors.Cause(err)
 
 			// Log the error.
-			e.logger.Printf("ERROR : %v\n", err)
+			e.logger.Printf("Error : %v\n", err)
 
 			// Respond with the error.
-			err = web.Error(ctx, w, err) // ToDo:  Make sure that returning err to caller is ok
+			err = web.Error(ctx, w, err) // ToDo: Make sure that returning err to caller is ok
 
 			return err
 		}

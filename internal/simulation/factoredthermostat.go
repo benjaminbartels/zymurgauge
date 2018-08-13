@@ -1,21 +1,24 @@
-package internal
+package simulation
 
 import (
 	"errors"
 	"math"
-	"sync"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/atomic"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/felixge/pidctrl"
 )
 
 type FactoredThermostat struct {
-	pidController *pidctrl.PIDController
-	thermometer   Thermometer
-	chiller       Actuator
-	heater        Actuator
+	ThermometerID string `json:"thermometerId"`
+	ChillerPin    string `json:"chillerPin,omitempty"`
+	HeaterPin     string `json:"heaterPin,omitempty"`
+	pid           *pidctrl.PIDController
+	thermometer   internal.Thermometer
+	chiller       internal.Actuator
+	heater        internal.Actuator
 	interval      time.Duration
 	factor        int
 	minChill      time.Duration
@@ -26,33 +29,66 @@ type FactoredThermostat struct {
 	quit          chan bool
 	subs          map[string]func(s ThermostatStatus)
 	lastCheck     time.Time
-	mux           sync.Mutex
 }
 
-func NewFactoredThermostat(pidController *pidctrl.PIDController, thermometer Thermometer, chiller, heater Actuator,
-	options ...func(*FactoredThermostat) error) (*FactoredThermostat, error) {
-	t := &FactoredThermostat{
-		pidController: pidController,
-		thermometer:   thermometer,
-		chiller:       chiller,
-		heater:        heater,
-		interval:      10 * time.Minute,
-		factor:        1,
-		minChill:      1 * time.Minute,
-		minHeat:       1 * time.Minute,
-		quit:          make(chan bool),
-		subs:          make(map[string]func(s ThermostatStatus)),
-		lastCheck:     time.Now(),
-	}
+// func NewFactoredThermostat(pid *pidctrl.PIDController, thermometer Thermometer, chiller, heater Actuator,
+// 	options ...func(*FactoredThermostat) error) (*FactoredThermostat, error) {
+// 	t := &FactoredThermostat{
+// 		pid:         pid,
+// 		thermometer: thermometer,
+// 		chiller:     chiller,
+// 		heater:      heater,
+// 		interval:    10 * time.Minute,
+// 		factor:      1,
+// 		minChill:    1 * time.Minute,
+// 		minHeat:     1 * time.Minute,
+// 		quit:        make(chan bool),
+// 		subs:        make(map[string]func(s ThermostatStatus)),
+// 		lastCheck:   time.Now(),
+// 	}
 
-	for _, option := range options {
-		err := option(t)
-		if err != nil {
-			return nil, err
-		}
-	}
+// 	for _, option := range options {
+// 		err := option(t)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 	}
 
-	return t, nil
+// 	return t, nil
+// }
+
+// Interval sets the interval in which the Thermostat checks the temperature.  Default is 10 minutes.
+func Interval(interval time.Duration) func(*FactoredThermostat) error {
+	return func(t *FactoredThermostat) error {
+		t.interval = interval
+		return nil
+	}
+}
+
+// MinimumChill set the minimum duration in which the Thermostat will leave the Cooler Actuator On.  This is to prevent
+// excessive cycling.  Default is 1 minute.
+func MinimumChill(min time.Duration) func(*FactoredThermostat) error {
+	return func(t *FactoredThermostat) error {
+		t.minChill = min
+		return nil
+	}
+}
+
+// MinimumHeat set the minimum duration in which the Thermostat will leave the Heater Actuator On.  This is to prevent
+// excessive cycling. Default is 1 minute.
+func MinimumHeat(min time.Duration) func(*FactoredThermostat) error {
+	return func(t *FactoredThermostat) error {
+		t.minHeat = min
+		return nil
+	}
+}
+
+// Logger sets the logger to be used.  If not set, nothing is logged.
+func Logger(logger log.Logger) func(*FactoredThermostat) error {
+	return func(t *FactoredThermostat) error {
+		t.logger = logger
+		return nil
+	}
 }
 
 func Factor(factor int) func(*FactoredThermostat) error {
@@ -60,6 +96,32 @@ func Factor(factor int) func(*FactoredThermostat) error {
 		t.factor = factor
 		return nil
 	}
+}
+
+// Configure configures a Thermostat with the given parameters
+func (t *FactoredThermostat) Configure(pid *pidctrl.PIDController, thermometer internal.Thermometer,
+	chiller, heater internal.Actuator, options ...func(*FactoredThermostat) error) error {
+
+	t.pid = pid
+	t.interval = 10 * time.Minute
+	t.factor = 1
+	t.minChill = 1 * time.Minute
+	t.minHeat = 1 * time.Minute
+	t.quit = make(chan bool)
+	t.subs = make(map[string]func(s ThermostatStatus))
+	t.lastCheck = time.Now()
+	t.thermometer = thermometer
+	t.chiller = chiller
+	t.heater = heater
+
+	for _, option := range options {
+		err := option(t)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (t *FactoredThermostat) On() {
@@ -125,7 +187,7 @@ func (t *FactoredThermostat) Off() {
 
 // Set sets TemperatureController to the specified temperature
 func (t *FactoredThermostat) Set(temp float64) {
-	t.pidController.Set(temp)
+	t.pid.Set(temp)
 }
 
 func (t *FactoredThermostat) GetStatus() ThermostatStatus {
@@ -144,9 +206,9 @@ func (t *FactoredThermostat) getNextAction(temperature float64) (ThermostatState
 
 	factoredElapsedTime := elapsedTime * (time.Duration(t.factor))
 
-	output := t.pidController.UpdateDuration(temperature, factoredElapsedTime)
+	output := t.pid.UpdateDuration(temperature, factoredElapsedTime)
 
-	_, max := t.pidController.OutputLimits()
+	_, max := t.pid.OutputLimits()
 
 	percent := math.Abs(math.Round((output/max)/.01) * .01)
 
@@ -266,3 +328,24 @@ func (t *FactoredThermostat) logf(s string, a ...interface{}) {
 		t.logger.Printf(s, a...)
 	}
 }
+
+// ThermostatStatus contains the state of the thermostat and an error
+type ThermostatStatus struct {
+	State              ThermostatState
+	CurrentTemperature *float64
+	Error              error
+}
+
+// ThermostatState is the current state (OFF, COOLING, HEATING) of the thermostat
+type ThermostatState string
+
+const (
+	// OFF means the Thermostat is not heating or cooling
+	OFF ThermostatState = "OFF"
+	// COOLING means the Thermostat is cooling
+	COOLING ThermostatState = "COOLING"
+	// HEATING means the Thermostat is heating
+	HEATING ThermostatState = "HEATING"
+	// ERROR means the Thermostat has an error
+	ERROR ThermostatState = "ERROR"
+)

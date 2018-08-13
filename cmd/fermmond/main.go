@@ -7,8 +7,11 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
+
+	"github.com/benjaminbartels/zymurgauge/internal"
 
 	"github.com/benjaminbartels/zymurgauge/internal/client"
 	"github.com/felixge/pidctrl"
@@ -16,19 +19,10 @@ import (
 )
 
 type config struct {
-	Address string `required:"true"`
+	APIAddress string `required:"true"`
 }
 
 func main() {
-
-	// ToDo: Implement context cancellation
-	// Setup graceful exit
-	sig := make(chan os.Signal, 2)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sig
-		os.Exit(1)
-	}()
 
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 
@@ -40,7 +34,7 @@ func main() {
 	}
 
 	// Parse server url
-	addr, err := url.Parse(cfg.Address)
+	addr, err := url.Parse(cfg.APIAddress)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -60,23 +54,25 @@ func main() {
 	// Create PID Controller
 	pid := pidctrl.NewPIDController(1, 1, 0) // ToDo: get from env vars
 
+	var ctl *chamberCtl
+
 	for {
-		chamberDefinition, err := client.ChamberResource.Get(macAddress)
+		var err error
+		chamber, err := client.ChamberResource.Get(macAddress)
 		if err != nil {
 			logger.Fatal(err)
 		}
 
-		if chamberDefinition != nil {
+		if chamber != nil {
 
-			c, err := NewChamber(chamberDefinition, pid, client, logger,
-				MinimumChill(1*time.Second), // ToDO: env vars
-				MinimumHeat(1*time.Second),
-				Interval(1*time.Second))
+			ctl, err = newChamberCtl(chamber, pid, client, logger,
+				internal.MinimumChill(1*time.Second), // ToDO: env vars
+				internal.MinimumHeat(1*time.Second),
+				internal.Interval(1*time.Second),
+				internal.Logger(logger))
 			if err != nil {
 				logger.Fatal(err)
 			}
-
-			c.Listen()
 			break
 
 		}
@@ -86,8 +82,21 @@ func main() {
 		time.Sleep(5 * time.Second)
 	}
 
-	logger.Println("Bye!")
+	var wg sync.WaitGroup
+	wg.Add(1)
 
+	// Start listening
+	ctl.Listen()
+
+	sig := make(chan os.Signal, 2)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	<-sig
+
+	// Stop listening
+	ctl.Close()
+
+	wg.Wait()
+	logger.Println("Bye!")
 }
 
 // getMacAddress returns the first Mac Address of the first network interface found
