@@ -94,57 +94,48 @@ func (t *Thermostat) Configure(pid *pidctrl.PIDController, thermometer Thermomet
 // On turns the Thermostat on and allows to being monitoring
 func (t *Thermostat) On() { // ToDo: Refactor this
 	if !t.isOn.Get() {
-		go func() {
-			t.isOn.Set(true)
-
-			for {
-				var action ThermostatState
-				var duration time.Duration
-
-				// read temperature
-				temperature, err := t.thermometer.Read()
-				if err != nil {
-					t.handleError(err)
-					return
-				}
-
-				// if temperature is not nil, then determine next action
-				if temperature == nil {
-					if err != nil {
-						t.handleError(errors.New("Could not read temperature"))
-						return
-					}
-				}
-
-				action, duration = t.getNextAction(*temperature)
-				if action == COOLING {
-					if err = t.cool(); err != nil {
-						t.handleError(err)
-						return
-					}
-				} else if action == HEATING {
-					if err = t.heat(); err != nil {
-						t.handleError(err)
-						return
-					}
-				}
-
-				// Finally update the status
-				t.updateStatus(action, temperature, nil)
-
-				t.wait(temperature, duration)
-
-			}
-		}()
+		t.isOn.Set(true)
+		go t.on()
 	}
 }
 
-func (t *Thermostat) handleError(err error) {
-	t.log(err.Error())
-	t.updateStatus(ERROR, nil, err)
-	if err := t.off(); err != nil {
-		t.log(err.Error())
+func (t *Thermostat) on() {
+	for {
+		var action ThermostatState
+		var duration time.Duration
+
+		// read temperature
+		temperature, err := t.thermometer.Read()
+
+		// if temperature is not nil, then determine next action
+		if temperature == nil {
+			err = errors.New("Could not read temperature")
+		} else {
+			action, duration = t.getNextAction(*temperature)
+			if action == COOLING {
+				err = t.cool()
+			} else if action == HEATING {
+				err = t.heat()
+			}
+		}
+
+		// if error occurred then log it, turn thermostat off and send ERROR update
+		if err != nil {
+			t.log(err.Error())
+			t.updateStatus(ERROR, nil, err)
+			if err := t.off(); err != nil {
+				t.log(err.Error())
+			}
+			return
+		}
+
+		// Finally update the status
+		t.updateStatus(action, temperature, nil)
+
+		t.wait(temperature, duration)
+
 	}
+
 }
 
 // wait waits for a the thermostat to be turned Off OR the interval to elapse OR or the calculated duration to
