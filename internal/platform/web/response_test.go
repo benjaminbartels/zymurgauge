@@ -49,13 +49,17 @@ func testRespondOK(t *testing.T) {
 
 	if err != nil {
 		t.Fatal(err)
-	} else if !rw.HeaderInvoked {
+	}
+	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
-	} else if !rw.WriteInvoked {
+	}
+	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
-	} else if !rw.WriteHeaderInvoked {
+	}
+	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
-	} else if code != http.StatusOK {
+	}
+	if code != http.StatusOK {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
 
@@ -79,13 +83,17 @@ func testRespondStatusNoContent(t *testing.T) {
 
 	if err != nil {
 		t.Fatal(err)
-	} else if rw.HeaderInvoked {
+	}
+	if rw.HeaderInvoked {
 		t.Fatal("Header invoked")
-	} else if rw.WriteInvoked {
+	}
+	if rw.WriteInvoked {
 		t.Fatal("Write invoked")
-	} else if !rw.WriteHeaderInvoked {
+	}
+	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
-	} else if code != http.StatusNoContent {
+	}
+	if code != http.StatusNoContent {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
 
@@ -119,11 +127,14 @@ func testRespondWriteError(t *testing.T) {
 
 	if err != writeError {
 		t.Fatalf("Expected Error %v was %v", writeError, err)
-	} else if !rw.HeaderInvoked {
+	}
+	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
-	} else if !rw.WriteInvoked {
+	}
+	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
-	} else if !rw.WriteHeaderInvoked {
+	}
+	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
 	}
 }
@@ -142,11 +153,14 @@ func testRespondMarshalError(t *testing.T) {
 
 	if _, ok := err.(*json.UnsupportedTypeError); !ok {
 		t.Errorf("Unexpected Error %v", err)
-	} else if rw.HeaderInvoked {
+	}
+	if rw.HeaderInvoked {
 		t.Fatal("Header invoked")
-	} else if rw.WriteInvoked {
+	}
+	if rw.WriteInvoked {
 		t.Fatal("Write invoked")
-	} else if rw.WriteHeaderInvoked {
+	}
+	if rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader invoked")
 	}
 }
@@ -183,13 +197,17 @@ func testErrorErrNotFound(t *testing.T) {
 
 	if err != nil {
 		t.Fatal(err)
-	} else if !rw.HeaderInvoked {
+	}
+	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
-	} else if !rw.WriteInvoked {
+	}
+	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
-	} else if !rw.WriteHeaderInvoked {
+	}
+	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
-	} else if code != http.StatusNotFound {
+	}
+	if code != http.StatusNotFound {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
 
@@ -223,13 +241,17 @@ func testErrorCatchAll(t *testing.T) {
 
 	if err != nil {
 		t.Fatal(err)
-	} else if !rw.HeaderInvoked {
+	}
+	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
-	} else if !rw.WriteInvoked {
+	}
+	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
-	} else if !rw.WriteHeaderInvoked {
+	}
+	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
-	} else if code != http.StatusInternalServerError {
+	}
+	if code != http.StatusInternalServerError {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
 
@@ -263,13 +285,17 @@ func testErrorErrorFromRespond(t *testing.T) {
 
 	if err != writeError {
 		t.Fatalf("Expected Error %v was %v", writeError, err)
-	} else if !rw.HeaderInvoked {
+	}
+	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
-	} else if !rw.WriteInvoked {
+	}
+	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
-	} else if !rw.WriteHeaderInvoked {
+	}
+	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
-	} else if code != http.StatusNotFound {
+	}
+	if code != http.StatusNotFound {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
 
