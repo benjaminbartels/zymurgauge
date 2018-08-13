@@ -5,45 +5,47 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
+	golog "log"
 	"os"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/simulation"
 	"github.com/felixge/pidctrl"
 	chart "github.com/wcharczuk/go-chart"
 )
 
-var logger *log.Logger
+var logger log.Logger
 var times []time.Time
 var temps, targets []float64
 
 const target = 18.00
+const factor = 60
+const interval = 10 * time.Second
+const minimun = 1 * time.Second
+const testDuration = 5 * time.Minute
 
 func main() {
 
-	logger = log.New(os.Stderr, "", log.LstdFlags)
-
+	logger = golog.New(os.Stderr, "", golog.LstdFlags)
 	thermometer := simulation.NewThermometer(20)
 	chiller := &simulation.Actuator{ActuatorType: simulation.Chiller}
 	heater := &simulation.Actuator{ActuatorType: simulation.Heater}
 	pidCtrl := pidctrl.NewPIDController(20, 0, 0)
 	pidCtrl.SetOutputLimits(-10, 10)
 
-	thermostat := &simulation.FactoredThermostat{
+	thermostat := &internal.Thermostat{
 		ChillerPin:    "1",
 		HeaterPin:     "2",
 		ThermometerID: "test",
 	}
 
 	err := thermostat.Configure(pidCtrl, thermometer, chiller, heater,
-		simulation.MinimumChill(1*time.Second),
-		simulation.MinimumHeat(1*time.Second),
-		simulation.Interval(1*time.Second), // 1sec = 10min
-		simulation.Logger(logger),
-		// internal.Factor(600),
-		// internal.Interval(10*time.Second), // 10sec = 10min
-		simulation.Factor(600), // 10sec = 10min
+		internal.MinimumChill(minimun),
+		internal.MinimumHeat(minimun),
+		internal.Interval(interval),
+		internal.Logger(logger),
 	)
 	if err != nil {
 		panic(err)
@@ -51,13 +53,12 @@ func main() {
 
 	thermostat.Subscribe("test", processStatus)
 
-	chamber := simulation.NewChamber(thermostat, thermometer, chiller, heater, 600, log.New(os.Stderr, "", log.LstdFlags))
-
+	chamber := simulation.NewChamber(thermostat, thermometer, chiller, heater, factor, logger)
 	chamber.Thermostat.Set(target)
 	chamber.Thermostat.On()
 
-	fmt.Println("Sleeping...")
-	time.Sleep(20 * time.Second)
+	fmt.Printf("Waiting for %v\n", testDuration)
+	time.Sleep(testDuration)
 
 	chamber.Thermostat.Off()
 
@@ -69,12 +70,13 @@ func main() {
 	fmt.Println("Bye!")
 }
 
-func processStatus(s simulation.ThermostatStatus) {
+func processStatus(s internal.ThermostatStatus) {
 
 	if s.Error != nil {
 		logger.Fatal(s.Error)
 	} else {
 		logger.Println(s.State, *(s.CurrentTemperature))
+
 		times = append(times, time.Now())
 		temps = append(temps, *(s.CurrentTemperature))
 		targets = append(targets, target)
@@ -123,8 +125,6 @@ func createGraph(x []time.Time, y []float64, targets []float64) error {
 	}
 
 	filename := "chart_" + time.Now().Format("20060102150405") + ".png"
-
-	fmt.Println(filename)
 
 	err = ioutil.WriteFile(filename, readBuf, 0644)
 

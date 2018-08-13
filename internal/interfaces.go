@@ -1,5 +1,6 @@
 package internal
 
+// TemperatureController device that controls temperature
 type TemperatureController interface {
 	// On turns the Thermostat on and allows to being monitoring
 	On()
