@@ -52,7 +52,7 @@ func newChamberCtl(chamber *internal.Chamber, pid *pidctrl.PIDController, client
 		return nil, err
 	}
 
-	err = c.chamber.Thermostat.Setup(pid, thermometer, chiller, heater, thermostatOptions...)
+	err = c.chamber.Thermostat.Configure(pid, thermometer, chiller, heater, thermostatOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (c *chamberCtl) processUpdate(chamberUpdate *internal.Chamber) error {
 		}
 
 		// Setup the new Thermostat
-		err = chamberUpdate.Thermostat.Setup(c.pid, thermometer, chiller, heater, c.thermostatOptions...)
+		err = chamberUpdate.Thermostat.Configure(c.pid, thermometer, chiller, heater, c.thermostatOptions...)
 		if err != nil {
 			return err
 		}
