@@ -21,10 +21,10 @@ var times []time.Time
 var temps, targets []float64
 
 const target = 18.00
-const factor = 60
-const interval = 10 * time.Second
+const factor = 600
+const interval = 1 * time.Second
 const minimun = 1 * time.Second
-const testDuration = 5 * time.Minute
+const testDuration = 20 * time.Second
 
 func main() {
 

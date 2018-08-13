@@ -103,36 +103,47 @@ func (t *Thermostat) On() { // ToDo: Refactor this
 
 				// read temperature
 				temperature, err := t.thermometer.Read()
-
-				// if temperature is not nil, then determine next action
-				if temperature == nil {
-					err = errors.New("Could not read temperature")
-				} else {
-					action, duration = t.getNextAction(*temperature)
-					if action == COOLING {
-						err = t.cool()
-					} else if action == HEATING {
-						err = t.heat()
-					}
-				}
-
-				// if error occurred then log it, turn thermostat off and send ERROR update
 				if err != nil {
-					t.log(err.Error())
-					t.updateStatus(ERROR, nil, err)
-					if err := t.off(); err != nil {
-						t.log(err.Error())
-					}
+					t.handleError(err)
 					return
 				}
 
-				t.wait(temperature, duration)
+				// if temperature is not nil, then determine next action
+				if temperature == nil {
+					if err != nil {
+						t.handleError(errors.New("Could not read temperature"))
+						return
+					}
+				}
+
+				action, duration = t.getNextAction(*temperature)
+				if action == COOLING {
+					if err = t.cool(); err != nil {
+						t.handleError(err)
+						return
+					}
+				} else if action == HEATING {
+					if err = t.heat(); err != nil {
+						t.handleError(err)
+						return
+					}
+				}
 
 				// Finally update the status
 				t.updateStatus(action, temperature, nil)
 
+				t.wait(temperature, duration)
+
 			}
 		}()
+	}
+}
+
+func (t *Thermostat) handleError(err error) {
+	t.log(err.Error())
+	t.updateStatus(ERROR, nil, err)
+	if err := t.off(); err != nil {
+		t.log(err.Error())
 	}
 }
 
@@ -142,7 +153,7 @@ func (t *Thermostat) wait(temperature *float64, duration time.Duration) {
 
 	select {
 	case <-t.quit:
-		// Themostat was set to Off
+		// Thermostat was set to Off
 		if err := t.off(); err != nil {
 			t.updateStatus(ERROR, nil, err)
 			t.log(err.Error())
@@ -165,7 +176,6 @@ func (t *Thermostat) wait(temperature *float64, duration time.Duration) {
 		t.logf("Waiting for remaining interval time %v", t.interval-duration)
 		<-time.After(t.interval - duration)
 	}
-
 }
 
 // getNextAction determines the next action (Heat or Cool or nothing) for the thermostat to perform.  It takes the
