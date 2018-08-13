@@ -85,15 +85,22 @@ func main() {
 
 	app := web.NewApp(api, uiFS)
 
+	startServer(app, cfg, logger)
+
+	logger.Println("Bye!")
+}
+
+func startServer(handler http.Handler, cfg config, logger *log.Logger) {
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	server := http.Server{
 		Addr:         cfg.HostAddress,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
-		Handler:      app,
+		Handler:      handler,
 	}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
 
 	go func() {
 		logger.Printf("Listening at %s", server.Addr)
@@ -117,5 +124,4 @@ func main() {
 	}
 
 	wg.Wait()
-	logger.Println("Bye!")
 }
