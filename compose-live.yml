@@ -7,8 +7,8 @@ services:
     expose:
       - 3000
     environment:
-      VIRTUAL_HOST: www.all4days.com,all4days.com
-      LETSENCRYPT_HOST: www.all4days.com,all4days.com
+      VIRTUAL_HOST: www.zymurgauge.com,zymurgauge.com
+      LETSENCRYPT_HOST: www.zymurgauge.com,zymurgauge.com
       LETSENCRYPT_EMAIL: bbartels@gmail.com
 
 networks:
