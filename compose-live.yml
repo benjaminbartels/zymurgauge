@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  hugo:
+    restart: always
+    image: benjaminbartels/zymurgauge
+    expose:
+      - 3000
+    environment:
+      VIRTUAL_HOST: www.all4days.com,all4days.com
+      LETSENCRYPT_HOST: www.all4days.com,all4days.com
+      LETSENCRYPT_EMAIL: bbartels@gmail.com
+
+networks:
+    default:
+        external:
+            name: nginx-proxy
