@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  hugo:
+  zymsrv:
     restart: always
     image: benjaminbartels/zymurgauge
     expose:
