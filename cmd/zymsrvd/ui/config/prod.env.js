@@ -1,5 +1,5 @@
 module.exports = {
   NODE_ENV: '"production"',
-  'API_URL': "`http://www.zymurgauge.com/api/v1/`"
+  API_URL: '"http://www.zymurgauge.com/api/v1/"'
 
 }
