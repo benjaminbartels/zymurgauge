@@ -2,45 +2,66 @@
 
 
 [[projects]]
+  digest = "1:b7453dcd64035c500930e3852a9324cfd92d2f379fface77361a4ba4cd3ada18"
+  name = "github.com/auth0-community/auth0"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ddfdc88aaa5909a3d4e3ad0543a27f4a63a691e6"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:0f98f59e9a2f4070d66f0c9c39561f68fcd1dc837b22a852d28d0003aebd1b1e"
   name = "github.com/boltdb/bolt"
   packages = ["."]
+  pruneopts = "UT"
   revision = "2f1ce7a837dcb8da3ec595b1dac9d0632f0f99e8"
   version = "v1.3.1"
 
 [[projects]]
   branch = "master"
+  digest = "1:4bb62fc65684e6b6be3005a1bebbc400c3b397d1732c921b94252fbf381174ec"
   name = "github.com/felixge/pidctrl"
   packages = ["."]
+  pruneopts = "UT"
   revision = "7b13bcae7243fe17bbeb7dd5cd8b26675c8db048"
 
 [[projects]]
   branch = "master"
+  digest = "1:62c57507df491b657e9ae2645f30958d9964c8eeb380600469eedc951ebb3a0e"
   name = "github.com/golang/freetype"
   packages = [
     "raster",
-    "truetype"
+    "truetype",
   ]
+  pruneopts = "UT"
   revision = "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4"
 
 [[projects]]
+  digest = "1:edbef42561faa44c19129b68d1e109fbc1647f63239250391eadc8d0e7c9f669"
   name = "github.com/kelseyhightower/envconfig"
   packages = ["."]
+  pruneopts = "UT"
   revision = "f611eb38b3875cc3bd991ca91c51d06446afa14c"
   version = "v1.3.0"
 
 [[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
   name = "github.com/pkg/errors"
   packages = ["."]
+  pruneopts = "UT"
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:bc91590d3e20673d5e33267fc140e7dadddde0b84f2e9030547ba86859d2d13e"
   name = "github.com/rakyll/statik"
   packages = ["fs"]
+  pruneopts = "UT"
   revision = "19b88da8fc15428620782ba18f68423130e7ac7d"
   version = "v0.1.3"
 
 [[projects]]
+  digest = "1:cf762a0ce01d48d8ac03f717aa41f66b655abea67c616d89994ce091a2cc6831"
   name = "github.com/wcharczuk/go-chart"
   packages = [
     ".",
@@ -48,43 +69,86 @@
     "matrix",
     "roboto",
     "seq",
-    "util"
+    "util",
   ]
+  pruneopts = "UT"
   revision = "7c3982fe3d8ab0c9eea9ab5d2aced51e45d447bc"
   version = "v2.0.1"
 
 [[projects]]
   branch = "master"
+  digest = "1:b8fa1ff0fc20983395978b3f771bb10438accbfe19326b02e236c1d4bf1c91b2"
+  name = "golang.org/x/crypto"
+  packages = [
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "pbkdf2",
+  ]
+  pruneopts = "UT"
+  revision = "614d502a4dac94afa3a6ce146bd1736da82514c6"
+
+[[projects]]
+  branch = "master"
+  digest = "1:c46a80735d879b1b808686638e0a5c0a356ed4edc0981971dab4dad93d8c20cc"
   name = "golang.org/x/image"
   packages = [
     "draw",
     "font",
     "math/f64",
-    "math/fixed"
+    "math/fixed",
   ]
+  pruneopts = "UT"
   revision = "c73c2afc3b812cdd6385de5a50616511c4a3d458"
 
 [[projects]]
   branch = "master"
+  digest = "1:33a43cb31975899cfcd81600d1390467db1778ae87102f80668a753fed8c663e"
   name = "golang.org/x/sys"
   packages = ["unix"]
+  pruneopts = "UT"
   revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
 
 [[projects]]
+  digest = "1:b57bb9a6a2a03558d63166f1afc3c0c4f91ad137f63bf2bee995e9baeb976a9c"
+  name = "gopkg.in/square/go-jose.v2"
+  packages = [
+    ".",
+    "cipher",
+    "json",
+    "jwt",
+  ]
+  pruneopts = "UT"
+  revision = "8254d6c783765f38c8675fae4427a1fe73fbd09d"
+  version = "v2.1.8"
+
+[[projects]]
+  digest = "1:1cd94edc47e6b4e5a7cc95178ce076e976fd7663c9259442f96b346964c73554"
   name = "periph.io/x/periph"
   packages = [
     "conn",
     "conn/gpio",
     "conn/gpio/gpioreg",
     "conn/physic",
-    "conn/pin"
+    "conn/pin",
   ]
+  pruneopts = "UT"
   revision = "f34a1b4e75c5935f6269723ae45eacd0aa1d1a2a"
   version = "v3.1.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b265ba3b0907fe61b715600aa2e8063b0010e11803a535fa2b8be089cd993af6"
+  input-imports = [
+    "github.com/auth0-community/auth0",
+    "github.com/boltdb/bolt",
+    "github.com/felixge/pidctrl",
+    "github.com/kelseyhightower/envconfig",
+    "github.com/pkg/errors",
+    "github.com/rakyll/statik/fs",
+    "github.com/wcharczuk/go-chart",
+    "gopkg.in/square/go-jose.v2",
+    "periph.io/x/periph/conn/gpio",
+    "periph.io/x/periph/conn/gpio/gpioreg",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
