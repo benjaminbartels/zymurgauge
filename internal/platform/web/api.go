@@ -85,10 +85,12 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Register mounts the provided handler to the provided path creating a route
-func (a *API) Register(path string, handler Handler) {
+func (a *API) Register(path string, handler Handler, wrapWithMiddlewares bool) {
 
 	// Wrap handler with middlewares
-	handler = wrap(handler, a.middlewares)
+	if wrapWithMiddlewares {
+		handler = wrap(handler, a.middlewares)
+	}
 
 	// Handler function that adds the app specific values to the request context, then calls the wrapped handler
 	h := func(w http.ResponseWriter, r *http.Request) {

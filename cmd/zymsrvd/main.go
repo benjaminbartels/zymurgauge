@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/handlers"
 	_ "github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/statik"
+	"github.com/benjaminbartels/zymurgauge/internal/auth"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/boltdb/bolt"
@@ -34,8 +37,19 @@ func main() {
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 
 	// Process env variables
-	var cfg config
-	err := envconfig.Process("fermmond", &cfg)
+	var appCfg config
+	err := envconfig.Process("fermmond", &appCfg)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	file, err := ioutil.ReadFile("./creds.json")
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+
+	var creds auth.Credentials
+	err = json.Unmarshal(file, &creds)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -72,20 +86,21 @@ func main() {
 
 	requestLogger := middleware.NewRequestLogger(logger)
 	errorHandler := middleware.NewErrorHandler(logger)
+	authorizer := middleware.NewAuthorizer(creds.Secret, logger)
 
 	uiFS, err := fs.New()
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	api := web.NewAPI("v1", logger, requestLogger.Log, errorHandler.HandleError)
-	api.Register("beers", beerHandler.Handle)
-	api.Register("chambers", chamberHandler.Handle)
-	api.Register("fermentations", fermentationHandler.Handle)
+	api := web.NewAPI("v1", logger, requestLogger.Log, errorHandler.HandleError, authorizer.Authorize)
+	api.Register("beers", beerHandler.Handle, true)
+	api.Register("chambers", chamberHandler.Handle, true)
+	api.Register("fermentations", fermentationHandler.Handle, true)
 
 	app := web.NewApp(api, uiFS)
 
-	startServer(app, cfg, logger)
+	startServer(app, appCfg, logger)
 
 	logger.Println("Bye!")
 }

@@ -42,6 +42,8 @@ var (
 	ErrBadRequest = errors.New("bad request")
 	// ErrMethodNotAllowed is returned when the request method (GET, POST, etc.) is not allowed
 	ErrMethodNotAllowed = errors.New("method not allowed")
+	// ErrUnauthorized is returned when the request is not authorized
+	ErrUnauthorized = errors.New("unauthorized")
 )
 
 // errorResponse is the response sent to the client in the event of a error
@@ -61,6 +63,8 @@ func Error(ctx context.Context, w http.ResponseWriter, err error) error {
 		code = http.StatusBadRequest
 	case ErrMethodNotAllowed:
 		code = http.StatusMethodNotAllowed
+	case ErrUnauthorized:
+		code = http.StatusUnauthorized
 	default:
 		code = http.StatusInternalServerError
 	}
