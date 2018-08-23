@@ -15,24 +15,10 @@
     <v-toolbar class="amber">
       <v-toolbar-side-icon class="black--text" @click.stop="drawer = !drawer"></v-toolbar-side-icon>
       <v-toolbar-title class="black--text" v-text="title"></v-toolbar-title>
-          <button
-            class="btn btn-primary btn-margin"
-            v-if="!authenticated"
-            @click="login()">
-              Log In
-          </button>
-          <button
-            class="btn btn-primary btn-margin"
-            v-if="authenticated"
-            @click="logout()">
-              Log Out
-          </button>
     </v-toolbar>
     <main>
       <v-fade-transition>
-      <router-view 
-        :auth="auth" 
-        :authenticated="authenticated">
+      <router-view>
       </router-view>
       </v-fade-transition>
     </main>
@@ -41,33 +27,24 @@
 
 <script>
 export default {
-  data() {
-    authNotifier.on("authChange", authState => {
-      this.authenticated = authState.authenticated;
-    });
+  data () {
     return {
-      auth,
-      authenticated,
       drawer: true,
       items: [
         {
-          icon: "bubble_chart",
-          title: "Fermentations",
-          route: "fermentations"
+          icon: 'bubble_chart',
+          title: 'Fermentations',
+          route: 'fermentations'
         },
-        { icon: "local_drink", title: "Beers", route: "beers" },
-        { icon: "devices", title: "Chambers", route: "chambers" }
+        { icon: 'local_drink', title: 'Beers', route: 'beers' },
+        {
+          icon: 'devices',
+          title: 'Chambers',
+          route: 'chambers'
+        }
       ],
-      title: "Zymurgauge"
-    };
-  },
-  methods: {
-    login,
-    logout
+      title: 'Zymurgauge'
+    }
   }
-};
+}
 </script>
-
-<style lang="stylus">
-@import './stylus/main';
-</style>
