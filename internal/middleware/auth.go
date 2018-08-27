@@ -26,10 +26,19 @@ func NewAuthorizer(clientSecret string, logger log.Logger) *Authorizer {
 func (a *Authorizer) Authorize(next web.Handler) web.Handler {
 
 	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+
+		if r.Method == "OPTIONS" { // ToDo: And more to circumvent auth check (login?, get-token?)
+			return next(ctx, w, r)
+		}
+
+		for k, v := range r.Header {
+			a.logger.Println(k, "=", v)
+		}
+
 		secretProvider := auth0.NewKeyProvider([]byte(a.clientSecret))
 		audience := []string{"https://www.zymurgauge.com/api"}
 
-		configuration := auth0.NewConfiguration(secretProvider, audience, "https://zymurguage.auth0.com/", jose.HS256)
+		configuration := auth0.NewConfiguration(secretProvider, audience, "https://zymurgauge.auth0.com/", jose.HS256)
 		validator := auth0.NewValidator(configuration, auth0.RequestTokenExtractorFunc(auth0.FromHeader))
 
 		token, err := validator.ValidateRequest(r)

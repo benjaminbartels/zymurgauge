@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +12,6 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/handlers"
 	_ "github.com/benjaminbartels/zymurgauge/cmd/zymsrvd/statik"
-	"github.com/benjaminbartels/zymurgauge/internal/auth"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/boltdb/bolt"
@@ -30,6 +27,7 @@ type config struct {
 	HostAddress  string        `default:"0.0.0.0:3000"`
 	ReadTimeout  time.Duration `default:"5s"`
 	WriteTimeout time.Duration `default:"5s"`
+	AuthSecret   string        `required:"true"`
 }
 
 func main() {
@@ -39,17 +37,6 @@ func main() {
 	// Process env variables
 	var appCfg config
 	err := envconfig.Process("fermmond", &appCfg)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
-	file, err := ioutil.ReadFile("./creds.json")
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
-	var creds auth.Credentials
-	err = json.Unmarshal(file, &creds)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -86,7 +73,7 @@ func main() {
 
 	requestLogger := middleware.NewRequestLogger(logger)
 	errorHandler := middleware.NewErrorHandler(logger)
-	authorizer := middleware.NewAuthorizer(creds.Secret, logger)
+	authorizer := middleware.NewAuthorizer(appCfg.AuthSecret, logger)
 
 	uiFS, err := fs.New()
 	if err != nil {

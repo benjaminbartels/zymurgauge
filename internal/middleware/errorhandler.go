@@ -55,9 +55,6 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 			// Indicate this request had an error.
 			v.HasError = true
 
-			// What is the root error.
-			err = errors.Cause(err)
-
 			// Log the error.
 			e.logger.Printf("Error : %v\n", err)
 

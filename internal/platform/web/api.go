@@ -58,6 +58,14 @@ func NewAPI(version string, logger log.Logger, mw ...MiddlewareFunc) *API {
 // ServeHTTP calls f(w, r).
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
+	w.Header().Set("Access-Control-Allow-Origin", "*") // ToDo: dont allow just *
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	handled := false
 
 	// check version

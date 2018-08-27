@@ -6,13 +6,13 @@
 
 <script>
 export default {
-  name: "callback",
-  props: ["auth"],
-  data() {
-    this.auth.handleAuthentication();
-    return {};
+  name: 'auth',
+  props: ['auth'],
+  data () {
+    this.auth.handleAuthentication()
+    return {}
   }
-};
+}
 </script>
 
 <style>

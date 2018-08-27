@@ -6,8 +6,10 @@ import Fermentation from '@/components/Fermentation.vue'
 import Fermentations from '@/components/Fermentations.vue'
 import Chamber from '@/components/Chamber.vue'
 import Chambers from '@/components/Chambers.vue'
+import Auth from '@/components/Auth.vue'
 
 const routes = [
+  { path: '/auth', name: 'auth', component: Auth },
   { path: '/fermentations', name: 'fermentations', component: Fermentations },
   { path: '/fermentations/:id/edit', name: 'editFermentation', component: Fermentation, props: true },
   { path: '/fermentations/create', name: 'createFermentation', component: Fermentation, props: { create: true } },
@@ -20,8 +22,9 @@ const routes = [
 ]
 
 const router = new VueRouter({
-  routes: routes,
-  root: './fermentations'
+  mode: 'history',
+  routes: routes
+ // root: './fermentations' // ToDo: is this correct?
 })
 
 Vue.use(VueRouter)

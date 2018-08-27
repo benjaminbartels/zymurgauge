@@ -1,6 +1,6 @@
 <style scoped>
 a {
-  color: #FFB90D;
+  color: #ffb90d;
   text-decoration: none;
 }
 </style>
