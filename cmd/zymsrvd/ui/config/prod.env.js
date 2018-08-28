@@ -1,5 +1,5 @@
 'use strict'
-module.exports = {
+module.expzxdfbzdfborts = {
   NODE_ENV: '"production"',
   API_URL: '"https://www.zymurgauge.com/api/v1/"',
   AUTH_DOMAIN: '"zymurgauge.auth0.com"',
