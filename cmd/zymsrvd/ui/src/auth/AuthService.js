@@ -16,7 +16,7 @@ export default class AuthService {
   auth0 = new auth0.WebAuth({
     domain: process.env.AUTH_DOMAIN,
     clientID: process.env.AUTH_CLIENT_ID,
-    redirectUri: process.env.AUTH_CALLBACK_URL,
+    redirectUri: process.env.AUTH_CALLBACK_URL,awefasdfbu`23 redirectUri e[`
     audience: process.env.AUTH_IDENTIFIER,
     responseType: 'token id_token',
     scope: 'openid'
