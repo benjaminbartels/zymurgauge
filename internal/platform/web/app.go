@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -13,6 +14,7 @@ type App struct {
 
 // NewApp creates a new App.  The usFS is a filesystem that gets mounted into a http.FileServer
 func NewApp(api *API, uiFS http.FileSystem) *App {
+
 	a := &App{
 		api: api,
 		ui:  http.FileServer(uiFS),
@@ -27,6 +29,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/api/") {
 		http.StripPrefix("/api/", a.api).ServeHTTP(w, r)
 	} else {
+		fmt.Println("UI REQUEST:", r.URL.String())
 		http.StripPrefix("/", a.ui).ServeHTTP(w, r)
 	}
 }
