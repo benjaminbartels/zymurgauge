@@ -85,7 +85,7 @@ func main() {
 	api.Register("chambers", chamberHandler.Handle, true)
 	api.Register("fermentations", fermentationHandler.Handle, true)
 
-	app := web.NewApp(api, uiFS)
+	app := web.NewApp(api, uiFS, logger)
 
 	startServer(app, appCfg, logger)
 

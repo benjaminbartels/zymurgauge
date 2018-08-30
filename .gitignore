@@ -23,11 +23,11 @@
 /cmd/client_test/client_test
 
 # BoltDB Databases
-cmd/zymsrvd/zymurgaugedb
-cmd/zymsrvd/zymurgaugedb.lock
+**/zymurgaugedb
+**/zymurgaugedb.lock
 
 # Other junk
 .vscode
+cmd/zymsrvd/statik/statik.go
 cmd/thermostat_test/*.png
 coverage.html
-creds.json

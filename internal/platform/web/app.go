@@ -1,23 +1,28 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 )
 
 // App represents a web application that includes a REST API and a hosted web based UI
 type App struct {
-	api *API
-	ui  http.Handler
+	api    *API
+	fs     http.FileSystem
+	ui     http.Handler
+	logger log.Logger
 }
 
 // NewApp creates a new App.  The usFS is a filesystem that gets mounted into a http.FileServer
-func NewApp(api *API, uiFS http.FileSystem) *App {
-
+func NewApp(api *API, uiFS http.FileSystem, logger log.Logger) *App {
 	a := &App{
-		api: api,
-		ui:  http.FileServer(uiFS),
+		api:    api,
+		fs:     uiFS,
+		ui:     http.FileServer(uiFS),
+		logger: logger,
 	}
 
 	return a
@@ -26,11 +31,21 @@ func NewApp(api *API, uiFS http.FileSystem) *App {
 // ServeHTTP calls f(w, r). API calls are routed to the API. Calls at the root "/" are intended to be for the UI and are
 // routed to an FileServer
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	if strings.HasPrefix(r.URL.Path, "/api/") {
+		// Handle calls to the API
 		http.StripPrefix("/api/", a.api).ServeHTTP(w, r)
-	} else {
-		fmt.Println("UI REQUEST:", r.URL.String())
-		r.URL.Path = "/index.html"
+	} else if strings.HasPrefix(r.URL.Path, "/static/") {
+		// Handle calls to static ui files
 		http.StripPrefix("/", a.ui).ServeHTTP(w, r)
+	} else {
+		// Everything else gets routed to index.html
+		// We can't tell the http.FileServer to serve a specific file, so we do it http.ServeContent
+		f, err := a.fs.Open("/index.html")
+		if err != nil {
+			a.logger.Println(err)
+		} else {
+			http.ServeContent(w, r, "index.html", time.Time{}, f) // ToDo: What set modtime to?
+		}
 	}
 }
