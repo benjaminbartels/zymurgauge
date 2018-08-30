@@ -4,6 +4,7 @@ services:
   zymsrv:
     restart: always
     image: benjaminbartels/zymsrv
+    container_name: zymsrv
     expose:
       - 3000
     environment:
