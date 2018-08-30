@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -30,6 +31,11 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.StripPrefix("/api/", a.api).ServeHTTP(w, r)
 	} else {
 		fmt.Println("UI REQUEST:", r.URL.String())
+
+		u, _ := url.Parse("/index.html")
+
+		r.URL = u
+
 		http.StripPrefix("/", a.ui).ServeHTTP(w, r)
 	}
 }
