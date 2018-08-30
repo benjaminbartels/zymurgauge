@@ -33,11 +33,8 @@
     <v-toolbar color="amber" fixed clipped-left app>
       <v-toolbar-side-icon class="black--text" @click.stop="drawer = !drawer"></v-toolbar-side-icon>
       <v-toolbar-title class="black--text" v-text="title"></v-toolbar-title>
-      <v-spacer></v-spacer>
-      <v-layout align-right>
-
-      </v-layout>
     </v-toolbar>
+    
     <v-content>
       <v-container>
         <router-view 

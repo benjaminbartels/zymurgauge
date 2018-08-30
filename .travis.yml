@@ -16,8 +16,8 @@ install:
   - . $HOME/.nvm/nvm.sh
   - nvm install stable
   - nvm use stable
-  - npm install --prefix cmd/zymsrvd/ui cmd/zymsrvd/ui
-  - npm run --prefix cmd/zymsrvd/ui build
+  - npm install --prefix ui ui
+  - npm run --prefix ui build
   - go get github.com/rakyll/statik
   - go get github.com/axw/gocov
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
@@ -27,7 +27,7 @@ before_script:
   - ./cc-test-reporter before-build
 
 script:
-  - statik -f -src=cmd/zymsrvd/ui/dist -dest=cmd/zymsrvd
+  - statik -f -src=ui/dist -dest=cmd/zymsrvd
   - go test -coverprofile c.out ./...
   - CGO_ENABLED=0 go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
   - GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
