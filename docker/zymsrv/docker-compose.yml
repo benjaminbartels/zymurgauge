@@ -11,6 +11,7 @@ services:
       VIRTUAL_HOST: www.zymurgauge.com,zymurgauge.com
       LETSENCRYPT_HOST: www.zymurgauge.com,zymurgauge.com
       LETSENCRYPT_EMAIL: bbartels@gmail.com
+      ZYMSRVD_AUTHSECRET: ${ZYMSRVD_AUTHSECRET}
 
 networks:
     default:
