@@ -31,19 +31,13 @@ func (a *Authorizer) Authorize(next web.Handler) web.Handler {
 			return next(ctx, w, r)
 		}
 
-		for k, v := range r.Header {
-			a.logger.Println(k, "=", v)
-		}
-
 		secretProvider := auth0.NewKeyProvider([]byte(a.clientSecret))
 		audience := []string{"https://www.zymurgauge.com/api"}
 
 		configuration := auth0.NewConfiguration(secretProvider, audience, "https://zymurgauge.auth0.com/", jose.HS256)
 		validator := auth0.NewValidator(configuration, auth0.RequestTokenExtractorFunc(auth0.FromHeader))
 
-		token, err := validator.ValidateRequest(r)
-
-		a.logger.Println(token)
+		_, err := validator.ValidateRequest(r)
 
 		if err != nil {
 			return errors.WithMessage(web.ErrUnauthorized, err.Error())
