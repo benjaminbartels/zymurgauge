@@ -27,8 +27,8 @@ before_script:
   - ./cc-test-reporter before-build
 
 script:
-  - go test -coverprofile c.out ./...
   - statik -f -src=cmd/zymsrvd/ui/dist -dest=cmd/zymsrvd
+  - go test -coverprofile c.out ./...
   - CGO_ENABLED=0 go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrvd
   - GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmond
   - docker build -f ./docker/zymsrv/Dockerfile -t benjaminbartels/zymsrv .
