@@ -36,7 +36,7 @@ func main() {
 
 	// Process env variables
 	var appCfg config
-	err := envconfig.Process("fermmond", &appCfg)
+	err := envconfig.Process("zymsrvd", &appCfg)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
