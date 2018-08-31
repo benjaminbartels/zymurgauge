@@ -1,6 +1,6 @@
 # zymsrv-ui
 
-> Zymsrvd's User Interface
+> Zymsrv's User Interface
 
 ## Build Setup
 

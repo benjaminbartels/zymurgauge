@@ -1,7 +1,7 @@
 {
   "name": "zymsrv-ui",
   "version": "1.0.0",
-  "description": "Zymsrvd's User Interface",
+  "description": "Zymsrv's User Interface",
   "author": "benjaminbartels <bbartels@gmail.com>",
   "private": true,
   "scripts": {
