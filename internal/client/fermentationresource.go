@@ -47,7 +47,7 @@ func (r *FermentationResource) Get(id uint64) (*internal.Fermentation, error) {
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.Wrapf(web.ErrNotFound, "Could not GET Fermentation %d", id)
+		return nil, errors.Wrapf(web.ErrNotFound, "Fermentation %d does not exist", id)
 	}
 
 	var fermentation *internal.Fermentation

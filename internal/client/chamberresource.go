@@ -39,20 +39,20 @@ func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 
 	req, err := http.NewRequest(http.MethodGet, r.url.String()+url.QueryEscape(mac), nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not create GET request for Chamber %d", mac)
+		return nil, errors.Wrapf(err, "Could not create GET request for Chamber %s", mac)
 	}
 
 	req.Header.Add("authorization", "Bearer "+r.token)
 
 	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not GET Chamber %d", mac)
+		return nil, errors.Wrapf(err, "Could not GET Chamber %s", mac)
 	}
 
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.Wrapf(web.ErrNotFound, "Could not GET Chamber %s", mac)
+		return nil, errors.Wrapf(web.ErrNotFound, "Chamber %s does not exist", mac)
 	}
 
 	var chamber *internal.Chamber

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/url"
@@ -74,7 +75,8 @@ func main() {
 		var err error
 		chamber, err := client.ChamberResource.Get(mac)
 		if err != nil {
-			logger.Printf("Chamber %s does not exist, creating it.\n", mac)
+			fmt.Println(err)
+			logger.Printf("Chamber %s does not exist, creating it\n", mac)
 
 			// ToDo: Create better way to provision new chambers. Enable/Disable flag?
 			chamber = &internal.Chamber{

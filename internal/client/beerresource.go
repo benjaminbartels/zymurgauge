@@ -45,7 +45,7 @@ func (r *BeerResource) Get(id uint64) (*internal.Beer, error) {
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.Wrapf(web.ErrNotFound, "Could not GET Beer %d", id)
+		return nil, errors.Wrapf(web.ErrNotFound, "Beer %d does not exist", id)
 	}
 
 	var beer *internal.Beer
