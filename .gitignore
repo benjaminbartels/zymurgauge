@@ -18,12 +18,12 @@
 .cover
 
 # Extentionless binaries in cmd directories
-/cmd/zymsrvd/zymsrvd
-/cmd/fermmond/fermmond
+/cmd/zymsrv/zymsrv
+/cmd/fermmon/fermmon
 /cmd/client_test/client_test
 
 # Statik Generate files
-cmd/zymsrvd/statik
+cmd/zymsrv/statik
 
 # BoltDB Databases
 **/zymurgaugedb

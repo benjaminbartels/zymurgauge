@@ -1,4 +1,4 @@
-# zymsrvd-ui
+# zymsrv-ui
 
 > Zymsrvd's User Interface
 
