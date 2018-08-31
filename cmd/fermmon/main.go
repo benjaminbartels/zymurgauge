@@ -80,7 +80,7 @@ func main() {
 
 			// ToDo: Create better way to provision new chambers. Enable/Disable flag?
 			chamber = &internal.Chamber{
-				Name:       "Chamber_" + mac,
+				Name:       "Chamber " + mac,
 				MacAddress: mac,
 			}
 
