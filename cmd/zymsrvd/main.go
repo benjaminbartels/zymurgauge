@@ -41,7 +41,14 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
-	db, err := bolt.Open("zymurgaugedb", 0666, &bolt.Options{Timeout: 1 * time.Second})
+	if _, err := os.Stat("data"); os.IsNotExist(err) {
+		err = os.MkdirAll("data", 0666)
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
+
+	db, err := bolt.Open("data/zymurgaugedb", 0666, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		logger.Fatal(err)
 	}
