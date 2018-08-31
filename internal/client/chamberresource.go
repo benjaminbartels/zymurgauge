@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -37,8 +36,6 @@ func newChamberResource(base, version, token string, logger log.Logger) (*Chambe
 
 // Get returns a controller by id
 func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
-
-	fmt.Println(r.url.String() + url.QueryEscape(mac))
 
 	req, err := http.NewRequest(http.MethodGet, r.url.String()+url.QueryEscape(mac), nil)
 	if err != nil {
