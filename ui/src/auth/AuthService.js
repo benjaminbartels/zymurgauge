@@ -17,7 +17,7 @@ export default class AuthService {
     domain: process.env.AUTH_DOMAIN,
     clientID: process.env.AUTH_CLIENT_ID,
     redirectUri: process.env.AUTH_CALLBACK_URL,
-    audience: process.env.AUTH_IDENTIFIER,
+    audience: process.env.AUTH_AUDIENCE,
     responseType: 'token id_token',
     scope: 'openid'
   })

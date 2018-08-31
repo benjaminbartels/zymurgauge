@@ -11,6 +11,11 @@ import (
 	jose "gopkg.in/square/go-jose.v2"
 )
 
+const (
+	audience = "zymurgauge.com/api"
+	issuer   = "https://zymurgauge.auth0.com/"
+)
+
 type Authorizer struct {
 	clientSecret string
 	logger       log.Logger
@@ -32,9 +37,8 @@ func (a *Authorizer) Authorize(next web.Handler) web.Handler {
 		}
 
 		secretProvider := auth0.NewKeyProvider([]byte(a.clientSecret))
-		audience := []string{"https://www.zymurgauge.com/api"}
 
-		configuration := auth0.NewConfiguration(secretProvider, audience, "https://zymurgauge.auth0.com/", jose.HS256)
+		configuration := auth0.NewConfiguration(secretProvider, []string{audience}, issuer, jose.HS256)
 		validator := auth0.NewValidator(configuration, auth0.RequestTokenExtractorFunc(auth0.FromHeader))
 
 		_, err := validator.ValidateRequest(r)
