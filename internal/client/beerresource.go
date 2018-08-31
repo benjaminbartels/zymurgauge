@@ -15,21 +15,29 @@ import (
 
 // BeerResource is a client side rest resource used to manage Beers
 type BeerResource struct {
-	url *url.URL
+	url   *url.URL
+	token string
 }
 
-func newBeerResource(base string, version string) (*BeerResource, error) {
+func newBeerResource(base, version, token string) (*BeerResource, error) {
 	u, err := url.Parse(base + "/" + version + "/beers/")
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not create new BeerResource")
 	}
-	return &BeerResource{url: u}, nil
+	return &BeerResource{url: u, token: token}, nil
 }
 
 // Get returns a beer by id
 func (r *BeerResource) Get(id uint64) (*internal.Beer, error) {
 
-	resp, err := http.Get(r.url.String() + url.QueryEscape(strconv.FormatUint(id, 10)))
+	req, err := http.NewRequest(http.MethodGet, r.url.String()+url.QueryEscape(strconv.FormatUint(id, 10)), nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not create GET request for Beer %d", id)
+	}
+
+	req.Header.Add("authorization", "Bearer "+r.token)
+
+	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not GET Beer %d", id)
 	}
@@ -56,7 +64,15 @@ func (r *BeerResource) Save(b *internal.Beer) error {
 		return errors.Wrapf(err, "Could not marshal Beer %d", b.ID)
 	}
 
-	resp, err := http.Post(r.url.String(), "application/json", bytes.NewReader(reqBody))
+	req, err := http.NewRequest(http.MethodPost, r.url.String(), bytes.NewReader(reqBody))
+	if err != nil {
+		return errors.Wrapf(err, "Could not create POST request for Beer %d", b.ID)
+	}
+
+	req.Header.Add("Authorization", "Bearer "+r.token)
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
 	if err != nil {
 		return errors.Wrapf(err, "Could not POST Beer %d", b.ID)
 	}

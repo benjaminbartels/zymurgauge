@@ -1,6 +1,7 @@
-package main
+package controller
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
@@ -12,7 +13,7 @@ import (
 )
 
 // ChamberCtl controls a Chamber
-type chamberCtl struct {
+type ChamberCtl struct {
 	chamber             *internal.Chamber
 	pid                 *pidctrl.PIDController
 	client              *client.Client
@@ -23,18 +24,31 @@ type chamberCtl struct {
 }
 
 // NewChamberCtl creates a new ChamberCtl with the given parameters
-func newChamberCtl(chamber *internal.Chamber, pid *pidctrl.PIDController, client *client.Client,
-	logger log.Logger, thermostatOptions ...func(*internal.Thermostat) error) (*chamberCtl, error) {
+func NewChamberCtl(chamber *internal.Chamber, pid *pidctrl.PIDController, client *client.Client,
+	logger log.Logger, thermostatOptions ...func(*internal.Thermostat) error) (*ChamberCtl, error) {
 
 	var err error
 
-	c := &chamberCtl{
+	c := &ChamberCtl{
 		chamber:           chamber,
 		pid:               pid,
 		client:            client,
 		logger:            logger,
 		thermostatOptions: thermostatOptions,
 		done:              make(chan bool, 1),
+	}
+
+	if c.chamber.CurrentFermentationID != 0 {
+		c.currentFermentation, err = client.FermentationResource.Get(c.chamber.CurrentFermentationID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if runtime.GOOS != "linux" || runtime.GOARCH != "arm" {
+		logger.Printf("%s %s not supported. Bypassing setting up Thermostat and Thermometers",
+			runtime.GOOS, runtime.GOARCH)
+		return c, nil
 	}
 
 	thermometer, err := ds18b20.NewThermometer(c.chamber.Thermostat.ThermometerID)
@@ -57,18 +71,11 @@ func newChamberCtl(chamber *internal.Chamber, pid *pidctrl.PIDController, client
 		return nil, err
 	}
 
-	if c.chamber.CurrentFermentationID != 0 {
-		c.currentFermentation, err = client.FermentationResource.Get(c.chamber.CurrentFermentationID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return c, nil
 }
 
 // Listen subscribes to receive Chamber updates from the server
-func (c *chamberCtl) Listen() {
+func (c *ChamberCtl) Listen() {
 
 	// Subscribe to chamber updates
 	ch := make(chan internal.Chamber)
@@ -91,11 +98,11 @@ func (c *chamberCtl) Listen() {
 }
 
 // Close unsubscribes from receiving Chamber updates from the server
-func (c *chamberCtl) Close() {
+func (c *ChamberCtl) Close() {
 	c.done <- true
 }
 
-func (c *chamberCtl) processUpdate(chamberUpdate *internal.Chamber) error {
+func (c *ChamberCtl) processUpdate(chamberUpdate *internal.Chamber) error {
 	c.logger.Println("Processing Chamber:", chamberUpdate.Name, chamberUpdate.MacAddress)
 
 	var err error
@@ -159,7 +166,7 @@ func (c *chamberCtl) processUpdate(chamberUpdate *internal.Chamber) error {
 	return nil
 }
 
-func (c *chamberCtl) handleStatusUpdate(status internal.ThermostatStatus) {
+func (c *ChamberCtl) handleStatusUpdate(status internal.ThermostatStatus) {
 	c.logger.Printf("State: %v, Error: %s\n", status.State, status.Error)
 
 	change := &internal.TemperatureChange{

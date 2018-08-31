@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -19,26 +20,36 @@ var headerData = []byte("data:")
 // ChamberResource is a client side rest resource used to manage Chambers
 type ChamberResource struct {
 	url    *url.URL
+	token  string
 	stream *stream
 	logger log.Logger
 }
 
-func newChamberResource(base string, version string, logger log.Logger) (*ChamberResource, error) {
+func newChamberResource(base, version, token string, logger log.Logger) (*ChamberResource, error) {
 
 	u, err := url.Parse(base + "/" + version + "/chambers/")
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not create new ChamberResource")
 	}
 
-	return &ChamberResource{url: u, logger: logger}, nil
+	return &ChamberResource{url: u, token: token, logger: logger}, nil
 }
 
-// Get returns a controller by MAC address
+// Get returns a controller by id
 func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 
-	resp, err := http.Get(r.url.String() + url.QueryEscape(mac))
+	fmt.Println(r.url.String() + url.QueryEscape(mac))
+
+	req, err := http.NewRequest(http.MethodGet, r.url.String()+url.QueryEscape(mac), nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not GET Chamber %s", mac)
+		return nil, errors.Wrapf(err, "Could not create GET request for Chamber %d", mac)
+	}
+
+	req.Header.Add("authorization", "Bearer "+r.token)
+
+	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not GET Chamber %d", mac)
 	}
 
 	defer safeclose.Close(resp.Body, &err)
@@ -63,7 +74,15 @@ func (r ChamberResource) Save(c *internal.Chamber) error {
 		return errors.Wrapf(err, "Could not marshal Chamber %s", c.MacAddress)
 	}
 
-	resp, err := http.Post(r.url.String(), "application/json", bytes.NewReader(reqBody))
+	req, err := http.NewRequest(http.MethodPost, r.url.String(), bytes.NewReader(reqBody))
+	if err != nil {
+		return errors.Wrapf(err, "Could not create POST request for Chamber %s", c.MacAddress)
+	}
+
+	req.Header.Add("Authorization", "Bearer "+r.token)
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
 	if err != nil {
 		return errors.Wrapf(err, "Could not POST Chamber %s", c.MacAddress)
 	}
@@ -82,10 +101,12 @@ func (r ChamberResource) Subscribe(mac string, ch chan internal.Chamber) error {
 
 	r.url.Path = r.url.Path + url.QueryEscape(mac) + "/events"
 
-	req, err := http.NewRequest("GET", r.url.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, r.url.String(), nil)
 	if err != nil {
 		return errors.Wrapf(err, "Could not GET Chamber events for %s", mac)
 	}
+
+	req.Header.Add("Authorization", "Bearer "+r.token)
 
 	r.stream = &stream{
 		ch:     ch,

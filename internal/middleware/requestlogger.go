@@ -29,6 +29,7 @@ func (l *RequestLogger) Log(next web.Handler) web.Handler {
 
 		v := ctx.Value(web.CtxValuesKey).(*web.CtxValues)
 
+		// ToDo: r.URL.Path is getting overwritten, create a value in ctx?
 		l.logger.Printf("(%d) : %s %s -> %s (%s)", v.StatusCode, r.Method, r.URL.Path, r.RemoteAddr,
 			time.Since(v.StartTime))
 
