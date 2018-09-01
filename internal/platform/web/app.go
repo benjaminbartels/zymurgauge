@@ -53,7 +53,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if head == "static" {
 		fmt.Println("!!!!!! routing to Static")
 		// Handle calls to static ui files
-		http.StripPrefix("/", a.ui).ServeHTTP(w, r) // ToDo: wrap handlers here to use middleware
+		a.ui.ServeHTTP(w, r) // ToDo: wrap handlers here to use middleware
 	} else {
 		fmt.Println("!!!!!! routing to index.html")
 		// Everything else gets routed to index.html
