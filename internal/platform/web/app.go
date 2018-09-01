@@ -1,8 +1,8 @@
 package web
 
 import (
+	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
@@ -32,12 +32,23 @@ func NewApp(api *API, uiFS http.FileSystem, logger log.Logger) *App {
 // routed to an FileServer
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	if strings.HasPrefix(r.URL.Path, "/api/") {
+	v := &CtxValues{
+		StartTime:    time.Now(),
+		OriginalPath: r.URL.Path,
+	}
+
+	// Add app specific values to the request context
+	ctx := context.WithValue(r.Context(), CtxValuesKey, v)
+
+	var head string
+	head, r.URL.Path = ShiftPath(r.URL.Path)
+
+	if head == "api" {
 		// Handle calls to the API
-		http.StripPrefix("/api/", a.api).ServeHTTP(w, r)
-	} else if strings.HasPrefix(r.URL.Path, "/static/") {
+		a.api.ServeHTTP(w, r.WithContext(ctx))
+	} else if head == "static" {
 		// Handle calls to static ui files
-		http.StripPrefix("/", a.ui).ServeHTTP(w, r)
+		http.StripPrefix("/", a.ui).ServeHTTP(w, r) // ToDo: wrap handlers here to use middleware
 	} else {
 		// Everything else gets routed to index.html
 		// We can't tell the http.FileServer to serve a specific file, so we do it http.ServeContent

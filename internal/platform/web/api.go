@@ -18,9 +18,10 @@ const CtxValuesKey ctxKey = 1
 
 // CtxValues are context values specific to the App
 type CtxValues struct {
-	StartTime  time.Time
-	StatusCode int
-	HasError   bool
+	StartTime    time.Time
+	OriginalPath string
+	StatusCode   int
+	HasError     bool
 }
 
 // Handler extends the http.HandlerFunc buy adding context param and an error
@@ -28,7 +29,7 @@ type Handler func(context.Context, http.ResponseWriter, *http.Request) error
 
 const (
 	// GET method
-	GET string = "GET"
+	GET string = "GET" // ToDo:  Are these needed?  Wrap html package completely...
 	// POST method
 	POST string = "POST"
 	// DELETE method
@@ -68,8 +69,11 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	handled := false
 
+	var head string
+	head, r.URL.Path = ShiftPath(r.URL.Path)
+
 	// check version
-	if strings.HasPrefix(r.URL.Path, a.version) {
+	if head == a.version {
 		// take off version
 		r.URL.Path = strings.TrimPrefix(r.URL.Path, a.version+"/")
 
@@ -102,11 +106,9 @@ func (a *API) Register(path string, handler Handler, wrapWithMiddlewares bool) {
 
 	// Handler function that adds the app specific values to the request context, then calls the wrapped handler
 	h := func(w http.ResponseWriter, r *http.Request) {
-		// Add app specific values to the request context
-		ctx := context.WithValue(r.Context(), CtxValuesKey, &CtxValues{StartTime: time.Now()})
 
 		// Calls the wrapped handler
-		if err := handler(ctx, w, r); err != nil {
+		if err := handler(r.Context(), w, r); err != nil {
 			// This is called when the error handler middleware doesn't handle the error, which is never
 			a.logger.Printf("ERROR : %v\n", err)
 		}
