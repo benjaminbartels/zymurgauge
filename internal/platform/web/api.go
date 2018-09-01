@@ -60,7 +60,7 @@ func NewAPI(version string, logger log.Logger, mw ...MiddlewareFunc) *API {
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*") // ToDo: dont allow just *
-	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type,Accept")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type")
 
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
