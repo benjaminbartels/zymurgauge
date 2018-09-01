@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -40,16 +41,21 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Add app specific values to the request context
 	ctx := context.WithValue(r.Context(), CtxValuesKey, v)
 
+	fmt.Println("!!!!!!path ", r.URL.Path)
+
 	var head string
 	head, r.URL.Path = ShiftPath(r.URL.Path)
 
 	if head == "api" {
+		fmt.Println("!!!!!! routing to API")
 		// Handle calls to the API
 		a.api.ServeHTTP(w, r.WithContext(ctx))
 	} else if head == "static" {
+		fmt.Println("!!!!!! routing to Static")
 		// Handle calls to static ui files
 		http.StripPrefix("/", a.ui).ServeHTTP(w, r) // ToDo: wrap handlers here to use middleware
 	} else {
+		fmt.Println("!!!!!! routing to index.html")
 		// Everything else gets routed to index.html
 		// We can't tell the http.FileServer to serve a specific file, so we do it http.ServeContent
 		f, err := a.fs.Open("/index.html")
