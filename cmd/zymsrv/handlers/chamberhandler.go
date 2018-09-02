@@ -84,6 +84,7 @@ func (h *ChamberHandler) getAll(ctx context.Context, w http.ResponseWriter) erro
 	return web.Respond(ctx, w, chambers, http.StatusOK)
 }
 
+// ToDo: Pending Removal
 func (h *ChamberHandler) getEvents(w http.ResponseWriter, mac string) error {
 	f, ok := w.(http.Flusher) //ToDo: comment this mess
 	if !ok {

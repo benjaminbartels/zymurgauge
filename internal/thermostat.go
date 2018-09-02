@@ -222,8 +222,10 @@ func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.D
 
 // Off turns the Thermostat Off
 func (t *Thermostat) Off() {
-	t.quit <- true
-	t.isOn.Set(false)
+	if t.isOn.Get() {
+		t.quit <- true
+		t.isOn.Set(false)
+	}
 }
 
 // Set sets TemperatureController to the specified temperature

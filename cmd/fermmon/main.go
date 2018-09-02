@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/url"
@@ -69,59 +68,26 @@ func main() {
 	// Create PID Controller
 	pid := pidctrl.NewPIDController(1, 1, 0) // ToDo: get from env vars
 
-	var ctl *controller.ChamberCtl
+	ctl := controller.NewChamberCtl(mac, pid, client, logger,
+		internal.MinimumChill(1*time.Second), // ToDO: env vars
+		internal.MinimumHeat(1*time.Second),
+		internal.Interval(1*time.Second),
+		internal.Logger(logger))
 
-	for {
-		var err error
-		chamber, err := client.ChamberResource.Get(mac)
-		if err != nil {
-			fmt.Println(err)
-			logger.Printf("Chamber %s does not exist, creating it\n", mac)
-
-			// ToDo: Create better way to provision new chambers. Enable/Disable flag?
-			chamber = &internal.Chamber{
-				Name:       "Chamber " + mac,
-				MacAddress: mac,
-			}
-
-			err := client.ChamberResource.Save(chamber)
-			if err != nil {
-				logger.Fatal(err)
-			}
-
-		}
-
-		if chamber != nil {
-
-			ctl, err = controller.NewChamberCtl(chamber, pid, client, logger,
-				internal.MinimumChill(1*time.Second), // ToDO: env vars
-				internal.MinimumHeat(1*time.Second),
-				internal.Interval(1*time.Second),
-				internal.Logger(logger))
-			if err != nil {
-				logger.Fatal(err)
-			}
-			break
-
-		}
-
-		logger.Printf("No Chamber found for MacAddress: %s, retrying in 5 seconds\n", mac)
-
-		time.Sleep(5 * time.Second)
-	}
+	ctl.Start()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	// Start listening
-	ctl.Listen()
+	// Start polling
+	ctl.Start()
 
 	sig := make(chan os.Signal, 2)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	<-sig
 
-	// Stop listening
-	ctl.Close()
+	// Stop polling
+	ctl.Stop()
 
 	wg.Wait()
 	logger.Println("Bye!")

@@ -94,6 +94,7 @@ func (r ChamberResource) Save(c *internal.Chamber) error {
 }
 
 // Subscribe registers the caller to receives updates to the given controller on the given channel
+// Pending Removal
 func (r ChamberResource) Subscribe(mac string, ch chan internal.Chamber) error {
 
 	r.url.Path = r.url.Path + url.QueryEscape(mac) + "/events"
@@ -118,6 +119,7 @@ func (r ChamberResource) Subscribe(mac string, ch chan internal.Chamber) error {
 }
 
 // Unsubscribe unregisters the caller to receives updates to the given controller
+// Pending Removal
 func (r ChamberResource) Unsubscribe(mac string) { // ToDo: Does Unsubscribe need to return an error?
 	r.stream.close()
 }
