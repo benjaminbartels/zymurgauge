@@ -61,6 +61,7 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Access-Control-Allow-Origin", "*") // ToDo: dont allow just *
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
 
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)

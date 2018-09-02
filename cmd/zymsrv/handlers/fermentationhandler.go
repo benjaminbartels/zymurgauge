@@ -35,7 +35,7 @@ func (h *FermentationHandler) Handle(ctx context.Context, w http.ResponseWriter,
 	case web.POST:
 		return h.post(ctx, w, r)
 	case web.DELETE:
-		return h.delete(r)
+		return h.delete(ctx, w, r)
 	default:
 		return web.ErrMethodNotAllowed
 	}
@@ -145,20 +145,20 @@ func (h *FermentationHandler) postTemperatureChange(ctx context.Context, w http.
 	return web.Respond(ctx, w, change, http.StatusOK)
 }
 
-func (h *FermentationHandler) delete(r *http.Request) error {
-	if r.URL.Path == "" {
+func (h *FermentationHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var head string
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
+	if head == "" {
 		return web.ErrBadRequest
 	}
-
-	id, err := strconv.ParseUint(r.URL.Path, 10, 64)
+	id, err := strconv.ParseUint(head, 10, 64)
 	if err != nil {
 		return web.ErrBadRequest
 	}
 	if err := h.fermRepo.Delete(id); err != nil {
 		return err
 	}
-	// ToDo: delete temperaturechanges
-	return nil
+	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
 func parseFermentation(r *http.Request) (internal.Fermentation, error) {
