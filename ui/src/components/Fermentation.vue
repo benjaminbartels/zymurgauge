@@ -1,12 +1,5 @@
 <template>
   <v-container>
-	<!-- ID               uint64     `json:"id"`
-	ChamberMacAddres uint64     `json:"chamberMacAddres"`
-	Beer             Beer       `json:"beer"`
-	CurrentStep      int        `json:"currentStep,omitempty"`
-	StartTime        *time.Time `json:"startTime,omitempty"`
-	CompletedTime    *time.Time `json:"completedTime,omitempty"`
-	ModTime          time.Time  `json:"modTime"` -->
 
    <div v-if="fermentation">
       <v-form v-model="valid" ref="form" lazy-validation>
@@ -21,16 +14,17 @@
       </v-form>
     </div>
 
-    <div v-if="loading">
-      <p>Loading...</p>
-    </div>
-
     <ul v-if="errors && errors.length">
       <li v-for="error of errors" :key="error.message">
         {{error.message}}
       </li>
     </ul>
-    <temperature-chart :chart-data="chartData" :options="chartOptions"/>
+    <div v-if="!create">
+      <p v-if="loading">Loading...</p>
+      <div v-if="!loading" >
+        <temperature-chart :chart-data="chartData" :options="chartOptions"/>
+      </div>
+    </div>
   </v-container>
 </template>
 
@@ -81,39 +75,40 @@ export default {
   props: ['id', 'create'],
 
   created () {
-    if (!this.create) {
-      this.fetch()
-    } else {
+    this.fetch()
+    if (this.create) {
       this.fermentation = {}
     }
   },
   mounted () {
-    HTTP.get('fermentations/' + this.id + '/temperaturechanges')
-      .then(response => {
-        this.temperaturechanges = response.data
+    if (!this.create) {
+      HTTP.get('fermentations/' + this.id + '/temperaturechanges')
+        .then(response => {
+          this.temperaturechanges = response.data
 
-        var times = []
-        var temps = []
+          var times = []
+          var temps = []
 
-        this.temperaturechanges.forEach(function (t) {
-          times.push(moment(t.insertTime).format('MM/DD/YYYY h:mm:ss a'))
-          temps.push(t.temperature)
+          this.temperaturechanges.forEach(function (t) {
+            times.push(moment(t.insertTime).format('MM/DD/YYYY h:mm:ss a'))
+            temps.push(t.temperature)
+          })
+
+          this.chartData = {
+            labels: times,
+            datasets: [
+              {
+                label: 'Temperature',
+                backgroundColor: '#FFB90D',
+                data: temps
+              }
+            ]
+          }
         })
-
-        this.chartData = {
-          labels: times,
-          datasets: [
-            {
-              label: 'Temperature',
-              backgroundColor: '#FFB90D',
-              data: temps
-            }
-          ]
-        }
-      })
-      .catch(e => {
-        this.errors.push(e)
-      })
+        .catch(e => {
+          this.errors.push(e)
+        })
+    }
   },
 
   watch: {
@@ -139,16 +134,18 @@ export default {
         .catch(e => {
           this.errors.push(e)
         })
-      HTTP.get('fermentations/' + this.id)
-        .then(response => {
-          this.fermentation = response.data
-        })
-        .catch(e => {
-          this.errors.push(e)
-        })
-        .finally(_ => {
-          this.loading = false
-        })
+      if (!this.create) {
+        HTTP.get('fermentations/' + this.id)
+          .then(response => {
+            this.fermentation = response.data
+          })
+          .catch(e => {
+            this.errors.push(e)
+          })
+          .finally(_ => {
+            this.loading = false
+          })
+      }
     },
     addSchedule () {
       if (this.fermentation.schedule == null) {
