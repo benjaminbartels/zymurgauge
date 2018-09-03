@@ -52,3 +52,7 @@
 [[constraint]]
   name = "periph.io/x/periph"
   version = "3.1.0"
+
+[[constraint]]
+  name = "gobot.io/x/gobot"
+  version = "1.12.0"

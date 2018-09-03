@@ -9,8 +9,8 @@
         <v-text-field v-if="!create" label="Beers" v-model="fermentation.beer.name" disabled required></v-text-field>
         <v-btn v-if="create" @click="save" :disabled="!valid">save</v-btn>
         <v-btn @click="remove" :disabled="this.create">remove</v-btn>
-        <v-btn v-if="!create" :disabled="this.create">start</v-btn>
-        <v-btn v-if="!create" :disabled="this.create">stop</v-btn>
+        <v-btn v-if="!create" @click="start" :disabled="this.create">start</v-btn>
+        <v-btn v-if="!create" @click="stop" :disabled="this.create">stop</v-btn>
       </v-form>
     </div>
 
@@ -169,6 +169,24 @@ export default {
     },
     remove () {
       HTTP.delete('fermentations/' + this.fermentation.id)
+        .then(response => {
+          this.$router.push({ name: 'fermentations' })
+        })
+        .catch(e => {
+          this.errors.push(e)
+        })
+    },
+    start () {
+      HTTP.post('fermentations/' + this.fermentation.id + '/start')
+        .then(response => {
+          this.$router.push({ name: 'fermentations' })
+        })
+        .catch(e => {
+          this.errors.push(e)
+        })
+    },
+    stop () {
+      HTTP.post('fermentations/' + this.fermentation.id + '/stop')
         .then(response => {
           this.$router.push({ name: 'fermentations' })
         })

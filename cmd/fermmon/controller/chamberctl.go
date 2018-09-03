@@ -3,13 +3,19 @@ package controller
 import (
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
-	"github.com/benjaminbartels/zymurgauge/internal/gpio"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/ds18b20"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/felixge/pidctrl"
+	"github.com/pkg/errors"
+	"gobot.io/x/gobot/drivers/gpio"
+	"gobot.io/x/gobot/platforms/raspi"
 )
+
+const interval = 10 * time.Second
 
 // ChamberCtl controls a Chamber
 type ChamberCtl struct {
@@ -46,16 +52,27 @@ func (c *ChamberCtl) Start() {
 		select {
 		case <-c.done:
 			return
-		case <-time.After(2 * time.Second):
+		case <-time.After(interval):
 			c.poll()
 		}
 	}
 }
 
 func (c *ChamberCtl) poll() {
+	var chamber *internal.Chamber
 	chamber, err := c.client.ChamberResource.Get(c.mac)
 	if err != nil {
-		c.logger.Println(err)
+		if web.ErrNotFound == errors.Cause(err) {
+			c.logger.Println("Chamber does not exist. Creating new chamber")
+			chamber := &internal.Chamber{
+				Name:       "Chamber " + c.mac,
+				MacAddress: c.mac,
+			}
+			err := c.client.ChamberResource.Save(chamber)
+			if err != nil {
+				c.logger.Fatalln(err.Error()) // ToDo: Handle
+			}
+		}
 	} else {
 		if err = c.processUpdate(chamber); err != nil {
 			c.logger.Println(err.Error()) // ToDo: Handle
@@ -88,14 +105,17 @@ func (c *ChamberCtl) processUpdate(chamber *internal.Chamber) error {
 			return err
 		}
 
-		chiller, err := gpio.NewActuator(c.chamber.Thermostat.ChillerPin)
-		if err != nil {
-			return err
+		adapter := raspi.NewAdaptor()
+
+		var chiller *gpio.RelayDriver
+
+		if c.chamber.Thermostat.ChillerPin != "" {
+			chiller = gpio.NewRelayDriver(adapter, c.chamber.Thermostat.ChillerPin)
 		}
 
-		heater, err := gpio.NewActuator(c.chamber.Thermostat.HeaterPin)
-		if err != nil {
-			return err
+		var heater *gpio.RelayDriver
+		if c.chamber.Thermostat.HeaterPin != "" {
+			heater = gpio.NewRelayDriver(adapter, c.chamber.Thermostat.HeaterPin)
 		}
 
 		// Setup the new Thermostat
@@ -110,16 +130,15 @@ func (c *ChamberCtl) processUpdate(chamber *internal.Chamber) error {
 	getFermentation := false
 
 	if c.currentFermentation == nil && c.chamber.CurrentFermentationID != 0 {
-		c.logger.Printf("No current fermentation. New fermentation is %d./n",
-			c.chamber.CurrentFermentationID, c.chamber.CurrentFermentationID)
+		c.logger.Printf("No current fermentation. New fermentation is %d.\n", c.chamber.CurrentFermentationID)
 		c.chamber.Thermostat.Off()
 		getFermentation = true
 	} else if c.currentFermentation != nil && c.currentFermentation.ID != c.chamber.CurrentFermentationID {
-		c.logger.Printf("Current fermentation is %d. New fermentation is %d./n")
+		c.logger.Printf("Current fermentation is %d. New fermentation is %d.\n")
 		c.chamber.Thermostat.Off()
 		getFermentation = true
 	} else if c.currentFermentation != nil && c.currentFermentation.ID == 0 {
-		c.logger.Printf("Current fermentation is %d. No fermentation set for chamber./n")
+		c.logger.Printf("Current fermentation is %d. No fermentation set for chamber.\n")
 		c.chamber.Thermostat.Off()
 		c.currentFermentation = nil
 	} else if c.chamber.CurrentFermentationID == 0 {
@@ -137,17 +156,32 @@ func (c *ChamberCtl) processUpdate(chamber *internal.Chamber) error {
 
 	// If there is a fermentation and thermostat is not nil, change setting and turn thermostat On if it is Off
 	if c.currentFermentation != nil { // To Do: remove && c.chamber.Thermostat != nil {
+		c.logger.Printf("Current Fermentation is for %s\n", c.currentFermentation.Beer.Name)
 		c.chamber.Thermostat.Set(c.currentFermentation.Beer.Schedule[0].TargetTemp)
 		if c.chamber.Thermostat.GetStatus().State == internal.OFF {
 			c.chamber.Thermostat.On()
 		}
+	} else {
+		c.logger.Println("No Current Fermentation, Do nothing")
 	}
 
 	return nil
 }
 
 func (c *ChamberCtl) handleStatusUpdate(status internal.ThermostatStatus) {
-	c.logger.Printf("State: %v, Error: %s\n", status.State, status.Error)
+
+	var temp float64
+	var errMsg string
+
+	if status.CurrentTemperature != nil {
+		temp = *status.CurrentTemperature
+	}
+
+	if status.Error != nil {
+		errMsg = status.Error.Error()
+	}
+
+	c.logger.Printf("State: %v, Temperature: %f, Error: %s\n", status.State, temp, errMsg)
 
 	change := &internal.TemperatureChange{
 		FermentationID: c.currentFermentation.ID,
@@ -155,8 +189,12 @@ func (c *ChamberCtl) handleStatusUpdate(status internal.ThermostatStatus) {
 		Chamber:        c.chamber.Name,
 		Beer:           c.currentFermentation.Beer.Name,
 		Thermometer:    c.chamber.Thermostat.ThermometerID,
-		Temperature:    *status.CurrentTemperature,
 	}
+
+	if status.CurrentTemperature != nil {
+		change.Temperature = *status.CurrentTemperature
+	}
+
 	if err := c.client.FermentationResource.SaveTemperatureChange(change); err != nil {
 		c.logger.Println(err)
 	}

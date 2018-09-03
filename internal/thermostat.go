@@ -2,13 +2,17 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"math"
+	"reflect"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/atomic"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/felixge/pidctrl"
 )
+
+var minTime = time.Time{}
 
 // Thermostat regulates the temperature of Chamber by monitoring the temperature that is read from a Thermometer and
 // switching on and off a heater and cooler Actuators.  It determines when to switching Actuators on and off by feeding
@@ -70,16 +74,18 @@ func Logger(logger log.Logger) func(*Thermostat) error {
 func (t *Thermostat) Configure(pid *pidctrl.PIDController, thermometer Thermometer, chiller, heater Actuator,
 	options ...func(*Thermostat) error) error {
 
+	pid.SetOutputLimits(-10, 10) // Ensure that limits are set
 	t.pid = pid
 	t.interval = 10 * time.Minute
 	t.minChill = 1 * time.Minute
 	t.minHeat = 1 * time.Minute
 	t.quit = make(chan bool)
 	t.subs = make(map[string]func(s ThermostatStatus))
-	t.lastCheck = time.Now()
+	t.lastCheck = minTime
 	t.thermometer = thermometer
 	t.chiller = chiller
 	t.heater = heater
+	t.status = ThermostatStatus{State: OFF, CurrentTemperature: nil, Error: nil}
 
 	for _, option := range options {
 		err := option(t)
@@ -176,11 +182,16 @@ func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.D
 
 	now := time.Now()
 
-	// get elapsed time
-	elapsedTime := now.Sub(t.lastCheck)
-
+	var output float64
+	var elapsedTime time.Duration
 	// get PID output
-	output := t.pid.UpdateDuration(temperature, elapsedTime)
+	if t.lastCheck == minTime {
+		output = t.pid.Update(temperature)
+	} else {
+		// get elapsed time
+		elapsedTime = now.Sub(t.lastCheck)
+		output = t.pid.UpdateDuration(temperature, elapsedTime)
+	}
 
 	// get PID max
 	_, max := t.pid.OutputLimits()
@@ -260,14 +271,14 @@ func (t *Thermostat) updateStatus(state ThermostatState, temperature *float64, e
 
 // cool turns the chiller on and the heater off
 func (t *Thermostat) cool() error {
-	if t.chiller != nil {
+	if !reflect.ValueOf(t.chiller).IsNil() {
 		if t.status.State != COOLING {
 			if err := t.chiller.On(); err != nil {
 				return err
 			}
 		}
 	}
-	if t.heater != nil {
+	if !reflect.ValueOf(t.heater).IsNil() {
 		if t.status.State == HEATING {
 			if err := t.heater.Off(); err != nil {
 				return err
@@ -280,14 +291,16 @@ func (t *Thermostat) cool() error {
 
 // heat turns the chiller off and the heater on
 func (t *Thermostat) heat() error {
-	if t.chiller != nil {
+	if !reflect.ValueOf(t.chiller).IsNil() {
 		if t.status.State == COOLING {
 			if err := t.chiller.Off(); err != nil {
 				return err
 			}
 		}
 	}
-	if t.heater != nil {
+
+	fmt.Println(t.heater)
+	if !reflect.ValueOf(t.heater).IsNil() {
 		if t.status.State != HEATING {
 			if err := t.heater.On(); err != nil {
 				return err
@@ -301,14 +314,15 @@ func (t *Thermostat) heat() error {
 // off turns the chiller off and the heater off
 func (t *Thermostat) off() error {
 
-	if t.chiller != nil {
+	if !reflect.ValueOf(t.chiller).IsNil() {
 		if t.status.State == COOLING {
 			if err := t.chiller.Off(); err != nil {
 				return err
 			}
 		}
 	}
-	if t.heater != nil {
+
+	if !reflect.ValueOf(t.heater).IsNil() {
 		if t.status.State == HEATING {
 			if err := t.heater.Off(); err != nil {
 				return err
