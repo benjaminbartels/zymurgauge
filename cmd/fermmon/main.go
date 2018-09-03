@@ -25,6 +25,9 @@ type config struct {
 	APIAddress   string `required:"true"`
 	ClientSecret string `required:"true"`
 	Interface    string
+	Interval     time.Duration `default:"10m"`
+	MinimumChill time.Duration `default:"3m"`
+	MinimumHeat  time.Duration `default:"3m"`
 }
 
 func main() {
@@ -69,9 +72,9 @@ func main() {
 	pid := pidctrl.NewPIDController(1, 1, 0) // ToDo: get from env vars
 
 	ctl := controller.NewChamberCtl(mac, pid, client, logger,
-		internal.MinimumChill(1*time.Second), // ToDO: env vars
-		internal.MinimumHeat(1*time.Second),
-		internal.Interval(1*time.Second),
+		internal.MinimumChill(cfg.MinimumChill),
+		internal.MinimumHeat(cfg.MinimumHeat),
+		internal.Interval(cfg.Interval),
 		internal.Logger(logger))
 
 	ctl.Start()
