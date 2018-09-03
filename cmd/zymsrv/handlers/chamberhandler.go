@@ -39,7 +39,7 @@ func (h *ChamberHandler) Handle(ctx context.Context, w http.ResponseWriter, r *h
 	case web.POST:
 		return h.post(w, r)
 	case web.DELETE:
-		return h.delete(r)
+		return h.delete(ctx, w, r)
 	default:
 		return web.ErrMethodNotAllowed
 	}
@@ -135,17 +135,17 @@ func (h *ChamberHandler) post(w io.Writer, r *http.Request) error {
 	return err
 }
 
-func (h *ChamberHandler) delete(r *http.Request) error {
-	if r.URL.Path == "" {
+func (h *ChamberHandler) delete(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	var head string
+	head, r.URL.Path = web.ShiftPath(r.URL.Path)
+	if head == "" {
 		return web.ErrBadRequest
 	}
 
-	mac, err := url.QueryUnescape(r.URL.Path)
-	if err != nil {
+	if err := h.repo.Delete(head); err != nil {
 		return err
 	}
-
-	return h.repo.Delete(mac)
+	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
 func parseChamber(r *http.Request) (internal.Chamber, error) {
