@@ -76,7 +76,7 @@ func main() {
 
 	beerHandler := handlers.NewBeerHandler(beerRepo)
 	chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
-	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo, temperatureChangeRepo)
+	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo, temperatureChangeRepo, chamberRepo)
 
 	requestLogger := middleware.NewRequestLogger(logger)
 	errorHandler := middleware.NewErrorHandler(logger)
