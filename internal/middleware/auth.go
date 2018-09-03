@@ -41,6 +41,8 @@ func (a *Authorizer) Authorize(next web.Handler) web.Handler {
 		configuration := auth0.NewConfiguration(secretProvider, []string{audience}, issuer, jose.HS256)
 		validator := auth0.NewValidator(configuration, auth0.RequestTokenExtractorFunc(auth0.FromHeader))
 
+		a.logger.Println(r.Header["Authorization"])
+
 		_, err := validator.ValidateRequest(r)
 
 		if err != nil {
