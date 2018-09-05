@@ -61,7 +61,7 @@ export default {
     return {
       auth,
       authenticated,
-      drawer: true,
+      drawer: null,
       items: [
         {
           icon: 'bubble_chart',
