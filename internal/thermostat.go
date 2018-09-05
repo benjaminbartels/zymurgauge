@@ -2,7 +2,6 @@ package internal
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"reflect"
 	"time"
@@ -106,7 +105,7 @@ func (t *Thermostat) On() { // ToDo: Refactor this
 }
 
 func (t *Thermostat) on() {
-	for {
+	for t.isOn.Get() {
 		var action ThermostatState
 		var duration time.Duration
 
@@ -206,18 +205,18 @@ func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.D
 
 	if output < 0 {
 		action = COOLING
-		// if duration > 0 { // ToDo: Implement minChill and minHeat
-		// 	if duration < t.minChill {
-		// 		duration = t.minChill
-		// 	}
-		// }
+		if duration > 0 { // ToDo: Implement minChill and minHeat
+			if duration < t.minChill {
+				duration = t.minChill
+			}
+		}
 	} else if output > 0 {
 		action = HEATING
-		// if duration > 0 {
-		// 	if duration < t.minHeat {
-		// 		duration = t.minHeat
-		// 	}
-		// }
+		if duration > 0 {
+			if duration < t.minHeat {
+				duration = t.minHeat
+			}
+		}
 	} else {
 		duration = t.interval
 	}
@@ -299,7 +298,6 @@ func (t *Thermostat) heat() error {
 		}
 	}
 
-	fmt.Println(t.heater)
 	if !reflect.ValueOf(t.heater).IsNil() {
 		if t.status.State != HEATING {
 			if err := t.heater.On(); err != nil {

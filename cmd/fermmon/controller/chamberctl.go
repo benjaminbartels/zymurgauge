@@ -19,14 +19,15 @@ const interval = 10 * time.Second
 
 // ChamberCtl controls a Chamber
 type ChamberCtl struct {
-	mac                 string
-	chamber             *internal.Chamber
-	pid                 *pidctrl.PIDController
-	client              *client.Client
-	logger              log.Logger
-	thermostatOptions   []func(*internal.Thermostat) error
-	currentFermentation *internal.Fermentation
-	done                chan bool
+	mac                   string
+	chamber               *internal.Chamber
+	pid                   *pidctrl.PIDController
+	client                *client.Client
+	logger                log.Logger
+	thermostatOptions     []func(*internal.Thermostat) error
+	currentFermentation   *internal.Fermentation
+	currentFermentationId uint64
+	done                  chan bool
 }
 
 // NewChamberCtl creates a new ChamberCtl with the given parameters
@@ -86,6 +87,7 @@ func (c *ChamberCtl) Stop() {
 
 func (c *ChamberCtl) processUpdate(chamber *internal.Chamber) error {
 	var err error
+	fermentationIdChanged := false
 
 	if c.chamber == nil ||
 		c.chamber.Thermostat.ChillerPin != chamber.Thermostat.ChillerPin ||
@@ -125,46 +127,35 @@ func (c *ChamberCtl) processUpdate(chamber *internal.Chamber) error {
 		}
 
 		c.chamber.Thermostat.Subscribe(c.chamber.MacAddress, c.handleStatusUpdate)
+
+		fermentationIdChanged = true
+		c.currentFermentationId = c.chamber.CurrentFermentationID
+	} else if c.currentFermentationId != chamber.CurrentFermentationID {
+		fermentationIdChanged = true
+		c.currentFermentationId = chamber.CurrentFermentationID
+		c.chamber.Thermostat.Off()
+
 	}
 
-	getFermentation := false
+	if fermentationIdChanged {
+		if c.currentFermentationId == 0 {
+			c.logger.Println("No fermentation set for chamber")
+			c.currentFermentation = nil
+		} else {
+			c.logger.Printf("Setting fermentation to %d.\n", c.currentFermentationId)
+			c.currentFermentation, err = c.client.FermentationResource.Get(c.currentFermentationId)
+			if err != nil {
+				return err
+			}
 
-	if c.currentFermentation == nil && c.chamber.CurrentFermentationID != 0 {
-		c.logger.Printf("No current fermentation. New fermentation is %d.\n", c.chamber.CurrentFermentationID)
-		c.chamber.Thermostat.Off()
-		getFermentation = true
-	} else if c.currentFermentation != nil && c.currentFermentation.ID != c.chamber.CurrentFermentationID {
-		c.logger.Printf("Current fermentation is %d. New fermentation is %d.\n")
-		c.chamber.Thermostat.Off()
-		getFermentation = true
-	} else if c.currentFermentation != nil && c.currentFermentation.ID == 0 {
-		c.logger.Printf("Current fermentation is %d. No fermentation set for chamber.\n")
-		c.chamber.Thermostat.Off()
-		c.currentFermentation = nil
-	} else if c.chamber.CurrentFermentationID == 0 {
-		c.logger.Println("No fermentation set for chamber")
-		c.chamber.Thermostat.Off()
-		c.currentFermentation = nil
-	}
+			c.logger.Printf("Current Fermentation has be set to %s\n", c.currentFermentation.Beer.Name)
+			c.chamber.Thermostat.Set(c.currentFermentation.Beer.Schedule[0].TargetTemp)
+			if c.chamber.Thermostat.GetStatus().State == internal.OFF {
+				c.chamber.Thermostat.On()
+			}
 
-	if getFermentation {
-		c.currentFermentation, err = c.client.FermentationResource.Get(c.chamber.CurrentFermentationID)
-		if err != nil {
-			return err
 		}
 	}
-
-	// If there is a fermentation and thermostat is not nil, change setting and turn thermostat On if it is Off
-	if c.currentFermentation != nil { // To Do: remove && c.chamber.Thermostat != nil {
-		c.logger.Printf("Current Fermentation is for %s\n", c.currentFermentation.Beer.Name)
-		c.chamber.Thermostat.Set(c.currentFermentation.Beer.Schedule[0].TargetTemp)
-		if c.chamber.Thermostat.GetStatus().State == internal.OFF {
-			c.chamber.Thermostat.On()
-		}
-	} else {
-		c.logger.Println("No Current Fermentation, Do nothing")
-	}
-
 	return nil
 }
 
@@ -184,11 +175,14 @@ func (c *ChamberCtl) handleStatusUpdate(status internal.ThermostatStatus) {
 	c.logger.Printf("State: %v, Temperature: %f, Error: %s\n", status.State, temp, errMsg)
 
 	change := &internal.TemperatureChange{
-		FermentationID: c.currentFermentation.ID,
-		InsertTime:     time.Now(),
-		Chamber:        c.chamber.Name,
-		Beer:           c.currentFermentation.Beer.Name,
-		Thermometer:    c.chamber.Thermostat.ThermometerID,
+		InsertTime:  time.Now(),
+		Chamber:     c.chamber.Name,
+		Thermometer: c.chamber.Thermostat.ThermometerID,
+	}
+
+	if c.currentFermentation != nil {
+		change.FermentationID = c.currentFermentation.ID
+		change.Beer = c.currentFermentation.Beer.Name
 	}
 
 	if status.CurrentTemperature != nil {
