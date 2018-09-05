@@ -7,9 +7,11 @@ import Fermentations from '@/components/Fermentations.vue'
 import Chamber from '@/components/Chamber.vue'
 import Chambers from '@/components/Chambers.vue'
 import Auth from '@/components/Auth.vue'
+import Login from '@/components/Login.vue'
 
 const routes = [
   { path: '/auth', name: 'auth', component: Auth },
+  { path: '/login', name: 'login', component: Login },
   { path: '/fermentations', name: 'fermentations', component: Fermentations },
   { path: '/fermentations/:id/edit', name: 'editFermentation', component: Fermentation, props: true },
   { path: '/fermentations/create', name: 'createFermentation', component: Fermentation, props: { create: true } },

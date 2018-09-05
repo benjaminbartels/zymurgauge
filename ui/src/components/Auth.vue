@@ -1,3 +1,5 @@
+<template/>
+
 <script>
 export default {
   name: 'auth',

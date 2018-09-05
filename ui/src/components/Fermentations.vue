@@ -1,6 +1,6 @@
 <style scoped>
 a {
-  color: #FFB90D;
+  color: #ffb90d;
   text-decoration: none;
 }
 </style>
@@ -33,6 +33,7 @@ a {
 
 <script>
 import { HTTP } from '../http-common'
+import router from './../router'
 
 export default {
 
@@ -40,8 +41,12 @@ export default {
     fermentations: [],
     errors: []
   }),
-
+  props: ['authenticated'],
   created () {
+    if (!this.authenticated) {
+      router.replace('login')
+    }
+
     HTTP.get('fermentations')
       .then(response => {
         this.fermentations = response.data

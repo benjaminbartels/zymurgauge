@@ -32,6 +32,7 @@
 import { HTTP } from '../http-common'
 import TemperatureChart from '../TemperatureChart'
 import moment from 'moment'
+import router from './../router'
 
 export default {
   components: {
@@ -71,10 +72,12 @@ export default {
     beerRules: [(v) => !!v || 'Beer is required'],
     chamberRules: [(v) => !!v || 'Chamber is required']
   }),
-
-  props: ['id', 'create'],
-
+  props: ['authenticated', 'id', 'create'],
   created () {
+    if (!this.authenticated) {
+      router.replace('login')
+    }
+
     this.fetch()
     if (this.create) {
       this.fermentation = {}

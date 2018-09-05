@@ -33,14 +33,19 @@ a {
 
 <script>
 import { HTTP } from '../http-common'
+import router from './../router'
 
 export default {
   data: () => ({
     beers: [],
     errors: []
   }),
-
+  props: ['authenticated', 'id', 'create'],
   created () {
+    if (!this.authenticated) {
+      router.replace('login')
+    }
+
     HTTP.get('beers')
       .then(response => {
         this.beers = response.data

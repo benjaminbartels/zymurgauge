@@ -26,6 +26,7 @@
 
 <script>
 import { HTTP } from '../http-common'
+import router from './../router'
 
 export default {
   data: () => ({
@@ -37,9 +38,13 @@ export default {
     pinRules: [(v) => isNaN(v) || 'Pin must be numeric']
   }),
 
-  props: ['macAddress'],
+  props: ['authenticated', 'macAddress'],
 
   created () {
+    if (!this.authenticated) {
+      router.replace('login')
+    }
+
     this.fetch()
   },
 

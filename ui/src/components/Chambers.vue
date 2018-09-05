@@ -32,14 +32,19 @@ a {
 
 <script>
 import { HTTP } from '../http-common'
+import router from './../router'
 
 export default {
   data: () => ({
     chambers: [],
     errors: []
   }),
-
+  props: ['authenticated'],
   created () {
+    if (!this.authenticated) {
+      router.replace('login')
+    }
+
     HTTP.get('chambers')
       .then(response => {
         this.chambers = response.data

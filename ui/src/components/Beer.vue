@@ -49,6 +49,7 @@
 
 <script>
 import { HTTP } from '../http-common'
+import router from './../router'
 
 export default {
   data: () => ({
@@ -177,10 +178,12 @@ export default {
       '34B - Mixed-Style Beer',
       '34C - Experimental Beer']
   }),
-
-  props: ['id', 'create'],
-
+  props: ['authenticated', 'id', 'create'],
   created () {
+    if (!this.authenticated) {
+      router.replace('login')
+    }
+
     if (!this.create) {
       this.fetch()
     } else {
