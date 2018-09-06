@@ -55,7 +55,7 @@ func (h *FermentationHandler) get(ctx context.Context, w http.ResponseWriter, r 
 	}
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "temperaturechanges" {
-		start := time.Time{}
+		start := time.Now().AddDate(0, 0, -1).UTC()
 		end := time.Unix(1<<63-62135596801, 999999999).UTC()
 		if startParam, ok := r.URL.Query()["start"]; ok {
 			start, err = time.Parse(time.RFC3339, startParam[0])
