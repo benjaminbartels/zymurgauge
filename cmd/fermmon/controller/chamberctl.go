@@ -86,33 +86,13 @@ func (c *ChamberCtl) Stop() {
 // processUpdate evaluates the inbound chamber to determine if any changes have occurred
 func (c *ChamberCtl) processUpdate(chamber *internal.Chamber) error {
 
-	configChanged := false
+	var configChanged bool
 
 	if c.chamber == nil {
 		configChanged = true
 		c.chamber = chamber
 	} else {
-
-		if c.chamber.Thermostat.ChillerPin != chamber.Thermostat.ChillerPin {
-			c.logger.Println("Chiller Pin changed from %s to %s",
-				c.chamber.Thermostat.ChillerPin, chamber.Thermostat.ChillerPin)
-
-			configChanged = true
-		}
-
-		if c.chamber.Thermostat.HeaterPin != chamber.Thermostat.HeaterPin {
-			c.logger.Println("Heater Pin changed from %s to %s",
-				c.chamber.Thermostat.HeaterPin, chamber.Thermostat.HeaterPin)
-
-			configChanged = true
-		}
-
-		if c.chamber.Thermostat.ChillerPin != chamber.Thermostat.ChillerPin {
-			c.logger.Println("Thermometer ID changed from %s to %s",
-				c.chamber.Thermostat.ChillerPin, chamber.Thermostat.ChillerPin)
-
-			configChanged = true
-		}
+		configChanged = c.checkChamber(chamber)
 	}
 
 	if configChanged {
@@ -128,38 +108,33 @@ func (c *ChamberCtl) processUpdate(chamber *internal.Chamber) error {
 		c.chamber.Thermostat.Subscribe(c.chamber.MacAddress, c.handleStatusUpdate)
 	}
 
-	var err error
-	if c.fermentation == nil {
-		if c.chamber.CurrentFermentationID != 0 {
-			c.logger.Println("Fermentation changed from none to %d", c.chamber.CurrentFermentationID)
-			c.fermentation, err = c.getFermentation(c.chamber.CurrentFermentationID)
-			if err != nil {
-				return err
-			}
-		}
-	} else {
-		if c.chamber.CurrentFermentationID != 0 {
-			c.logger.Println("Fermentation changed from %d to %d", c.chamber.CurrentFermentationID, c.fermentation.ID)
-			c.chamber.Thermostat.Off()
-			c.fermentation, err = c.getFermentation(c.chamber.CurrentFermentationID)
-			if err != nil {
-				return err
-			}
-		} else {
-			c.logger.Println("Fermentation changed from %d to none", c.chamber.CurrentFermentationID)
-			c.chamber.Thermostat.Off()
-		}
-	}
-
-	if c.fermentation != nil {
-		c.logger.Printf("Current Fermentation has be set to %d\n", c.fermentation.ID)
-		c.chamber.Thermostat.Set(c.fermentation.Beer.Schedule[0].TargetTemp)
-		if c.chamber.Thermostat.GetStatus().State == internal.OFF {
-			c.chamber.Thermostat.On()
-		}
-	}
-
 	return nil
+}
+
+func (c *ChamberCtl) checkChamber(chamber *internal.Chamber) bool {
+
+	if c.chamber.Thermostat.ChillerPin != chamber.Thermostat.ChillerPin {
+		c.logger.Println("Chiller Pin changed from %s to %s",
+			c.chamber.Thermostat.ChillerPin, chamber.Thermostat.ChillerPin)
+
+		return true
+	}
+
+	if c.chamber.Thermostat.HeaterPin != chamber.Thermostat.HeaterPin {
+		c.logger.Println("Heater Pin changed from %s to %s",
+			c.chamber.Thermostat.HeaterPin, chamber.Thermostat.HeaterPin)
+
+		return true
+	}
+
+	if c.chamber.Thermostat.ChillerPin != chamber.Thermostat.ChillerPin {
+		c.logger.Println("Thermometer ID changed from %s to %s",
+			c.chamber.Thermostat.ChillerPin, chamber.Thermostat.ChillerPin)
+
+		return true
+	}
+
+	return false
 }
 
 func (c *ChamberCtl) getFermentation(id uint64) (*internal.Fermentation, error) {
