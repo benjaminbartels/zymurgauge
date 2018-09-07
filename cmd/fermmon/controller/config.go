@@ -11,14 +11,8 @@ import (
 
 // Configure sets up a new chamber's thermostat using the supplied ThermometerID, ChillerPin and HeaterPin values
 func (c *ChamberCtl) Configure(chamber *internal.Chamber) error {
-
-	if err := chamber.Thermostat.Configure(c.pid, &stubThermometer{}, &stubActuator{}, &stubActuator{},
-		c.thermostatOptions...); err != nil {
-		return err
-	}
-
-	return nil
-
+	return chamber.Thermostat.Configure(c.pid, &stubThermometer{}, &stubActuator{}, &stubActuator{},
+		c.thermostatOptions...)
 }
 
 type stubThermometer struct{}

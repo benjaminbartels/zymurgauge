@@ -16,11 +16,13 @@ const (
 	issuer   = "https://zymurgauge.auth0.com/"
 )
 
+// Authorizer check validates that the authorization header of the request
 type Authorizer struct {
 	clientSecret string
 	logger       log.Logger
 }
 
+// NewAuthorizer creates a new Authorizer
 func NewAuthorizer(clientSecret string, logger log.Logger) *Authorizer {
 	return &Authorizer{
 		clientSecret: clientSecret,
@@ -28,6 +30,8 @@ func NewAuthorizer(clientSecret string, logger log.Logger) *Authorizer {
 	}
 }
 
+// Authorize validates that token contained authorization header.  If the token is invalid a 401 unauthorized status is
+// returned in the response
 func (a *Authorizer) Authorize(next web.Handler) web.Handler {
 
 	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
