@@ -108,6 +108,37 @@ func (c *ChamberCtl) processUpdate(chamber *internal.Chamber) error {
 		c.chamber.Thermostat.Subscribe(c.chamber.MacAddress, c.handleStatusUpdate)
 	}
 
+	var err error
+	if c.fermentation == nil {
+		if c.chamber.CurrentFermentationID != 0 {
+			c.logger.Println("Fermentation changed from none to %d", c.chamber.CurrentFermentationID)
+			c.fermentation, err = c.getFermentation(c.chamber.CurrentFermentationID)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		if c.chamber.CurrentFermentationID != 0 {
+			c.logger.Println("Fermentation changed from %d to %d", c.chamber.CurrentFermentationID, c.fermentation.ID)
+			c.chamber.Thermostat.Off()
+			c.fermentation, err = c.getFermentation(c.chamber.CurrentFermentationID)
+			if err != nil {
+				return err
+			}
+		} else {
+			c.logger.Println("Fermentation changed from %d to none", c.chamber.CurrentFermentationID)
+			c.chamber.Thermostat.Off()
+		}
+	}
+
+	if c.fermentation != nil {
+		c.logger.Printf("Current Fermentation has be set to %d\n", c.fermentation.ID)
+		c.chamber.Thermostat.Set(c.fermentation.Beer.Schedule[0].TargetTemp)
+		if c.chamber.Thermostat.GetStatus().State == internal.OFF {
+			c.chamber.Thermostat.On()
+		}
+	}
+
 	return nil
 }
 
@@ -135,6 +166,10 @@ func (c *ChamberCtl) checkChamber(chamber *internal.Chamber) bool {
 	}
 
 	return false
+}
+
+func (c *ChamberCtl) checkFermentation(fermentation *internal.Fermentation) bool {
+
 }
 
 func (c *ChamberCtl) getFermentation(id uint64) (*internal.Fermentation, error) {
