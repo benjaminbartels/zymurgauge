@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
@@ -144,8 +143,6 @@ func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 	}
 
 	c.Chamber.CurrentFermentationID = newFermID
-
-	fmt.Println("oldFermID", oldFermID, "newFermID", newFermID)
 
 	if oldFermID != newFermID || configChanged {
 		if c.Fermentation != nil {

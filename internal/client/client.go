@@ -101,6 +101,7 @@ type getTokenResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
+// ChamberProvider is a data provider for Chambers
 type ChamberProvider interface {
 	Get(mac string) (*internal.Chamber, error)
 	Save(c *internal.Chamber) error
@@ -108,6 +109,7 @@ type ChamberProvider interface {
 	Unsubscribe(mac string)
 }
 
+// FermentationProvider is a data provider for Fermentations
 type FermentationProvider interface {
 	Get(id uint64) (*internal.Fermentation, error)
 	Save(f *internal.Fermentation) error

@@ -10,7 +10,7 @@ services:
   - docker
 
 go:
-  - 1.10.x
+  - 1.11
 
 install:
   - . $HOME/.nvm/nvm.sh

@@ -35,6 +35,7 @@ type Thermostat struct {
 	lastCheck     time.Time
 }
 
+// ThermostatOptionsFunc is a function that supplies optional configuration to a Thermostat
 type ThermostatOptionsFunc func(*Thermostat) error
 
 // Interval sets the interval in which the Thermostat checks the temperature.  Default is 10 minutes.
@@ -247,6 +248,7 @@ func (t *Thermostat) Set(temp float64) {
 	t.pid.Set(temp)
 }
 
+// IsOn returns whether or not a Thermostat is on
 func (t *Thermostat) IsOn() bool {
 	return t.isOn.Get()
 }
