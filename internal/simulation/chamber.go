@@ -10,7 +10,7 @@ import (
 
 // Chamber is used to simulate a real Chamber
 type Chamber struct {
-	Thermostat              internal.Thermostat
+	Thermostat              *internal.Thermostat
 	beerThermometer         *Thermometer
 	chiller                 *Actuator
 	heater                  *Actuator
@@ -37,7 +37,7 @@ type Chamber struct {
 
 // NewChamber creates a new Chamber. Factor the value in which the elapsed time is multiplied by to simulated
 // an longer elapsed time in a shorter time period
-func NewChamber(thermostat internal.Thermostat, beerThermometer *Thermometer,
+func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
 	chiller, heater *Actuator, factor int, logger log.Logger) *Chamber {
 	c := &Chamber{
 		Thermostat:      thermostat,
