@@ -4,26 +4,15 @@ package controller
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/felixge/pidctrl"
 )
 
 // The program is only meant to run on linux on arm. This file only exists to prevent compilation issues on non
 // linux/arm systems.
 
-// Configure sets up a new chamber's thermostat using the supplied ThermometerID, ChillerPin and HeaterPin values
-func (c *ChamberCtl) Configure(chamber *internal.Chamber) error {
-	return chamber.Thermostat.Configure(c.pid, &stubThermometer{}, &stubActuator{}, &stubActuator{},
-		c.thermostatOptions...)
+// ConfigureThermostat returns the results of ConfigureStubThermostat.  This methods only gets compiled when the
+// operating system is not linux and the architecture is not arm.
+func ConfigureThermostat(thermostat *internal.Thermostat, pid *pidctrl.PIDController,
+	options ...internal.ThermostatOptionsFunc) error {
+	return ConfigureStubThermostat(thermostat, pid, options...)
 }
-
-type stubThermometer struct{}
-
-func (t *stubThermometer) Read() (*float64, error) {
-	var f float64 = 22
-	return &f, nil
-}
-
-type stubActuator struct{}
-
-func (a *stubActuator) On() error { return nil }
-
-func (a *stubActuator) Off() error { return nil }

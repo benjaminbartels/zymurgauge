@@ -1,6 +1,6 @@
 package internal
 
-// TemperatureController device that controls temperature
+// TemperatureController device that controls temperature //ToDo: Pending removal?
 type TemperatureController interface {
 	// On turns the Thermostat on and allows to being monitoring
 	On()

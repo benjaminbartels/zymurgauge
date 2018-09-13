@@ -3,14 +3,24 @@ package controller
 import (
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/ds18b20"
+	"github.com/felixge/pidctrl"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/raspi"
 )
 
-// Configure sets up a new chamber's thermostat using the supplied ThermometerID, ChillerPin and HeaterPin values
-func (c *ChamberCtl) Configure(chamber *internal.Chamber) error {
+// ConfigureThermostat returns the results of ConfigurePiThermostat.  This methods only gets compiled when the operating
+// system is linux and the architecture is arm.
+func ConfigureThermostat(thermostat *internal.Thermostat, pid *pidctrl.PIDController,
+	options ...internal.ThermostatOptionsFunc) error {
+	return ConfigurePiThermostat(thermostat, pid, options...)
+}
 
-	thermometer, err := ds18b20.NewThermometer(chamber.Thermostat.ThermometerID)
+// Configure sets up a new chamber's RaspberryPI thermostat using the supplied ThermometerID, ChillerPin and HeaterPin
+// values.
+func ConfigurePiThermostat(thermostat *internal.Thermostat, pid *pidctrl.PIDController,
+	options ...internal.ThermostatOptionsFunc) error {
+
+	thermometer, err := ds18b20.NewThermometer(thermostat.ThermometerID)
 	if err != nil {
 		return err
 	}
@@ -18,17 +28,17 @@ func (c *ChamberCtl) Configure(chamber *internal.Chamber) error {
 	adapter := raspi.NewAdaptor()
 
 	var chiller *gpio.RelayDriver
-	if c.chamber.Thermostat.ChillerPin != "" {
-		chiller = gpio.NewRelayDriver(adapter, chamber.Thermostat.ChillerPin)
+	if thermostat.ChillerPin != "" {
+		chiller = gpio.NewRelayDriver(adapter, thermostat.ChillerPin)
 	}
 
 	var heater *gpio.RelayDriver
-	if c.chamber.Thermostat.HeaterPin != "" {
-		heater = gpio.NewRelayDriver(adapter, chamber.Thermostat.HeaterPin)
+	if thermostat.HeaterPin != "" {
+		heater = gpio.NewRelayDriver(adapter, thermostat.HeaterPin)
 	}
 
 	// Setup the new Thermostat
-	err = chamber.Thermostat.Configure(c.pid, thermometer, chiller, heater, c.thermostatOptions...)
+	err = thermostat.Configure(pid, thermometer, chiller, heater, options...)
 	if err != nil {
 		return err
 	}

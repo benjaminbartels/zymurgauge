@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/pkg/errors"
@@ -17,11 +18,13 @@ const (
 	grantType = "client_credentials"
 )
 
+// ToDo: Do I really need a client to contail all Resources
+
 // Client provides resources used to manage entities via REST.
 type Client struct {
-	ChamberResource      *ChamberResource
+	ChamberProvider      ChamberProvider
 	BeerResource         *BeerResource
-	FermentationResource *FermentationResource
+	FermentationProvider FermentationProvider
 }
 
 // NewClient creates a new instance of the HTTP client
@@ -48,9 +51,9 @@ func NewClient(url fmt.Stringer, version, clientID, clientSecret string, logger 
 	}
 
 	c := &Client{
-		ChamberResource:      chamberResource,
+		ChamberProvider:      chamberResource,
 		BeerResource:         beerResource,
-		FermentationResource: fermentationResource,
+		FermentationProvider: fermentationResource,
 	}
 
 	return c, nil
@@ -96,4 +99,17 @@ type getTokenRequest struct {
 type getTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
+}
+
+type ChamberProvider interface {
+	Get(mac string) (*internal.Chamber, error)
+	Save(c *internal.Chamber) error
+	Subscribe(mac string, ch chan internal.Chamber) error
+	Unsubscribe(mac string)
+}
+
+type FermentationProvider interface {
+	Get(id uint64) (*internal.Fermentation, error)
+	Save(f *internal.Fermentation) error
+	SaveTemperatureChange(t *internal.TemperatureChange) error
 }

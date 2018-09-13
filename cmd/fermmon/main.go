@@ -71,19 +71,17 @@ func main() {
 	// Create PID Controller
 	pid := pidctrl.NewPIDController(1, 1, 0) // ToDo: get from env vars
 
-	ctl := controller.NewChamberCtl(mac, pid, client, logger,
+	ctl := controller.New(mac, pid, client.ChamberProvider, client.FermentationProvider, logger,
 		internal.MinimumChill(cfg.MinimumChill),
 		internal.MinimumHeat(cfg.MinimumHeat),
 		internal.Interval(cfg.Interval),
 		internal.Logger(logger))
 
-	ctl.Start()
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	// Start polling
-	ctl.Start()
+	ctl.Start(10 * time.Second)
 
 	sig := make(chan os.Signal, 2)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)

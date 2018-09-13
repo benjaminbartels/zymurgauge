@@ -35,8 +35,10 @@ type Thermostat struct {
 	lastCheck     time.Time
 }
 
+type ThermostatOptionsFunc func(*Thermostat) error
+
 // Interval sets the interval in which the Thermostat checks the temperature.  Default is 10 minutes.
-func Interval(interval time.Duration) func(*Thermostat) error {
+func Interval(interval time.Duration) ThermostatOptionsFunc {
 	return func(t *Thermostat) error {
 		t.interval = interval
 		return nil
@@ -45,7 +47,7 @@ func Interval(interval time.Duration) func(*Thermostat) error {
 
 // MinimumChill set the minimum duration in which the Thermostat will leave the Cooler Actuator On.  This is to prevent
 // excessive cycling.  Default is 1 minute.
-func MinimumChill(min time.Duration) func(*Thermostat) error {
+func MinimumChill(min time.Duration) ThermostatOptionsFunc {
 	return func(t *Thermostat) error {
 		t.minChill = min
 		return nil
@@ -54,7 +56,7 @@ func MinimumChill(min time.Duration) func(*Thermostat) error {
 
 // MinimumHeat set the minimum duration in which the Thermostat will leave the Heater Actuator On.  This is to prevent
 // excessive cycling. Default is 1 minute.
-func MinimumHeat(min time.Duration) func(*Thermostat) error {
+func MinimumHeat(min time.Duration) ThermostatOptionsFunc {
 	return func(t *Thermostat) error {
 		t.minHeat = min
 		return nil
@@ -62,7 +64,7 @@ func MinimumHeat(min time.Duration) func(*Thermostat) error {
 }
 
 // Logger sets the logger to be used.  If not set, nothing is logged.
-func Logger(logger log.Logger) func(*Thermostat) error {
+func Logger(logger log.Logger) ThermostatOptionsFunc {
 	return func(t *Thermostat) error {
 		t.logger = logger
 		return nil
@@ -71,7 +73,7 @@ func Logger(logger log.Logger) func(*Thermostat) error {
 
 // Configure configures a Thermostat with the given parameters
 func (t *Thermostat) Configure(pid *pidctrl.PIDController, thermometer Thermometer, chiller, heater Actuator,
-	options ...func(*Thermostat) error) error {
+	options ...ThermostatOptionsFunc) error {
 
 	pid.SetOutputLimits(-10, 10) // Ensure that limits are set
 	t.pid = pid
@@ -98,6 +100,7 @@ func (t *Thermostat) Configure(pid *pidctrl.PIDController, thermometer Thermomet
 
 // On turns the Thermostat on and allows to being monitoring
 func (t *Thermostat) On() { // ToDo: Refactor this
+	t.log("On called")
 	if !t.isOn.Get() {
 		t.isOn.Set(true)
 		go t.on()
@@ -232,15 +235,20 @@ func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.D
 
 // Off turns the Thermostat Off
 func (t *Thermostat) Off() {
+	t.log("Off called")
 	if t.isOn.Get() {
 		t.quit <- true
 		t.isOn.Set(false)
 	}
 }
 
-// Set sets TemperatureController to the specified temperature
+// Set sets Thermostat to the specified temperature
 func (t *Thermostat) Set(temp float64) {
 	t.pid.Set(temp)
+}
+
+func (t *Thermostat) IsOn() bool {
+	return t.isOn.Get()
 }
 
 // GetStatus return the current status of the Thermostat
