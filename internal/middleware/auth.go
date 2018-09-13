@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/auth0-community/auth0"
+	"github.com/auth0-community/go-auth0"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/pkg/errors"
