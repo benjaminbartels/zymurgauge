@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/url"
@@ -132,6 +133,8 @@ func getMacAddressByInterfaceName(name string) (string, error) {
 		return "", errors.New("failed to get host MAC address")
 	}
 	for _, iface := range interfaces {
+		fmt.Println("iface.Name", iface.Name)
+		fmt.Println("iface.HardwareAddr", iface.HardwareAddr.String())
 		if iface.Name == name {
 			mac = iface.HardwareAddr.String()
 		}
