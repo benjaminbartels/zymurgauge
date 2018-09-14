@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  zymsrv:
+    restart: always
+    image: benjaminbartels/fermmon
+    container_name: fermmon
+    volumes:
+      - /sys:/sys

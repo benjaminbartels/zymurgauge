@@ -35,6 +35,7 @@ script:
   - CGO_ENABLED=0 go build -v github.com/benjaminbartels/zymurgauge/cmd/zymsrv
   - GOARCH=arm go build -v github.com/benjaminbartels/zymurgauge/cmd/fermmon
   - docker build -f ./docker/zymsrv/Dockerfile -t benjaminbartels/zymsrv .
+  - docker build -f ./docker/fermmon/Dockerfile -t benjaminbartels/fermmon .
 
 after_script:
   - ./cc-test-reporter after-build -t gocov --exit-code $TRAVIS_TEST_RESULT
@@ -43,4 +44,5 @@ after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
     docker push benjaminbartels/zymsrv;
+    docker push benjaminbartels/fermmon;
     fi
