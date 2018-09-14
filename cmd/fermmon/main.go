@@ -105,9 +105,10 @@ func getMacAddress() (string, error) {
 		return "", errors.New("failed to get host MAC address")
 	}
 	for _, iface := range interfaces {
-		fmt.Println("iface.Name", iface.Name)
-		fmt.Println("iface.HardwareAddr", iface.HardwareAddr.String())
 		if len(iface.HardwareAddr.String()) > 0 {
+			if iface.Name == "eth0" { //ToDo: fix this
+				mac = iface.HardwareAddr.String()
+			}
 			if iface.Name == "wlan0" { //ToDo: fix this
 				mac = iface.HardwareAddr.String()
 			}
@@ -135,8 +136,6 @@ func getMacAddressByInterfaceName(name string) (string, error) {
 		return "", errors.New("Failed to get host MAC address")
 	}
 	for _, iface := range interfaces {
-		fmt.Println("iface.Name", iface.Name)
-		fmt.Println("iface.HardwareAddr", iface.HardwareAddr.String())
 		if iface.Name == name {
 			mac = iface.HardwareAddr.String()
 		}
