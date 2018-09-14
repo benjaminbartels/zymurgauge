@@ -68,6 +68,7 @@ func (c *Controller) Poll() {
 			chamber := &internal.Chamber{
 				Name:       "Chamber " + c.mac,
 				MacAddress: c.mac,
+				Thermostat: &internal.Thermostat{},
 			}
 			err := c.chamberProvider.Save(chamber)
 			if err != nil {
