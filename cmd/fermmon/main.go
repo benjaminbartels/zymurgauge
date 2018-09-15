@@ -28,12 +28,15 @@ type config struct {
 	Interval     time.Duration `default:"10m"`
 	MinimumChill time.Duration `default:"3m"`
 	MinimumHeat  time.Duration `default:"3m"`
+	P            float64 `default:"1"`
+	I            float64 `default:"1"`
+	D            float64 `default:"0"`
 }
 
 func main() {
 
 	logger := log.New(os.Stderr, "", log.LstdFlags)
-
+	
 	// Process env variables
 	var cfg config
 	err := envconfig.Process("fermmon", &cfg)
@@ -69,7 +72,7 @@ func main() {
 	}
 
 	// Create PID Controller
-	pid := pidctrl.NewPIDController(1, 1, 0) // ToDo: get from env vars
+	pid := pidctrl.NewPIDController(cfg.P, cfg.I, cfg.D)
 
 	ctl := controller.New(mac, pid, client.ChamberProvider, client.FermentationProvider, logger,
 		internal.MinimumChill(cfg.MinimumChill),
