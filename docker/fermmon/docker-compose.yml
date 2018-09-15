@@ -10,3 +10,6 @@ services:
     environment:
       FERMMON_APIADDRESS: https://www.zymurgauge.com
       FERMMON_CLIENTSECRET: ${FERMMON_CLIENTSECRET}
+      FERMMON_P: ${FERMMON_P}
+      FERMMON_I: ${FERMMON_I}
+      FERMMON_D: ${FERMMON_D}

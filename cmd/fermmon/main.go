@@ -28,15 +28,15 @@ type config struct {
 	Interval     time.Duration `default:"10m"`
 	MinimumChill time.Duration `default:"3m"`
 	MinimumHeat  time.Duration `default:"3m"`
-	P            float64 `default:"1"`
-	I            float64 `default:"1"`
-	D            float64 `default:"0"`
+	P            float64       `default:"1"`
+	I            float64       `default:"1"`
+	D            float64       `default:"0"`
 }
 
 func main() {
 
 	logger := log.New(os.Stderr, "", log.LstdFlags)
-	
+
 	// Process env variables
 	var cfg config
 	err := envconfig.Process("fermmon", &cfg)
