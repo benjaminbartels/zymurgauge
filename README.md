@@ -17,5 +17,3 @@ Homebrewing automation system
 - Add optional config Funcs to constructors
 
 - Review error handling and separation `https://www.ardanlabs.com/blog/2017/02/package-oriented-design.html`
-
-test
