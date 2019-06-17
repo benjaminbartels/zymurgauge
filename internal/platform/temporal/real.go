@@ -1,4 +1,4 @@
-package clock
+package temporal
 
 import "time"
 
@@ -6,7 +6,7 @@ import "time"
 type RealClock struct{}
 
 // New creates a new Clock
-func New() Clock {
+func NewClock() Clock {
 	return &RealClock{}
 }
 
