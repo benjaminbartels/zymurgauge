@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/temporal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/temporal"
 	"github.com/benjaminbartels/zymurgauge/internal/simulation"
 	"github.com/felixge/pidctrl"
 	chart "github.com/wcharczuk/go-chart"
@@ -23,7 +23,7 @@ var temps, targets []float64
 var dilatedClock temporal.Clock
 
 const target = 18.00
-const factor = 600
+const factor = 6000
 const interval = 10 * time.Minute
 const minimun = 1 * time.Minute
 const testDuration = 10 * time.Second
@@ -34,7 +34,7 @@ func main() {
 	thermometer := simulation.NewThermometer(20)
 	chiller := &simulation.Actuator{ActuatorType: simulation.Chiller}
 	heater := &simulation.Actuator{ActuatorType: simulation.Heater}
-	pidCtrl := pidctrl.NewPIDController(20, 0, 0)
+	pidCtrl := pidctrl.NewPIDController(1, 0, 0)
 	pidCtrl.SetOutputLimits(-10, 10)
 
 	thermostat := &internal.Thermostat{
@@ -79,7 +79,7 @@ func processStatus(s internal.ThermostatStatus) {
 	if s.Error != nil {
 		logger.Fatal(s.Error)
 	} else {
-		logger.Println(s.State, *(s.CurrentTemperature))
+		logger.Println("Event:", s.State, *(s.CurrentTemperature))
 
 		times = append(times, dilatedClock.Now())
 		temps = append(temps, *(s.CurrentTemperature))

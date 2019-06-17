@@ -1,4 +1,4 @@
-package internal
+ package internal
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	outputLimitMin        = -1
+	outputLimitMin        = -10
 	outputLimitMax        = 10
 	defaultMinimumCooling = 1 * time.Minute
 	defaultMinimumHeating = 1 * time.Minute
@@ -44,7 +44,6 @@ type Thermostat struct {
 // ThermostatOptionsFunc is a function that supplies optional configuration to a Thermostat
 type ThermostatOptionsFunc func(*Thermostat) error
 
-// Logger sets the logger to be used.  If not set, nothing is logged.
 func Clock(clock temporal.Clock) ThermostatOptionsFunc {
 	return func(t *Thermostat) error {
 		t.clock = clock
@@ -128,12 +127,13 @@ func (t *Thermostat) On() { // ToDo: Refactor this
 func (t *Thermostat) run() {
 
 	lastCheck := t.clock.Now()
+	var remainingTime time.Duration
 
 	for t.GetStatus().IsOn {
 
-		now := t.clock.Now()
-
-	//	t.logf("\n\nCycle started @ %v", now) // ToDo: better log message
+		if remainingTime == 0 {
+			remainingTime = t.interval
+		}
 
 		// read temperature
 		temperature, err := t.readTemperature()
@@ -142,20 +142,20 @@ func (t *Thermostat) run() {
 			return
 		}
 
-		elapsedTime := now.Sub(lastCheck)
-		lastCheck = now
+		t.logf("Temperature is: %.3f.", *temperature)
+
+		t.updateTemperature(temperature)
 
 		var action ThermostatState
 		var duration time.Duration
 
-		if elapsedTime < t.interval {
-			action = Idle
-			duration = t.interval - elapsedTime
-			t.logf(" ---------------------- interval = %v, elapsedTime %v, duration %v ", t.interval, elapsedTime, duration)
-			t.logf("%v still remaining. Going to Idle.", duration)
+		if remainingTime == t.interval {
+			now := t.clock.Now()
+			action, duration = t.getNextAction(*temperature, now.Sub(lastCheck))
+			lastCheck = now
 		} else {
-			action, duration = t.getNextAction(temperature, elapsedTime)
-			t.logf("Full interval used (%v).  Next Action is %s for %v", t.interval, action, duration) // ToDo: better log messag
+			action = Idle
+			duration = remainingTime
 		}
 
 		if err := t.performAction(action, duration); err != nil {
@@ -163,29 +163,33 @@ func (t *Thermostat) run() {
 			return
 		}
 
+		remainingTime = remainingTime - duration
+
 	}
 
 }
 
-func (t *Thermostat) readTemperature() (float64, error) {
+func (t *Thermostat) readTemperature() (*float64, error) {
 
 	// read temperature
 	temperature, err := t.thermometer.Read()
 	if err != nil {
-		return 0, err // ToDo: Wrap error
+		return nil, err // ToDo: Wrap error
 	}
 	if temperature == nil {
-		return 0, errors.New("Could not read temperature")
+		return nil, errors.New("Could not read temperature")
 	}
-	return *temperature, nil
+	return temperature, nil
 
 }
 
-func (t *Thermostat) performAction(state ThermostatState, duration time.Duration) error {
+func (t *Thermostat) performAction(action ThermostatState, duration time.Duration) error {
+
+	t.logf("%s for %v.", action, duration)
 
 	var err error
 
-	switch state {
+	switch action {
 	case Idle:
 		err = t.idle()
 	case Cooling:
@@ -194,7 +198,8 @@ func (t *Thermostat) performAction(state ThermostatState, duration time.Duration
 		err = t.heat()
 	}
 
-	t.updateState(state) // ToDo: What should state be if error occurred?
+	t.updateState(action) // ToDo: What should state be if error occurred?
+	t.sendUpdate()
 
 	if err != nil {
 		return err
@@ -208,11 +213,11 @@ func (t *Thermostat) performAction(state ThermostatState, duration time.Duration
 			return err
 		} else {
 			t.updateState(Idle) // ToDo: What should state be if error occurred?
+			t.sendUpdate()
 		}
 
 	case <-t.clock.After(duration):
-		// Thermostat did work for calculated duration, turn off until next interval
-		t.logf("Was %s for %v", state, duration) // ToDo: better log message
+
 	}
 
 	return nil
@@ -223,7 +228,10 @@ func (t *Thermostat) performAction(state ThermostatState, duration time.Duration
 // which the thermostat will perform the action
 func (t *Thermostat) getNextAction(temperature float64, elapsedTime time.Duration) (ThermostatState, time.Duration) {
 
-	output := t.pid.UpdateDuration(temperature, elapsedTime)
+	var output float64
+
+	output = t.pid.UpdateDuration(temperature, elapsedTime)
+	
 
 	// get PID max
 	_, max := t.pid.OutputLimits()
@@ -254,12 +262,14 @@ func (t *Thermostat) getNextAction(temperature float64, elapsedTime time.Duratio
 		duration = t.interval
 	}
 
+	t.logf("getNextAction. elapsedTime: %v, in: %.3f, out: %.3f, %.f%%, %s, %v", elapsedTime, temperature, 
+	output, percent*100, action, duration)
+
 	return action, duration
 }
 
 // Off turns the Thermostat Off
 func (t *Thermostat) Off() {
-	t.log("Off called")
 	t.updateIsOn(false)
 	t.quit <- true
 }
