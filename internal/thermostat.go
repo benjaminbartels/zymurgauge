@@ -7,9 +7,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/platform/clock"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/temporal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/felixge/pidctrl"
+)
+
+const (
+	outputLimitMin = -1
+	outputLimitMax = 10
+	defaultMinimumCooling = 1 * time.Minute
+	defaultMinimumHeating = 1 * time.Minute
 )
 
 // Thermostat regulates the temperature of Chamber by monitoring the temperature that is read from a Thermometer and
@@ -23,23 +30,22 @@ type Thermostat struct {
 	thermometer   Thermometer
 	chiller       Actuator
 	heater        Actuator
-	clock         clock.Clock
+	clock         temporal.Clock
 	interval      time.Duration
-	minChill      time.Duration
-	minHeat       time.Duration
+	minCooling    time.Duration
+	minHeating    time.Duration
 	logger        log.Logger
 	status        ThermostatStatus
 	mux           sync.RWMutex
 	quit          chan bool
 	subs          map[string]func(s ThermostatStatus)
-	lastCheck     time.Time
 }
 
 // ThermostatOptionsFunc is a function that supplies optional configuration to a Thermostat
 type ThermostatOptionsFunc func(*Thermostat) error
 
 // Logger sets the logger to be used.  If not set, nothing is logged.
-func Clock(clock clock.Clock) ThermostatOptionsFunc {
+func Clock(clock temporal.Clock) ThermostatOptionsFunc {
 	return func(t *Thermostat) error {
 		t.clock = clock
 		return nil
@@ -54,20 +60,20 @@ func Interval(interval time.Duration) ThermostatOptionsFunc {
 	}
 }
 
-// MinimumChill set the minimum duration in which the Thermostat will leave the Cooler Actuator On.  This is to prevent
+// MinimumCooling set the minimum duration in which the Thermostat will leave the Chiller Actuator On.  This is to prevent
 // excessive cycling.  Default is 1 minute.
-func MinimumChill(min time.Duration) ThermostatOptionsFunc {
+func MinimumCooling(min time.Duration) ThermostatOptionsFunc {
 	return func(t *Thermostat) error {
-		t.minChill = min
+		t.minCooling = min
 		return nil
 	}
 }
 
-// MinimumHeat set the minimum duration in which the Thermostat will leave the Heater Actuator On.  This is to prevent
+// MinimumHeating set the minimum duration in which the Thermostat will leave the Heater Actuator On.  This is to prevent
 // excessive cycling. Default is 1 minute.
-func MinimumHeat(min time.Duration) ThermostatOptionsFunc {
+func MinimumHeating(min time.Duration) ThermostatOptionsFunc {
 	return func(t *Thermostat) error {
-		t.minHeat = min
+		t.minHeating = min
 		return nil
 	}
 }
@@ -84,15 +90,15 @@ func Logger(logger log.Logger) ThermostatOptionsFunc {
 func (t *Thermostat) Configure(pid *pidctrl.PIDController, thermometer Thermometer, chiller, heater Actuator,
 	options ...ThermostatOptionsFunc) error {
 
-	pid.SetOutputLimits(-10, 10) // Ensure that limits are set
+	pid.SetOutputLimits(outputLimitMin, outputLimitMax) // Ensure that limits are set
 	t.pid = pid
 	t.interval = 10 * time.Minute
-	t.minChill = 1 * time.Minute
-	t.minHeat = 1 * time.Minute
+	t.minCooling = defaultMinimumCooling
+	t.minHeating = defaultMinimumHeating
 	t.quit = make(chan bool)
 	t.subs = make(map[string]func(s ThermostatStatus))
 	t.thermometer = thermometer
-	t.clock = clock.New()
+	t.clock = temporal.NewClock()
 	t.chiller = chiller
 	t.heater = heater
 	t.status = ThermostatStatus{IsOn: false, State: IDLING, CurrentTemperature: nil, Error: nil}
@@ -118,42 +124,88 @@ func (t *Thermostat) On() { // ToDo: Refactor this
 		go t.run()
 	}
 }
-func (t *Thermostat) run() {
-	for t.GetStatus().IsOn {
-		var action ThermostatState
-		var duration time.Duration
+
+func (t *Thermostat) readTemperature() (float64, error) {
 
 		// read temperature
 		temperature, err := t.thermometer.Read()
-
-		// if temperature is not nil, then determine next action
-		if temperature == nil {
-			err = errors.New("Could not read temperature")
-		} else {
-			action, duration = t.getNextAction(*temperature)
-			if action == COOLING {
-				err = t.cool()
-			} else if action == HEATING {
-				err = t.heat()
-			}
+		if err != nil {
+			return 0, err // ToDo: Wrap error
 		}
+		if temperature == nil {
+			return 0, errors.New("Could not read temperature")
+		}
+		return *temperature, nil
 
-		// if error occurred then log it, turn thermostat off and send ERROR update
+
+}
+
+func (t *Thermostat) run() {
+
+	lastCheck := time.Now()
+
+	for t.GetStatus().IsOn {
+
+		now := t.clock.Now()
+
+		t.logf("Stating new cycle @ %s", now)
+
+		// read temperature
+		temperature, err := t.readTemperature()
 		if err != nil {
 			t.handleError(err)
-			if err := t.idle(); err != nil {
-				t.handleError(err)
-			}
 			return
 		}
 
-		// Finally update the status
-		t.updateStatus(action, temperature, nil)
+		elapsedTime := now.Sub(lastCheck)
 
-		t.wait(temperature, duration)
+		action, duration := t.getNextAction(temperature, elapsedTime)
+		
+		if err := t.performAction(); err != nil {
+			t.handleError(err)
+			return
+		}
 
 	}
 
+}
+
+func (t *Thermostat) performAction(state ThermostatState, duration time.Duration) error {
+
+	var err error
+
+	switch state {
+	case IDLING:
+		err = t.idle()
+	case COOLING:
+		err = t.cool()
+	case HEATING:
+		err = t.heat()
+	}
+
+	t.updateState(state) // ToDo: What should state be if error occurred?
+
+	if err != nil {
+		return err
+	}
+
+	select {
+
+	case <-t.quit:
+		// Thermostat was set to Off
+		if err := t.idle(); err != nil {
+			return err
+		} else {
+			t.updateState(IDLING) // ToDo: What should state be if error occurred?
+		}
+
+	case <-t.clock.After(duration):
+		// Thermostat did work for calculated duration, turn off until next interval
+		t.logf("Acted for only %v", duration) // ToDo: better log message
+	}
+
+
+	return nil
 }
 
 // wait waits for a the thermostat to be turned Off OR the interval to elapse OR or the calculated duration to
@@ -188,21 +240,10 @@ func (t *Thermostat) wait(temperature *float64, duration time.Duration) {
 // getNextAction determines the next action (Heat or Cool or nothing) for the thermostat to perform.  It takes the
 // output of the PID controller and converts to to a percentage of the interval.  This percentage is the duration in
 // which the thermostat will perform the action
-func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.Duration) {
+func (t *Thermostat) getNextAction(temperature float64, elapsedTime time.Duration) (ThermostatState, time.Duration) {
 
-	now := t.clock.Now()
-
-	var output float64
-	var elapsedTime time.Duration
-	// get PID output
-	if t.lastCheck.IsZero() {
-		output = t.pid.Update(temperature)
-	} else {
-		// get elapsed time
-		elapsedTime = now.Sub(t.lastCheck)
-		output = t.pid.UpdateDuration(temperature, elapsedTime)
-	}
-
+	output := t.pid.UpdateDuration(temperature, elapsedTime)
+	
 	// get PID max
 	_, max := t.pid.OutputLimits()
 
@@ -217,15 +258,15 @@ func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.D
 	if output < 0 {
 		action = COOLING
 		if duration > 0 { // ToDo: Implement minChill and minHeat
-			if duration < t.minChill {
-				duration = t.minChill
+			if duration < t.minCooling {
+				duration = t.minCooling
 			}
 		}
 	} else if output > 0 {
 		action = HEATING
 		if duration > 0 {
-			if duration < t.minHeat {
-				duration = t.minHeat
+			if duration < t.minHeating {
+				duration = t.minHeating
 			}
 		}
 	} else {
@@ -235,8 +276,6 @@ func (t *Thermostat) getNextAction(temperature float64) (ThermostatState, time.D
 	t.logf("getNextAction - lastCheck: %v, elapsedTime: %v, in: %.3f, out: %.3f, %.f%%, %s, %v",
 		t.lastCheck.Format("2006/01/02 15:04:05"), elapsedTime, temperature, output, percent*100,
 		action, duration)
-
-	t.lastCheck = now
 
 	return action, duration
 }
@@ -397,6 +436,4 @@ const (
 	COOLING ThermostatState = "COOLING"
 	// HEATING means the Thermostat is heating
 	HEATING ThermostatState = "HEATING"
-	// ERROR means the Thermostat has an error
-	ERROR ThermostatState = "ERROR"
 )
