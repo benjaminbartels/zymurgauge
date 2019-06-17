@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/clock"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/simulation"
 	"github.com/felixge/pidctrl"
@@ -19,12 +20,13 @@ import (
 var logger log.Logger
 var times []time.Time
 var temps, targets []float64
+var dilatedClock clock.Clock
 
 const target = 18.00
 const factor = 600
 const interval = 1 * time.Second
 const minimun = 1 * time.Second
-const testDuration = 20 * time.Second
+const testDuration = 10 * time.Second
 
 func main() {
 
@@ -41,11 +43,14 @@ func main() {
 		ThermometerID: "test",
 	}
 
+	dilatedClock = clock.NewDilatedClock(factor)
+
 	err := thermostat.Configure(pidCtrl, thermometer, chiller, heater,
 		internal.MinimumChill(minimun),
 		internal.MinimumHeat(minimun),
 		internal.Interval(interval),
 		internal.Logger(logger),
+		internal.Clock(dilatedClock),
 	)
 	if err != nil {
 		panic(err)
@@ -77,7 +82,7 @@ func processStatus(s internal.ThermostatStatus) {
 	} else {
 		logger.Println(s.State, *(s.CurrentTemperature))
 
-		times = append(times, time.Now())
+		times = append(times, dilatedClock.Now())
 		temps = append(temps, *(s.CurrentTemperature))
 		targets = append(targets, target)
 	}
