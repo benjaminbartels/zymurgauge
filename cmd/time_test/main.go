@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/platform/clock"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/temporal"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 	// fmt.Println("Done.")
 
 	start := time.Now()
-	c := clock.NewDilatedClock(600)
+	c := temporal.NewDilatedClock(600)
 
 	<-c.After(10 * time.Minute)
 
