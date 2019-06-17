@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/clock"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/temporal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/simulation"
 	"github.com/felixge/pidctrl"
@@ -20,12 +20,12 @@ import (
 var logger log.Logger
 var times []time.Time
 var temps, targets []float64
-var dilatedClock clock.Clock
+var dilatedClock temporal.Clock
 
 const target = 18.00
 const factor = 600
-const interval = 1 * time.Second
-const minimun = 1 * time.Second
+const interval = 10 * time.Minute
+const minimun = 1 * time.Minute
 const testDuration = 10 * time.Second
 
 func main() {
@@ -43,11 +43,11 @@ func main() {
 		ThermometerID: "test",
 	}
 
-	dilatedClock = clock.NewDilatedClock(factor)
+	dilatedClock = temporal.NewDilatedClock(factor)
 
 	err := thermostat.Configure(pidCtrl, thermometer, chiller, heater,
-		internal.MinimumChill(minimun),
-		internal.MinimumHeat(minimun),
+		internal.MinimumCooling(minimun),
+		internal.MinimumHeating(minimun),
 		internal.Interval(interval),
 		internal.Logger(logger),
 		internal.Clock(dilatedClock),
@@ -62,7 +62,6 @@ func main() {
 	chamber.Thermostat.Set(target)
 	chamber.Thermostat.On()
 
-	fmt.Printf("Waiting for %v\n", testDuration)
 	time.Sleep(testDuration)
 
 	chamber.Thermostat.Off()
