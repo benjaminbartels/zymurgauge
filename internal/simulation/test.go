@@ -13,6 +13,7 @@ type Test struct {
 	Name       string
 	Result     Result
 	chamber    *Chamber
+	speed      float64
 	clock      temporal.Clock
 	targetTemp float64
 	start      time.Time
@@ -26,7 +27,7 @@ type Result struct {
 }
 
 func NewTest(name string, initalTemp float64, targetTemp float64, interval time.Duration, minimumCooling time.Duration,
-	minimumHeating time.Duration, p float64, i float64, d float64, multiplier float64,
+	minimumHeating time.Duration, p float64, i float64, d float64, speed float64,
 	logger log.Logger) (*Test, error) {
 
 	thermometer := NewThermometer(initalTemp)
@@ -40,7 +41,7 @@ func NewTest(name string, initalTemp float64, targetTemp float64, interval time.
 		ThermometerID: "abc123",
 	}
 
-	clock := temporal.NewDilatedClock(multiplier)
+	clock := temporal.NewDilatedClock(speed)
 
 	if err := thermostat.Configure(pidCtrl,
 		thermometer, chiller, heater,
@@ -51,12 +52,13 @@ func NewTest(name string, initalTemp float64, targetTemp float64, interval time.
 		internal.Clock(clock)); err != nil {
 		return nil, err
 	}
-	chamber := NewChamber(thermostat, thermometer, chiller, heater, multiplier, logger)
+	chamber := NewChamber(thermostat, thermometer, chiller, heater, speed, logger)
 
 	t := &Test{
 		Name:       name,
 		chamber:    chamber,
 		targetTemp: targetTemp,
+		speed:      speed,
 		clock:      clock,
 		logger:     logger,
 	}
@@ -86,7 +88,7 @@ func (t *Test) processStatus(s internal.ThermostatStatus) {
 	if s.Error != nil {
 		t.logger.Fatal(s.Error)
 	} else {
-		t.Result.Durations = append(t.Result.Durations, time.Since(t.start))
+		t.Result.Durations = append(t.Result.Durations, time.Duration(float64(time.Since(t.start))*t.speed))
 		t.Result.Temps = append(t.Result.Temps, *(s.CurrentTemperature))
 		t.Result.Targets = append(t.Result.Targets, t.targetTemp)
 	}

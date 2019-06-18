@@ -18,21 +18,21 @@ func main() {
 
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 
-	target := 18.0
-
-	multiplier := 43200.0 * 2
+	initialTemp := 20.0
+	targetTemp := 18.0
+	speed := 43200.0 * 2
 
 	tests := []*simulation.Test{}
-	for i := 1; i <= 5; i++ {
-		test, err := simulation.NewTest("Test 1", 20, target, 10*time.Minute, 1*time.Minute, 1*time.Minute,
-			float64(i), 0, 0, multiplier, logger)
+	for i := 1; i <= 10; i++ {
+		test, err := simulation.NewTest(fmt.Sprintf("P = %d", i), initialTemp, targetTemp, 10*time.Minute, 1*time.Minute, 1*time.Minute,
+			float64(i), 0, 0, speed, logger)
 		if err != nil {
 			panic(err)
 		}
 		tests = append(tests, test)
 	}
 
-	results := make([]simulation.Results, len(tests))
+	results := make([]*simulation.Test, len(tests))
 
 	var wg sync.WaitGroup
 
@@ -40,13 +40,14 @@ func main() {
 		wg.Add(1)
 		go func(i int, test *simulation.Test) {
 			defer wg.Done()
-			results[i] = test.Run(1 * time.Second)
+			_ = test.Run(1 * time.Second)
+			results[i] = test
 		}(i, test)
 	}
 
 	wg.Wait()
 
-	err := createGraph(results, target)
+	err := createGraph(results, targetTemp)
 	if err != nil {
 		panic(err)
 	}
@@ -54,26 +55,25 @@ func main() {
 	fmt.Println("Bye!")
 }
 
-func createGraph(results []simulation.Results, target float64) error {
+func createGraph(tests []*simulation.Test, targetTemp float64) error {
 
 	series := []chart.Series{}
 
-	for _, result := range results {
+	for _, test := range tests {
 
 		times := []time.Time{}
 
-		// for i := range result.Times {
-		// 	fmt.Println(result.Times[i], result.Temps[i])
-		// }
-
-		for _, duration := range result.Durations {
+		for _, duration := range test.Result.Durations {
+			fmt.Println(duration, time.Time{}.Add(duration))
 			times = append(times, time.Time{}.Add(duration))
 		}
 
 		s := chart.TimeSeries{
+			Name:    test.Name,
 			XValues: times,
-			YValues: result.Temps,
+			YValues: test.Result.Temps,
 		}
+
 		series = append(series, s)
 	}
 
@@ -94,10 +94,14 @@ func createGraph(results []simulation.Results, target float64) error {
 				StrokeWidth: 1.0,
 			},
 			GridLines: []chart.GridLine{
-				{Value: target},
+				{Value: targetTemp},
 			},
 		},
 		Series: series,
+	}
+
+	graph.Elements = []chart.Renderable{
+		chart.Legend(&graph),
 	}
 
 	buffer := bytes.NewBuffer([]byte{})
