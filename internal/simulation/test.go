@@ -10,12 +10,19 @@ import (
 )
 
 type Test struct {
+	Name       string
+	Result     Result
 	chamber    *Chamber
 	clock      temporal.Clock
 	targetTemp float64
 	start      time.Time
-	results    Results
 	logger     log.Logger
+}
+
+type Result struct {
+	Durations []time.Duration
+	Temps     []float64
+	Targets   []float64
 }
 
 func NewTest(name string, initalTemp float64, targetTemp float64, interval time.Duration, minimumCooling time.Duration,
@@ -47,6 +54,7 @@ func NewTest(name string, initalTemp float64, targetTemp float64, interval time.
 	chamber := NewChamber(thermostat, thermometer, chiller, heater, multiplier, logger)
 
 	t := &Test{
+		Name:       name,
 		chamber:    chamber,
 		targetTemp: targetTemp,
 		clock:      clock,
@@ -59,7 +67,7 @@ func NewTest(name string, initalTemp float64, targetTemp float64, interval time.
 
 }
 
-func (t *Test) Run(duration time.Duration) Results {
+func (t *Test) Run(duration time.Duration) Result {
 	t.start = time.Now()
 
 	t.chamber.Thermostat.Set(t.targetTemp)
@@ -70,7 +78,7 @@ func (t *Test) Run(duration time.Duration) Results {
 
 	t.chamber.Thermostat.Off()
 
-	return t.results
+	return t.Result
 }
 
 func (t *Test) processStatus(s internal.ThermostatStatus) {
@@ -78,14 +86,8 @@ func (t *Test) processStatus(s internal.ThermostatStatus) {
 	if s.Error != nil {
 		t.logger.Fatal(s.Error)
 	} else {
-		t.results.Durations = append(t.results.Durations, time.Since(t.start))
-		t.results.Temps = append(t.results.Temps, *(s.CurrentTemperature))
-		t.results.Targets = append(t.results.Targets, t.targetTemp)
+		t.Result.Durations = append(t.Result.Durations, time.Since(t.start))
+		t.Result.Temps = append(t.Result.Temps, *(s.CurrentTemperature))
+		t.Result.Targets = append(t.Result.Targets, t.targetTemp)
 	}
-}
-
-type Results struct {
-	Durations []time.Duration
-	Temps     []float64
-	Targets   []float64
 }
