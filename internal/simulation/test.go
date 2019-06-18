@@ -1,0 +1,91 @@
+package simulation
+
+import (
+	"time"
+
+	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/temporal"
+	"github.com/felixge/pidctrl"
+)
+
+type Test struct {
+	chamber    *Chamber
+	clock      temporal.Clock
+	targetTemp float64
+	start      time.Time
+	results    Results
+	logger     log.Logger
+}
+
+func NewTest(name string, initalTemp float64, targetTemp float64, interval time.Duration, minimumCooling time.Duration,
+	minimumHeating time.Duration, p float64, i float64, d float64, multiplier float64,
+	logger log.Logger) (*Test, error) {
+
+	thermometer := NewThermometer(initalTemp)
+	chiller := &Actuator{ActuatorType: Chiller}
+	heater := &Actuator{ActuatorType: Heater}
+	pidCtrl := pidctrl.NewPIDController(p, i, d)
+
+	thermostat := &internal.Thermostat{
+		ChillerPin:    "1",
+		HeaterPin:     "2",
+		ThermometerID: "abc123",
+	}
+
+	clock := temporal.NewDilatedClock(multiplier)
+
+	if err := thermostat.Configure(pidCtrl,
+		thermometer, chiller, heater,
+		internal.MinimumCooling(minimumCooling),
+		internal.MinimumHeating(minimumHeating),
+		internal.Interval(interval),
+		internal.Logger(logger),
+		internal.Clock(clock)); err != nil {
+		return nil, err
+	}
+	chamber := NewChamber(thermostat, thermometer, chiller, heater, multiplier, logger)
+
+	t := &Test{
+		chamber:    chamber,
+		targetTemp: targetTemp,
+		clock:      clock,
+		logger:     logger,
+	}
+
+	chamber.Thermostat.Subscribe(name, t.processStatus)
+
+	return t, nil
+
+}
+
+func (t *Test) Run(duration time.Duration) Results {
+	t.start = time.Now()
+
+	t.chamber.Thermostat.Set(t.targetTemp)
+
+	t.chamber.Thermostat.On()
+
+	<-time.After(duration)
+
+	t.chamber.Thermostat.Off()
+
+	return t.results
+}
+
+func (t *Test) processStatus(s internal.ThermostatStatus) {
+
+	if s.Error != nil {
+		t.logger.Fatal(s.Error)
+	} else {
+		t.results.Durations = append(t.results.Durations, time.Since(t.start))
+		t.results.Temps = append(t.results.Temps, *(s.CurrentTemperature))
+		t.results.Targets = append(t.results.Targets, t.targetTemp)
+	}
+}
+
+type Results struct {
+	Durations []time.Duration
+	Temps     []float64
+	Targets   []float64
+}

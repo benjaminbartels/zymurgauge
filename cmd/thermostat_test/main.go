@@ -1,72 +1,52 @@
 package main
 
-// ToDo: make this a unit test or part of fermmon
 import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	golog "log"
+	"log"
 	"os"
+	"sync"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/temporal"
 	"github.com/benjaminbartels/zymurgauge/internal/simulation"
-	"github.com/felixge/pidctrl"
+
 	chart "github.com/wcharczuk/go-chart"
 )
 
-var logger log.Logger
-var times []time.Time
-var temps, targets []float64
-var dilatedClock temporal.Clock
-
-const target = 18.00
-const factor = 6000
-const interval = 10 * time.Minute
-const minimun = 1 * time.Minute
-const testDuration = 10 * time.Second
-
 func main() {
 
-	logger = golog.New(os.Stderr, "", golog.LstdFlags)
-	thermometer := simulation.NewThermometer(20)
-	chiller := &simulation.Actuator{ActuatorType: simulation.Chiller}
-	heater := &simulation.Actuator{ActuatorType: simulation.Heater}
-	pidCtrl := pidctrl.NewPIDController(1, 0, 0)
-	pidCtrl.SetOutputLimits(-10, 10)
+	logger := log.New(os.Stderr, "", log.LstdFlags)
 
-	thermostat := &internal.Thermostat{
-		ChillerPin:    "1",
-		HeaterPin:     "2",
-		ThermometerID: "test",
+	target := 18.0
+
+	multiplier := 43200.0 * 2
+
+	tests := []*simulation.Test{}
+	for i := 1; i <= 5; i++ {
+		test, err := simulation.NewTest("Test 1", 20, target, 10*time.Minute, 1*time.Minute, 1*time.Minute,
+			float64(i), 0, 0, multiplier, logger)
+		if err != nil {
+			panic(err)
+		}
+		tests = append(tests, test)
 	}
 
-	dilatedClock = temporal.NewDilatedClock(factor)
+	results := make([]simulation.Results, len(tests))
 
-	err := thermostat.Configure(pidCtrl, thermometer, chiller, heater,
-		internal.MinimumCooling(minimun),
-		internal.MinimumHeating(minimun),
-		internal.Interval(interval),
-		internal.Logger(logger),
-		internal.Clock(dilatedClock),
-	)
-	if err != nil {
-		panic(err)
+	var wg sync.WaitGroup
+
+	for i, test := range tests {
+		wg.Add(1)
+		go func(i int, test *simulation.Test) {
+			defer wg.Done()
+			results[i] = test.Run(1 * time.Second)
+		}(i, test)
 	}
 
-	thermostat.Subscribe("test", processStatus)
+	wg.Wait()
 
-	chamber := simulation.NewChamber(thermostat, thermometer, chiller, heater, factor, logger)
-	chamber.Thermostat.Set(target)
-	chamber.Thermostat.On()
-
-	time.Sleep(testDuration)
-
-	chamber.Thermostat.Off()
-
-	err = createGraph(times, temps, targets)
+	err := createGraph(results, target)
 	if err != nil {
 		panic(err)
 	}
@@ -74,23 +54,27 @@ func main() {
 	fmt.Println("Bye!")
 }
 
-func processStatus(s internal.ThermostatStatus) {
+func createGraph(results []simulation.Results, target float64) error {
 
-	if s.Error != nil {
-		logger.Fatal(s.Error)
-	} else {
-		logger.Println("Event:", s.State, *(s.CurrentTemperature))
+	series := []chart.Series{}
 
-		times = append(times, dilatedClock.Now())
-		temps = append(temps, *(s.CurrentTemperature))
-		targets = append(targets, target)
-	}
-}
+	for _, result := range results {
 
-func createGraph(x []time.Time, y []float64, targets []float64) error {
+		times := []time.Time{}
 
-	for i := range x {
-		fmt.Println(x[i], y[i])
+		// for i := range result.Times {
+		// 	fmt.Println(result.Times[i], result.Temps[i])
+		// }
+
+		for _, duration := range result.Durations {
+			times = append(times, time.Time{}.Add(duration))
+		}
+
+		s := chart.TimeSeries{
+			XValues: times,
+			YValues: result.Temps,
+		}
+		series = append(series, s)
 	}
 
 	graph := chart.Chart{
@@ -104,17 +88,16 @@ func createGraph(x []time.Time, y []float64, targets []float64) error {
 			Style: chart.Style{
 				Show: true,
 			},
-		},
-		Series: []chart.Series{
-			chart.TimeSeries{
-				XValues: x,
-				YValues: y,
+			GridMajorStyle: chart.Style{
+				Show:        true,
+				StrokeColor: chart.ColorAlternateGray,
+				StrokeWidth: 1.0,
 			},
-			chart.TimeSeries{
-				XValues: x,
-				YValues: targets,
+			GridLines: []chart.GridLine{
+				{Value: target},
 			},
 		},
+		Series: series,
 	}
 
 	buffer := bytes.NewBuffer([]byte{})

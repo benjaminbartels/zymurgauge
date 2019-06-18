@@ -1,4 +1,4 @@
- package internal
+package internal
 
 import (
 	"errors"
@@ -231,7 +231,6 @@ func (t *Thermostat) getNextAction(temperature float64, elapsedTime time.Duratio
 	var output float64
 
 	output = t.pid.UpdateDuration(temperature, elapsedTime)
-	
 
 	// get PID max
 	_, max := t.pid.OutputLimits()
@@ -262,8 +261,8 @@ func (t *Thermostat) getNextAction(temperature float64, elapsedTime time.Duratio
 		duration = t.interval
 	}
 
-	t.logf("getNextAction. elapsedTime: %v, in: %.3f, out: %.3f, %.f%%, %s, %v", elapsedTime, temperature, 
-	output, percent*100, action, duration)
+	t.logf("getNextAction. elapsedTime: %v, in: %.3f, out: %.3f, %.f%%, %s, %v", elapsedTime, temperature, output,
+		percent*100, action, duration)
 
 	return action, duration
 }
@@ -348,6 +347,7 @@ func (t *Thermostat) idle() error {
 
 	return nil
 }
+
 // cool turns the chiller on and the heater off
 func (t *Thermostat) cool() error {
 	if !reflect.ValueOf(t.chiller).IsNil() {
