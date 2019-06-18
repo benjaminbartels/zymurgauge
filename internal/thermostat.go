@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"sync"
 	"time"
-
+	
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/temporal"
 	"github.com/felixge/pidctrl"
@@ -212,6 +212,7 @@ func (t *Thermostat) performAction(action ThermostatState, duration time.Duratio
 		if err := t.idle(); err != nil {
 			return err
 		} else {
+			t.updateIsOn(false)
 			t.updateState(Idle) // ToDo: What should state be if error occurred?
 			t.sendUpdate()
 		}
@@ -269,7 +270,6 @@ func (t *Thermostat) getNextAction(temperature float64, elapsedTime time.Duratio
 
 // Off turns the Thermostat Off
 func (t *Thermostat) Off() {
-	t.updateIsOn(false)
 	t.quit <- true
 }
 
@@ -285,6 +285,8 @@ func (t *Thermostat) Subscribe(key string, f func(s ThermostatStatus)) {
 
 // GetStatus return the current status of the Thermostat
 func (t *Thermostat) GetStatus() ThermostatStatus {
+	t.mux.RLock()
+	defer t.mux.RUnlock()
 	return t.status
 }
 
