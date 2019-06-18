@@ -20,10 +20,10 @@ func main() {
 
 	initialTemp := 20.0
 	targetTemp := 18.0
-	speed := 43200.0 * 2
+	speed := 3600.0
 
 	tests := []*simulation.Test{}
-	for i := 1; i <= 10; i++ {
+	for i := 1; i <= 1; i++ {
 		test, err := simulation.NewTest(fmt.Sprintf("P = %d", i), initialTemp, targetTemp, 10*time.Minute, 1*time.Minute, 1*time.Minute,
 			float64(i), 0, 0, speed, logger)
 		if err != nil {
@@ -40,7 +40,7 @@ func main() {
 		wg.Add(1)
 		go func(i int, test *simulation.Test) {
 			defer wg.Done()
-			_ = test.Run(1 * time.Second)
+			_ = test.Run(5 * time.Second)
 			results[i] = test
 		}(i, test)
 	}
@@ -59,16 +59,24 @@ func createGraph(tests []*simulation.Test, targetTemp float64) error {
 
 	series := []chart.Series{}
 
+	var maxTime float64
+
 	for _, test := range tests {
 
-		times := []time.Time{}
+		times := []float64{}
 
 		for _, duration := range test.Result.Durations {
-			fmt.Println(duration, time.Time{}.Add(duration))
-			times = append(times, time.Time{}.Add(duration))
+
+			time := float64(duration) / 3600000000000.0
+
+			if time > maxTime {
+				maxTime = time
+			}
+
+			times = append(times, time)
 		}
 
-		s := chart.TimeSeries{
+		s := chart.ContinuousSeries{
 			Name:    test.Name,
 			XValues: times,
 			YValues: test.Result.Temps,
@@ -79,15 +87,28 @@ func createGraph(tests []*simulation.Test, targetTemp float64) error {
 
 	graph := chart.Chart{
 		XAxis: chart.XAxis{
-			Style: chart.Style{
-				Show: true,
+			Name:      "Hours",
+			NameStyle: chart.StyleShow(),
+			Style:     chart.StyleShow(),
+			Ticks: []chart.Tick{
+				{0.0, "00:00"},
+				{0.5, "00:30"},
+				{1.0, "01:00"},
+				{1.5, "01:30"},
+				{2.0, "02:00"},
+				{2.5, "02:30"},
+				{3.0, "03:00"},
+				{3.5, "03:30"},
+				{4.0, "04:00"},
+				{4.5, "04:30"},
+				{5.0, "05:00"},
 			},
-			ValueFormatter: chart.TimeMinuteValueFormatter,
+			//	ValueFormatter: chart.TimeMinuteValueFormatter,
 		},
 		YAxis: chart.YAxis{
-			Style: chart.Style{
-				Show: true,
-			},
+			Name:      "Temperature",
+			NameStyle: chart.StyleShow(),
+			Style:     chart.StyleShow(),
 			GridMajorStyle: chart.Style{
 				Show:        true,
 				StrokeColor: chart.ColorAlternateGray,
