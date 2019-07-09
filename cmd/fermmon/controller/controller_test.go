@@ -273,8 +273,8 @@ func createController(mac string, c client.ChamberProvider, f client.Fermentatio
 	logger := golog.New(os.Stderr, "", golog.LstdFlags)
 
 	return controller.New(mac, pid, c, f, logger,
-		internal.MinimumChill(3*time.Minute),
-		internal.MinimumHeat(3*time.Minute),
+		internal.MinimumCooling(3*time.Minute),
+		internal.MinimumHeating(3*time.Minute),
 		internal.Interval(10*time.Second),
 		internal.Logger(logger))
 }
