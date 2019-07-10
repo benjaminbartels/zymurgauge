@@ -11,8 +11,10 @@ require (
 	github.com/hashicorp/errwrap v1.0.0
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/kelseyhightower/envconfig v1.3.0
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/rakyll/statik v0.1.4
+	github.com/satori/go.uuid v1.2.0
 	github.com/sigurn/crc8 v0.0.0-20160107002456-e55481d6f45c
 	github.com/sigurn/utils v0.0.0-20151230205143-f19e41f79f8f
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
@@ -20,6 +22,7 @@ require (
 	golang.org/x/crypto v0.0.0-20180830192347-182538f80094
 	golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81
 	golang.org/x/sys v0.0.0-20180831094639-fa5fdf94c789
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/square/go-jose.v2 v2.1.8
 	periph.io/x/periph v3.1.0+incompatible
 )

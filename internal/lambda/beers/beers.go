@@ -9,8 +9,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awsdynamodb "github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database/dynamodb"
 	"github.com/pkg/errors"
+	"github.com/satori/go.uuid"
 )
 
 type handler struct {
@@ -21,8 +23,8 @@ func (h *handler) handle(req events.APIGatewayProxyRequest) (events.APIGatewayPr
 	switch req.HTTPMethod {
 	case "GET":
 		return h.get(req)
-	// case "POST":
-	// 	return h.post(req)
+	case "POST":
+		return h.post(req)
 	default:
 		return createErrorResponse(ErrMethodNotAllowed)
 	}
@@ -35,6 +37,74 @@ func (h *handler) get(req events.APIGatewayProxyRequest) (events.APIGatewayProxy
 		return createErrorResponse(err)
 	}
 	return createResponse(beers, http.StatusOK)
+}
+
+func (h *handler) post(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+
+	beer, err := parseBeer(req.Body)
+	if err != nil {
+		return createErrorResponse(err)
+	}
+
+	if beer.ID == "" {
+		beer.ID = uuid.NewV4().String()
+	}
+
+	err = h.repo.Save(&beer)
+	if err != nil {
+		return createErrorResponse(err)
+	}
+	return createResponse(beer, http.StatusOK)
+}
+
+func (h *handler) put(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+
+	beer, err := parseBeer(req.Body)
+	if err != nil {
+		return createErrorResponse(err)
+	}
+	
+	err = h.repo.Save(&beer)
+	if err != nil {
+		return createErrorResponse(err)
+	}
+	return createResponse(beer, http.StatusOK)
+}
+
+
+// func create(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+//     if req.Headers["Content-Type"] != "application/json" {
+//         return clientError(http.StatusNotAcceptable)
+//     }
+
+//     bk := new(beer)
+//     err := json.Unmarshal([]byte(req.Body), bk)
+//     if err != nil {
+//         return clientError(http.StatusUnprocessableEntity)
+//     }
+
+//     if !isbnRegexp.MatchString(bk.ISBN) {
+//         return clientError(http.StatusBadRequest)
+//     }
+//     if bk.Title == "" || bk.Author == "" {
+//         return clientError(http.StatusBadRequest)
+//     }
+
+//     err = putItem(bk)
+//     if err != nil {
+//         return serverError(err)
+//     }
+
+//     return events.APIGatewayProxyResponse{
+//         StatusCode: 201,
+//         Headers:    map[string]string{"Location": fmt.Sprintf("/beers?isbn=%s", bk.ISBN)},
+//     }, nil
+// }
+
+func parseBeer(body string) (internal.Beer, error) {
+	var b internal.Beer
+    err := json.Unmarshal([]byte(body), b)
+	return b, err
 }
 
 func createResponse(data interface{}, code int) (events.APIGatewayProxyResponse, error) {
@@ -101,35 +171,6 @@ func createErrorResponse(err error) (events.APIGatewayProxyResponse, error) {
 type errorResponse struct {
 	Err string `json:"error,omitempty"`
 }
-
-// func create(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-//     if req.Headers["Content-Type"] != "application/json" {
-//         return clientError(http.StatusNotAcceptable)
-//     }
-
-//     bk := new(beer)
-//     err := json.Unmarshal([]byte(req.Body), bk)
-//     if err != nil {
-//         return clientError(http.StatusUnprocessableEntity)
-//     }
-
-//     if !isbnRegexp.MatchString(bk.ISBN) {
-//         return clientError(http.StatusBadRequest)
-//     }
-//     if bk.Title == "" || bk.Author == "" {
-//         return clientError(http.StatusBadRequest)
-//     }
-
-//     err = putItem(bk)
-//     if err != nil {
-//         return serverError(err)
-//     }
-
-//     return events.APIGatewayProxyResponse{
-//         StatusCode: 201,
-//         Headers:    map[string]string{"Location": fmt.Sprintf("/beers?isbn=%s", bk.ISBN)},
-//     }, nil
-// }
 
 func main() {
 
