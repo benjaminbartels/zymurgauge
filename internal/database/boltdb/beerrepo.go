@@ -34,12 +34,12 @@ func NewBeerRepo(db *bolt.DB) (*BeerRepo, error) {
 }
 
 // Get returns a Beer by its ID
-func (r *BeerRepo) Get(id uint64) (*internal.Beer, error) {
+func (r *BeerRepo) Get(id string) (*internal.Beer, error) {
 	var b *internal.Beer
 	err := r.db.View(func(tx *bolt.Tx) error {
-		if v := tx.Bucket([]byte("Beers")).Get(itob(id)); v != nil {
+		if v := tx.Bucket([]byte("Beers")).Get([]byte(id)); v != nil {
 			if err := json.Unmarshal(v, &b); err != nil {
-				return errors.Wrapf(err, "Could not unmarshal Beer %d", id)
+				return errors.Wrapf(err, "Could not unmarshal Beer %s", id)
 			}
 		}
 		return nil

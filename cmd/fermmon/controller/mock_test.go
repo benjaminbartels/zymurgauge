@@ -37,7 +37,7 @@ func (m *chamberResourceMock) Unsubscribe(mac string) {
 }
 
 type fermentationResourceMock struct {
-	GetFn                   func(uint64) (*internal.Fermentation, error)
+	GetFn                   func(string) (*internal.Fermentation, error)
 	SaveFn                  func(*internal.Fermentation) error
 	SaveTemperatureChangeFn func(*internal.TemperatureChange) error
 
@@ -46,7 +46,7 @@ type fermentationResourceMock struct {
 	SaveTemperatureChangeInvoked bool
 }
 
-func (m *fermentationResourceMock) Get(id uint64) (*internal.Fermentation, error) {
+func (m *fermentationResourceMock) Get(id string) (*internal.Fermentation, error) {
 	m.GetInvoked = true
 	return m.GetFn(id)
 }

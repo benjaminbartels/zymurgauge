@@ -12,13 +12,14 @@ func TestBeerServiceSaveNew(t *testing.T) {
 	defer func() { testDB.Close() }()
 
 	b := internal.Beer{
+		ID:   "1",
 		Name: "My Beer",
 	}
 
 	if err := testDB.beerRepo.Save(&b); err != nil {
 		t.Fatal(err)
-	} else if b.ID != 1 {
-		t.Fatalf("unexpected id: %d", b.ID)
+	} else if b.ID != "1" {
+		t.Fatalf("unexpected id: %s", b.ID)
 	}
 
 	// other, err := testDB.beerRepo.Get(1)
@@ -34,8 +35,8 @@ func TestBeerServiceSaveExisting(t *testing.T) {
 	testDB := createTestDB()
 	defer func() { testDB.Close() }()
 
-	b1 := &internal.Beer{Name: "My Beer 1"}
-	b2 := &internal.Beer{Name: "My Beer 2"}
+	b1 := &internal.Beer{ID: "1", Name: "My Beer 1"}
+	b2 := &internal.Beer{ID: "2", Name: "My Beer 2"}
 
 	if err := testDB.beerRepo.Save(b1); err != nil {
 		t.Fatal(err)

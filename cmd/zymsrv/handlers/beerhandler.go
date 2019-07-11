@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/database/boltdb"
@@ -44,10 +43,7 @@ func (h *BeerHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if head == "" {
 		return h.getAll(ctx, w)
 	}
-	id, err := strconv.ParseUint(head, 10, 64)
-	if err != nil {
-		return err
-	}
+	id := head
 	return h.getOne(ctx, w, id)
 }
 
@@ -59,7 +55,7 @@ func (h *BeerHandler) getAll(ctx context.Context, w http.ResponseWriter) error {
 	return web.Respond(ctx, w, beers, http.StatusOK)
 }
 
-func (h *BeerHandler) getOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
+func (h *BeerHandler) getOne(ctx context.Context, w http.ResponseWriter, id string) error {
 	if beer, err := h.repo.Get(id); err != nil {
 		return err
 	} else if beer == nil {

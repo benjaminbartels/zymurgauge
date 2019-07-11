@@ -16,7 +16,9 @@ func TestFermentationServiceSaveNew(t *testing.T) {
 	now := time.Now()
 
 	f := internal.Fermentation{
+		ID: "1",
 		Beer: internal.Beer{
+			ID:      "1",
 			Name:    "My Beer",
 			ModTime: now,
 		},
@@ -26,8 +28,8 @@ func TestFermentationServiceSaveNew(t *testing.T) {
 
 	if err := testDB.fermentationRepo.Save(&f); err != nil {
 		t.Fatal(err)
-	} else if f.ID != 1 {
-		t.Fatalf("unexpected id: %d", f.ID)
+	} else if f.ID != "1" {
+		t.Fatalf("unexpected id: %s", f.ID)
 	}
 
 	// other, err := testDB.fermentationRepo.Get(1)
@@ -46,7 +48,9 @@ func TestFermentationServiceSaveExisting(t *testing.T) {
 	now := time.Now()
 
 	f1 := &internal.Fermentation{
+		ID: "1",
 		Beer: internal.Beer{
+			ID:      "1",
 			Name:    "My Beer 1",
 			ModTime: now,
 		},
@@ -55,7 +59,9 @@ func TestFermentationServiceSaveExisting(t *testing.T) {
 	}
 
 	f2 := &internal.Fermentation{
+		ID: "2",
 		Beer: internal.Beer{
+			ID:      "2",
 			Name:    "My Beer 2",
 			ModTime: now,
 		},

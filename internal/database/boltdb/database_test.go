@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/boltdb"
+	"github.com/benjaminbartels/zymurgauge/internal/database/boltdb"
 	"github.com/boltdb/bolt"
 )
 
@@ -45,7 +45,7 @@ func createTestDB() *testDB {
 		panic(err)
 	}
 
-	fermentationRepo, err := boltdb.wFermentationRepo(db)
+	fermentationRepo, err := boltdb.NewFermentationRepo(db)
 	if err != nil {
 		panic(err)
 	}
