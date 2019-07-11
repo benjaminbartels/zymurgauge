@@ -1,4 +1,4 @@
-package database_test
+package boltdb_test
 
 import (
 	"testing"

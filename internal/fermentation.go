@@ -4,7 +4,7 @@ import "time"
 
 // Fermentation is a single instance of a fermentation of a beer
 type Fermentation struct {
-	ID            uint64     `json:"id"`
+	ID            string     `json:"id"`
 	Chamber       Chamber    `json:"chamber"`
 	Beer          Beer       `json:"beer"`
 	CurrentStep   int        `json:"currentStep,omitempty"`

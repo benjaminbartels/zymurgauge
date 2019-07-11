@@ -12,7 +12,7 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrv/handlers"
 	_ "github.com/benjaminbartels/zymurgauge/cmd/zymsrv/statik"
-	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/database/boltdb"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/boltdb/bolt"
 	"github.com/kelseyhightower/envconfig"
@@ -54,22 +54,22 @@ func main() {
 	}
 	defer safeclose.Close(db, &err)
 
-	beerRepo, err := database.NewBeerRepo(db)
+	beerRepo, err := boltdb.NewBeerRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	chamberRepo, err := database.NewChamberRepo(db)
+	chamberRepo, err := boltdb.NewChamberRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	fermentationRepo, err := database.NewFermentationRepo(db)
+	fermentationRepo, err := boltdb.NewFermentationRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	temperatureChangeRepo, err := database.NewTemperatureChangeRepo(db)
+	temperatureChangeRepo, err := boltdb.NewTemperatureChangeRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}

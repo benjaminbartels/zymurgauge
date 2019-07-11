@@ -8,20 +8,21 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/database/boltdb"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	uuid "github.com/satori/go.uuid"
 )
 
 // FermentationHandler is the http handler for API calls to manage Fermentations
 type FermentationHandler struct {
-	fermRepo    *database.FermentationRepo
-	changeRepo  *database.TemperatureChangeRepo
-	chamberRepo *database.ChamberRepo
+	fermRepo    *boltdb.FermentationRepo
+	changeRepo  *boltdb.TemperatureChangeRepo
+	chamberRepo *boltdb.ChamberRepo
 }
 
 // NewFermentationHandler instantiates a FermentationHandler
-func NewFermentationHandler(fermRepo *database.FermentationRepo, changeRepo *database.TemperatureChangeRepo,
-	chamberRepo *database.ChamberRepo) *FermentationHandler {
+func NewFermentationHandler(fermRepo *boltdb.FermentationRepo, changeRepo *boltdb.TemperatureChangeRepo,
+	chamberRepo *boltdb.ChamberRepo) *FermentationHandler {
 	return &FermentationHandler{
 		fermRepo:    fermRepo,
 		changeRepo:  changeRepo,
@@ -134,6 +135,9 @@ func (h *FermentationHandler) postFermentation(ctx context.Context, w http.Respo
 	if err != nil {
 		return err
 	}
+	if fermentation.ID == "" {
+		fermentation.ID = uuid.NewV4().String()
+	}
 	err = h.fermRepo.Save(&fermentation)
 	if err != nil {
 		return err
@@ -186,7 +190,7 @@ func (h *FermentationHandler) postStop(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	chamber.CurrentFermentationID = 0
+	chamber.CurrentFermentationID = ""
 
 	if err := h.chamberRepo.Save(chamber); err != nil {
 		return err
@@ -201,10 +205,7 @@ func (h *FermentationHandler) delete(ctx context.Context, w http.ResponseWriter,
 	if head == "" {
 		return web.ErrBadRequest
 	}
-	id, err := strconv.ParseUint(head, 10, 64)
-	if err != nil {
-		return web.ErrBadRequest
-	}
+	id := head
 	if err := h.fermRepo.Delete(id); err != nil {
 		return err
 	}

@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/database/boltdb"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
@@ -17,13 +17,13 @@ import (
 
 // ChamberHandler is the http handler for API calls to manage Chambers
 type ChamberHandler struct {
-	repo   *database.ChamberRepo
+	repo   *boltdb.ChamberRepo
 	pubSub *pubsub.PubSub
 	logger log.Logger
 }
 
 // NewChamberHandler instantiates a ChamberHandler
-func NewChamberHandler(repo *database.ChamberRepo, pubSub *pubsub.PubSub, logger log.Logger) *ChamberHandler {
+func NewChamberHandler(repo *boltdb.ChamberRepo, pubSub *pubsub.PubSub, logger log.Logger) *ChamberHandler {
 	return &ChamberHandler{
 		repo:   repo,
 		pubSub: pubSub,

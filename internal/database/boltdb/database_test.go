@@ -1,20 +1,20 @@
-package database_test
+package boltdb_test
 
 import (
 	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/boltdb"
 	"github.com/boltdb/bolt"
 )
 
 // TestClient is a wrapper around the bolt.Client.
 type testDB struct {
 	db               *bolt.DB
-	chamberRepo      *database.ChamberRepo
-	beerRepo         *database.BeerRepo
-	fermentationRepo *database.FermentationRepo
+	chamberRepo      *boltdb.ChamberRepo
+	beerRepo         *boltdb.BeerRepo
+	fermentationRepo *boltdb.FermentationRepo
 }
 
 func createTestDB() *testDB {
@@ -35,17 +35,17 @@ func createTestDB() *testDB {
 		panic(err)
 	}
 
-	chamberRepo, err := database.NewChamberRepo(db)
+	chamberRepo, err := boltdb.NewChamberRepo(db)
 	if err != nil {
 		panic(err)
 	}
 
-	beerRepo, err := database.NewBeerRepo(db)
+	beerRepo, err := boltdb.NewBeerRepo(db)
 	if err != nil {
 		panic(err)
 	}
 
-	fermentationRepo, err := database.NewFermentationRepo(db)
+	fermentationRepo, err := boltdb.wFermentationRepo(db)
 	if err != nil {
 		panic(err)
 	}
