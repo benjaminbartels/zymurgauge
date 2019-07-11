@@ -22,7 +22,7 @@ install:
   - npm install --prefix ui ui
   - npm run --prefix ui build
   - go get github.com/rakyll/statik
-  - go get github.com/axw/gocov
+  - go get github.com/axw/gocov/gocov
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
   - chmod +x ./cc-test-reporter
 
