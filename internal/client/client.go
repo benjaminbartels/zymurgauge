@@ -111,7 +111,7 @@ type ChamberProvider interface {
 
 // FermentationProvider is a data provider for Fermentations
 type FermentationProvider interface {
-	Get(id uint64) (*internal.Fermentation, error)
+	Get(id string) (*internal.Fermentation, error)
 	Save(f *internal.Fermentation) error
 	SaveTemperatureChange(t *internal.TemperatureChange) error
 }

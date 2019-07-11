@@ -34,7 +34,7 @@ func NewTemperatureChangeRepo(db *bolt.DB) (*TemperatureChangeRepo, error) {
 }
 
 // GetRangeByFermentationID returns a all temperature changes for the given fermentation id for the given range
-func (r *TemperatureChangeRepo) GetRangeByFermentationID(fermentationID uint64, start,
+func (r *TemperatureChangeRepo) GetRangeByFermentationID(fermentationID string, start,
 	end time.Time) ([]internal.TemperatureChange, error) {
 	temperatureChanges := []internal.TemperatureChange{}
 
@@ -60,17 +60,10 @@ func (r *TemperatureChangeRepo) GetRangeByFermentationID(fermentationID uint64, 
 func (r *TemperatureChangeRepo) Save(b *internal.TemperatureChange) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("TemperatureChanges"))
-		if v := bu.Get(itob(b.ID)); v == nil {
-			seq, err := bu.NextSequence()
-			if err != nil {
-				return err
-			}
-			b.ID = seq
-		}
 		if v, err := json.Marshal(b); err != nil {
-			return errors.Wrapf(err, "Could not marshal TemperatureChange %d", b.ID)
-		} else if err := bu.Put(itob(b.ID), v); err != nil {
-			return errors.Wrapf(err, "Could not put TemperatureChange %d", b.ID)
+			return errors.Wrapf(err, "Could not marshal TemperatureChange %s", b.ID)
+		} else if err := bu.Put([]byte(b.ID), v); err != nil {
+			return errors.Wrapf(err, "Could not put TemperatureChange %s", b.ID)
 		}
 		return nil
 	})

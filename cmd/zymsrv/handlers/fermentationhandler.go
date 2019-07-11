@@ -111,10 +111,7 @@ func (h *FermentationHandler) post(ctx context.Context, w http.ResponseWriter, r
 	if head == "" {
 		return h.postFermentation(ctx, w, r)
 	}
-	id, err := strconv.ParseUint(head, 10, 64)
-	if err != nil {
-		return web.ErrBadRequest
-	}
+	id := head
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 
 	switch head {
@@ -157,7 +154,7 @@ func (h *FermentationHandler) postTemperatureChange(ctx context.Context, w http.
 	return web.Respond(ctx, w, change, http.StatusOK)
 }
 
-func (h *FermentationHandler) postStart(ctx context.Context, w http.ResponseWriter, id uint64) error {
+func (h *FermentationHandler) postStart(ctx context.Context, w http.ResponseWriter, id string) error {
 
 	fermentation, err := h.fermRepo.Get(id)
 	if err != nil {
@@ -178,7 +175,7 @@ func (h *FermentationHandler) postStart(ctx context.Context, w http.ResponseWrit
 	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
-func (h *FermentationHandler) postStop(ctx context.Context, w http.ResponseWriter, id uint64) error {
+func (h *FermentationHandler) postStop(ctx context.Context, w http.ResponseWriter, id string) error {
 
 	fermentation, err := h.fermRepo.Get(id)
 	if err != nil {

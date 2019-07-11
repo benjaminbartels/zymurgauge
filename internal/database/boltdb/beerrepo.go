@@ -90,7 +90,7 @@ func (r *BeerRepo) Delete(id string) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Beers"))
 		if err := bu.Delete([]byte(id)); err != nil {
-			return errors.Wrapf(err, "Could not delete Beer %d", id)
+			return errors.Wrapf(err, "Could not delete Beer %s", id)
 		}
 		return nil
 	})

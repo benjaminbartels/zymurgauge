@@ -34,12 +34,12 @@ func NewFermentationRepo(db *bolt.DB) (*FermentationRepo, error) {
 }
 
 // Get returns a Fermentation by its ID
-func (r *FermentationRepo) Get(id uint64) (*internal.Fermentation, error) {
+func (r *FermentationRepo) Get(id string) (*internal.Fermentation, error) {
 	var f *internal.Fermentation
 	err := r.db.View(func(tx *bolt.Tx) error {
-		if v := tx.Bucket([]byte("Fermentations")).Get(itob(id)); v != nil {
+		if v := tx.Bucket([]byte("Fermentations")).Get([]byte(id)); v != nil {
 			if err := json.Unmarshal(v, &f); err != nil {
-				return errors.Wrapf(err, "Could not unmarshal Fermentation %d", id)
+				return errors.Wrapf(err, "Could not unmarshal Fermentation %s", id)
 			}
 		}
 		return nil
@@ -75,9 +75,9 @@ func (r *FermentationRepo) Save(f *internal.Fermentation) error {
 		bu := tx.Bucket([]byte("Fermentations"))
 		f.ModTime = time.Now()
 		if v, err := json.Marshal(f); err != nil {
-			return errors.Wrapf(err, "Could not marshal Fermentation %d", f.ID)
+			return errors.Wrapf(err, "Could not marshal Fermentation %s", f.ID)
 		} else if err := bu.Put([]byte(f.ID), v); err != nil {
-			return errors.Wrapf(err, "Could not put Fermentation %d", f.ID)
+			return errors.Wrapf(err, "Could not put Fermentation %s", f.ID)
 		}
 		return nil
 	})
@@ -89,7 +89,7 @@ func (r *FermentationRepo) Delete(id string) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
 		if err := bu.Delete([]byte(id)); err != nil {
-			return errors.Wrapf(err, "Could not delete Fermentation %d", id)
+			return errors.Wrapf(err, "Could not delete Fermentation %s", id)
 		}
 		return nil
 	})
