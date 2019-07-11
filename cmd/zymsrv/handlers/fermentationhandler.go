@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
@@ -50,14 +49,12 @@ func (h *FermentationHandler) get(ctx context.Context, w http.ResponseWriter, r 
 	if head == "" {
 		return h.getAll(ctx, w)
 	}
-	id, err := strconv.ParseUint(head, 10, 64)
-	if err != nil {
-		return web.ErrBadRequest
-	}
+	id := head
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "temperaturechanges" {
 		start := time.Now().AddDate(0, 0, -1).UTC()
 		end := time.Unix(1<<63-62135596801, 999999999).UTC()
+		var err error
 		if startParam, ok := r.URL.Query()["start"]; ok {
 			start, err = time.Parse(time.RFC3339, startParam[0])
 			if err != nil {
@@ -78,7 +75,7 @@ func (h *FermentationHandler) get(ctx context.Context, w http.ResponseWriter, r 
 	}
 }
 
-func (h *FermentationHandler) getOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
+func (h *FermentationHandler) getOne(ctx context.Context, w http.ResponseWriter, id string) error {
 	if fermentation, err := h.fermRepo.Get(id); err != nil {
 		return err
 	} else if fermentation == nil {
@@ -96,7 +93,7 @@ func (h *FermentationHandler) getAll(ctx context.Context, w http.ResponseWriter)
 	return web.Respond(ctx, w, fermentations, http.StatusOK)
 }
 
-func (h *FermentationHandler) getTemperatureChanges(ctx context.Context, w http.ResponseWriter, id uint64,
+func (h *FermentationHandler) getTemperatureChanges(ctx context.Context, w http.ResponseWriter, id string,
 	start, end time.Time) error {
 	changes, err := h.changeRepo.GetRangeByFermentationID(id, start, end)
 	if err != nil {
