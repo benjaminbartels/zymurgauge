@@ -1,4 +1,4 @@
-package database
+package boltdb
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ type FermentationRepo struct {
 	db *bolt.DB
 }
 
-// NewFermentationRepo returns a new Fermentation repository using the given bolt database. It also creates the
+// NewFermentationRepo returns a new Fermentation repository using the given bolt boltdb. It also creates the
 // Fermentations bucket if it is not yet created on disk.
 func NewFermentationRepo(db *bolt.DB) (*FermentationRepo, error) {
 	tx, err := db.Begin(true)
@@ -73,17 +73,10 @@ func (r *FermentationRepo) GetAll() ([]internal.Fermentation, error) {
 func (r *FermentationRepo) Save(f *internal.Fermentation) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
-		if v := bu.Get(itob(f.ID)); v == nil {
-			seq, err := bu.NextSequence()
-			if err != nil {
-				return err
-			}
-			f.ID = seq
-		}
 		f.ModTime = time.Now()
 		if v, err := json.Marshal(f); err != nil {
 			return errors.Wrapf(err, "Could not marshal Fermentation %d", f.ID)
-		} else if err := bu.Put(itob(f.ID), v); err != nil {
+		} else if err := bu.Put([]byte(f.ID), v); err != nil {
 			return errors.Wrapf(err, "Could not put Fermentation %d", f.ID)
 		}
 		return nil
@@ -92,10 +85,10 @@ func (r *FermentationRepo) Save(f *internal.Fermentation) error {
 }
 
 // Delete permanently removes a Fermentation
-func (r *FermentationRepo) Delete(id uint64) error {
+func (r *FermentationRepo) Delete(id string) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
-		if err := bu.Delete(itob(id)); err != nil {
+		if err := bu.Delete([]byte(id)); err != nil {
 			return errors.Wrapf(err, "Could not delete Fermentation %d", id)
 		}
 		return nil

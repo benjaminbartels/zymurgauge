@@ -7,17 +7,18 @@ import (
 	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/database/boltdb"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	uuid "github.com/satori/go.uuid"
 )
 
 // BeerHandler is the http handler for API calls to manage Beers
 type BeerHandler struct {
-	repo *database.BeerRepo
+	repo *boltdb.BeerRepo
 }
 
 // NewBeerHandler instantiates a BeerHandler
-func NewBeerHandler(repo *database.BeerRepo) *BeerHandler {
+func NewBeerHandler(repo *boltdb.BeerRepo) *BeerHandler {
 	return &BeerHandler{
 		repo: repo,
 	}
@@ -73,6 +74,11 @@ func (h *BeerHandler) post(ctx context.Context, w http.ResponseWriter, r *http.R
 	if err != nil {
 		return err
 	}
+
+	if beer.ID == "" {
+		beer.ID = uuid.NewV4().String()
+	}
+
 	err = h.repo.Save(&beer)
 	if err != nil {
 		return err
@@ -84,10 +90,7 @@ func (h *BeerHandler) delete(r *http.Request) error {
 	if r.URL.Path == "" {
 		return web.ErrBadRequest
 	}
-	id, err := strconv.ParseUint(r.URL.Path, 10, 64)
-	if err != nil {
-		return err
-	}
+	id := r.URL.Path
 	return h.repo.Delete(id)
 }
 

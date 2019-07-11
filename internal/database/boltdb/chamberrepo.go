@@ -1,4 +1,4 @@
-package database
+package boltdb
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ type ChamberRepo struct {
 	db *bolt.DB
 }
 
-// NewChamberRepo returns a new Chamber repository using the given bolt database. It also creates the Chambers
+// NewChamberRepo returns a new Chamber repository using the given bolt boltdb. It also creates the Chambers
 // bucket if it is not yet created on disk.
 func NewChamberRepo(db *bolt.DB) (*ChamberRepo, error) {
 	tx, err := db.Begin(true)

@@ -1,4 +1,4 @@
-package database
+package boltdb
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ type BeerRepo struct {
 	db *bolt.DB
 }
 
-// NewBeerRepo returns a new Beer repository using the given bolt database. It also creates the Beers
+// NewBeerRepo returns a new Beer repository using the given bolt boltdb. It also creates the Beers
 // bucket if it is not yet created on disk.
 func NewBeerRepo(db *bolt.DB) (*BeerRepo, error) {
 	tx, err := db.Begin(true)
@@ -74,18 +74,11 @@ func (r *BeerRepo) GetAll() ([]internal.Beer, error) {
 func (r *BeerRepo) Save(b *internal.Beer) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Beers"))
-		if v := bu.Get(itob(b.ID)); v == nil {
-			seq, err := bu.NextSequence()
-			if err != nil {
-				return err
-			}
-			b.ID = seq
-		}
 		b.ModTime = time.Now()
 		if v, err := json.Marshal(b); err != nil {
-			return errors.Wrapf(err, "Could not marshal Beer %d", b.ID)
-		} else if err := bu.Put(itob(b.ID), v); err != nil {
-			return errors.Wrapf(err, "Could not put Beer %d", b.ID)
+			return errors.Wrapf(err, "Could not marshal Beer %s", b.ID)
+		} else if err := bu.Put([]byte(b.ID), v); err != nil {
+			return errors.Wrapf(err, "Could not put Beer %s", b.ID)
 		}
 		return nil
 	})
@@ -93,10 +86,10 @@ func (r *BeerRepo) Save(b *internal.Beer) error {
 }
 
 // Delete permanently removes a Beer
-func (r *BeerRepo) Delete(id uint64) error {
+func (r *BeerRepo) Delete(id string) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Beers"))
-		if err := bu.Delete(itob(id)); err != nil {
+		if err := bu.Delete([]byte(id)); err != nil {
 			return errors.Wrapf(err, "Could not delete Beer %d", id)
 		}
 		return nil
