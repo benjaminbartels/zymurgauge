@@ -8,6 +8,6 @@ type Chamber struct {
 	MacAddress            string      `json:"macAddress"`
 	Name                  string      `json:"name"`
 	Thermostat            *Thermostat `json:"thermostat"`
-	CurrentFermentationID string      `json:"currentFermentationId"`
+	CurrentFermentationID uint64      `json:"currentFermentationId"`
 	ModTime               time.Time   `json:"modTime"`
 }

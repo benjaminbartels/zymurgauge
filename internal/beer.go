@@ -6,7 +6,7 @@ import (
 
 // Beer represents details of a beer to be fermented
 type Beer struct {
-	ID       string             `json:"id"`
+	ID       uint64             `json:"id"`
 	Name     string             `json:"name"`
 	Style    string             `json:"style"`
 	Schedule []FermentationStep `json:"schedule"`

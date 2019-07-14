@@ -4,8 +4,8 @@ import "time"
 
 // TemperatureChange is the event that represents a change in temperature
 type TemperatureChange struct {
-	ID             string    `json:"id"`
-	FermentationID string    `json:"fermentationId"`
+	ID             uint64    `json:"id"`
+	FermentationID uint64    `json:"fermentationId"`
 	InsertTime     time.Time `json:"insertTime"`
 	Chamber        string    `json:"chamber"`
 	Beer           string    `json:"beer"`
