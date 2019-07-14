@@ -2,7 +2,7 @@ remote_state {
   backend = "s3"
 
   config = {
-    encrypt        = false
+    encrypt        = true
     bucket         = "zymurgauge-terraform-remote-state"
     key            = "${path_relative_to_include()}/terraform.tfstate"
     region         = "us-west-2"

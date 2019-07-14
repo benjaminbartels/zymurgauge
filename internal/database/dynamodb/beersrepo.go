@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const beersTableName = "Beers"
+const beersTableName = "beers"
 
 // BeerRepo represents a boltdb repository for managing beers
 type BeerRepo struct {
