@@ -75,8 +75,8 @@ func main() {
 	pid := pidctrl.NewPIDController(cfg.P, cfg.I, cfg.D)
 
 	ctl := controller.New(mac, pid, client.ChamberProvider, client.FermentationProvider, logger,
-		internal.MinimumCooling(cfg.MinimumChill),
-		internal.MinimumHeating(cfg.MinimumHeat),
+		internal.MinimumChill(cfg.MinimumChill),
+		internal.MinimumHeat(cfg.MinimumHeat),
 		internal.Interval(cfg.Interval),
 		internal.Logger(logger))
 

@@ -4,20 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/database/boltdb"
+	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	uuid "github.com/satori/go.uuid"
 )
 
 // BeerHandler is the http handler for API calls to manage Beers
 type BeerHandler struct {
-	repo *boltdb.BeerRepo
+	repo *database.BeerRepo
 }
 
 // NewBeerHandler instantiates a BeerHandler
-func NewBeerHandler(repo *boltdb.BeerRepo) *BeerHandler {
+func NewBeerHandler(repo *database.BeerRepo) *BeerHandler {
 	return &BeerHandler{
 		repo: repo,
 	}
@@ -43,7 +43,10 @@ func (h *BeerHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Re
 	if head == "" {
 		return h.getAll(ctx, w)
 	}
-	id := head
+	id, err := strconv.ParseUint(head, 10, 64)
+	if err != nil {
+		return err
+	}
 	return h.getOne(ctx, w, id)
 }
 
@@ -55,7 +58,7 @@ func (h *BeerHandler) getAll(ctx context.Context, w http.ResponseWriter) error {
 	return web.Respond(ctx, w, beers, http.StatusOK)
 }
 
-func (h *BeerHandler) getOne(ctx context.Context, w http.ResponseWriter, id string) error {
+func (h *BeerHandler) getOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
 	if beer, err := h.repo.Get(id); err != nil {
 		return err
 	} else if beer == nil {
@@ -70,11 +73,6 @@ func (h *BeerHandler) post(ctx context.Context, w http.ResponseWriter, r *http.R
 	if err != nil {
 		return err
 	}
-
-	if beer.ID == "" {
-		beer.ID = uuid.NewV4().String()
-	}
-
 	err = h.repo.Save(&beer)
 	if err != nil {
 		return err
@@ -86,7 +84,10 @@ func (h *BeerHandler) delete(r *http.Request) error {
 	if r.URL.Path == "" {
 		return web.ErrBadRequest
 	}
-	id := r.URL.Path
+	id, err := strconv.ParseUint(r.URL.Path, 10, 64)
+	if err != nil {
+		return err
+	}
 	return h.repo.Delete(id)
 }
 

@@ -4,24 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/database/boltdb"
+	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	uuid "github.com/satori/go.uuid"
 )
 
 // FermentationHandler is the http handler for API calls to manage Fermentations
 type FermentationHandler struct {
-	fermRepo    *boltdb.FermentationRepo
-	changeRepo  *boltdb.TemperatureChangeRepo
-	chamberRepo *boltdb.ChamberRepo
+	fermRepo    *database.FermentationRepo
+	changeRepo  *database.TemperatureChangeRepo
+	chamberRepo *database.ChamberRepo
 }
 
 // NewFermentationHandler instantiates a FermentationHandler
-func NewFermentationHandler(fermRepo *boltdb.FermentationRepo, changeRepo *boltdb.TemperatureChangeRepo,
-	chamberRepo *boltdb.ChamberRepo) *FermentationHandler {
+func NewFermentationHandler(fermRepo *database.FermentationRepo, changeRepo *database.TemperatureChangeRepo,
+	chamberRepo *database.ChamberRepo) *FermentationHandler {
 	return &FermentationHandler{
 		fermRepo:    fermRepo,
 		changeRepo:  changeRepo,
@@ -49,12 +49,14 @@ func (h *FermentationHandler) get(ctx context.Context, w http.ResponseWriter, r 
 	if head == "" {
 		return h.getAll(ctx, w)
 	}
-	id := head
+	id, err := strconv.ParseUint(head, 10, 64)
+	if err != nil {
+		return web.ErrBadRequest
+	}
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 	if head == "temperaturechanges" {
 		start := time.Now().AddDate(0, 0, -1).UTC()
 		end := time.Unix(1<<63-62135596801, 999999999).UTC()
-		var err error
 		if startParam, ok := r.URL.Query()["start"]; ok {
 			start, err = time.Parse(time.RFC3339, startParam[0])
 			if err != nil {
@@ -75,7 +77,7 @@ func (h *FermentationHandler) get(ctx context.Context, w http.ResponseWriter, r 
 	}
 }
 
-func (h *FermentationHandler) getOne(ctx context.Context, w http.ResponseWriter, id string) error {
+func (h *FermentationHandler) getOne(ctx context.Context, w http.ResponseWriter, id uint64) error {
 	if fermentation, err := h.fermRepo.Get(id); err != nil {
 		return err
 	} else if fermentation == nil {
@@ -93,7 +95,7 @@ func (h *FermentationHandler) getAll(ctx context.Context, w http.ResponseWriter)
 	return web.Respond(ctx, w, fermentations, http.StatusOK)
 }
 
-func (h *FermentationHandler) getTemperatureChanges(ctx context.Context, w http.ResponseWriter, id string,
+func (h *FermentationHandler) getTemperatureChanges(ctx context.Context, w http.ResponseWriter, id uint64,
 	start, end time.Time) error {
 	changes, err := h.changeRepo.GetRangeByFermentationID(id, start, end)
 	if err != nil {
@@ -108,7 +110,10 @@ func (h *FermentationHandler) post(ctx context.Context, w http.ResponseWriter, r
 	if head == "" {
 		return h.postFermentation(ctx, w, r)
 	}
-	id := head
+	id, err := strconv.ParseUint(head, 10, 64)
+	if err != nil {
+		return web.ErrBadRequest
+	}
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
 
 	switch head {
@@ -129,9 +134,6 @@ func (h *FermentationHandler) postFermentation(ctx context.Context, w http.Respo
 	if err != nil {
 		return err
 	}
-	if fermentation.ID == "" {
-		fermentation.ID = uuid.NewV4().String()
-	}
 	err = h.fermRepo.Save(&fermentation)
 	if err != nil {
 		return err
@@ -151,7 +153,7 @@ func (h *FermentationHandler) postTemperatureChange(ctx context.Context, w http.
 	return web.Respond(ctx, w, change, http.StatusOK)
 }
 
-func (h *FermentationHandler) postStart(ctx context.Context, w http.ResponseWriter, id string) error {
+func (h *FermentationHandler) postStart(ctx context.Context, w http.ResponseWriter, id uint64) error {
 
 	fermentation, err := h.fermRepo.Get(id)
 	if err != nil {
@@ -172,7 +174,7 @@ func (h *FermentationHandler) postStart(ctx context.Context, w http.ResponseWrit
 	return web.Respond(ctx, w, nil, http.StatusOK)
 }
 
-func (h *FermentationHandler) postStop(ctx context.Context, w http.ResponseWriter, id string) error {
+func (h *FermentationHandler) postStop(ctx context.Context, w http.ResponseWriter, id uint64) error {
 
 	fermentation, err := h.fermRepo.Get(id)
 	if err != nil {
@@ -184,7 +186,7 @@ func (h *FermentationHandler) postStop(ctx context.Context, w http.ResponseWrite
 		return err
 	}
 
-	chamber.CurrentFermentationID = ""
+	chamber.CurrentFermentationID = 0
 
 	if err := h.chamberRepo.Save(chamber); err != nil {
 		return err
@@ -199,7 +201,10 @@ func (h *FermentationHandler) delete(ctx context.Context, w http.ResponseWriter,
 	if head == "" {
 		return web.ErrBadRequest
 	}
-	id := head
+	id, err := strconv.ParseUint(head, 10, 64)
+	if err != nil {
+		return web.ErrBadRequest
+	}
 	if err := h.fermRepo.Delete(id); err != nil {
 		return err
 	}

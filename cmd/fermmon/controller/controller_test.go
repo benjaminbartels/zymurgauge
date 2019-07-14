@@ -17,15 +17,15 @@ const (
 )
 
 func TestController(t *testing.T) {
-	//t.Run("NoFermentationToNewFermentation", testNoFermentationToNewFermentation)
-	//t.Run("ReplaceFermentation", testReplaceFermentation)
-	//t.Run("FermentationToNoFermentation", testFermentationToNoFermentation)
+	t.Run("NoFermentationToNewFermentation", testNoFermentationToNewFermentation)
+	t.Run("ReplaceFermentation", testReplaceFermentation)
+	t.Run("FermentationToNoFermentation", testFermentationToNoFermentation)
 }
 
 func testNoFermentationToNewFermentation(t *testing.T) {
 
-	fermentation := createFermentation("1")
-	chamber := createChamber("0")
+	fermentation := createFermentation(1)
+	chamber := createChamber(0)
 
 	chamberResource := &chamberResourceMock{}
 	chamberResource.GetFn = func(mac string) (*internal.Chamber, error) {
@@ -33,7 +33,7 @@ func testNoFermentationToNewFermentation(t *testing.T) {
 	}
 
 	fermentationResource := &fermentationResourceMock{}
-	fermentationResource.GetFn = func(id string) (*internal.Fermentation, error) {
+	fermentationResource.GetFn = func(id uint64) (*internal.Fermentation, error) {
 		return fermentation, nil
 	}
 
@@ -55,15 +55,15 @@ func testNoFermentationToNewFermentation(t *testing.T) {
 		t.Fatal("Fermentation.Get invoked")
 	}
 
-	if ctl.Chamber.CurrentFermentationID != "" {
-		t.Fatal("CurrentFermentationID is not an empty string")
+	if ctl.Chamber.CurrentFermentationID != 0 {
+		t.Fatal("CurrentFermentationID is not 0")
 	}
 
 	if ctl.Fermentation != nil {
 		t.Fatal("Fermentation is not nil")
 	}
 
-	chamber = createChamber("1")
+	chamber = createChamber(1)
 	chamberResource.GetInvoked = false
 
 	ctl.Poll()
@@ -87,9 +87,9 @@ func testNoFermentationToNewFermentation(t *testing.T) {
 
 func testReplaceFermentation(t *testing.T) {
 
-	fermentation1 := createFermentation("1")
-	fermentation2 := createFermentation("2")
-	chamber := createChamber("1")
+	fermentation1 := createFermentation(1)
+	fermentation2 := createFermentation(2)
+	chamber := createChamber(1)
 
 	chamberResource := &chamberResourceMock{}
 	chamberResource.GetFn = func(mac string) (*internal.Chamber, error) {
@@ -97,11 +97,11 @@ func testReplaceFermentation(t *testing.T) {
 	}
 
 	fermentationResource := &fermentationResourceMock{}
-	fermentationResource.GetFn = func(id string) (*internal.Fermentation, error) {
+	fermentationResource.GetFn = func(id uint64) (*internal.Fermentation, error) {
 
-		if id == "1" {
+		if id == 1 {
 			return fermentation1, nil
-		} else if id == "2" {
+		} else if id == 2 {
 			return fermentation2, nil
 		}
 
@@ -134,7 +134,7 @@ func testReplaceFermentation(t *testing.T) {
 		t.Fatal("Fermentation is nil")
 	}
 
-	chamber = createChamber("2")
+	chamber = createChamber(2)
 	chamberResource.GetInvoked = false
 	fermentationResource.GetInvoked = false
 
@@ -159,8 +159,8 @@ func testReplaceFermentation(t *testing.T) {
 
 func testFermentationToNoFermentation(t *testing.T) {
 
-	fermentation := createFermentation("1")
-	chamber := createChamber("1")
+	fermentation := createFermentation(1)
+	chamber := createChamber(1)
 
 	chamberResource := &chamberResourceMock{}
 	chamberResource.GetFn = func(mac string) (*internal.Chamber, error) {
@@ -168,7 +168,7 @@ func testFermentationToNoFermentation(t *testing.T) {
 	}
 
 	fermentationResource := &fermentationResourceMock{}
-	fermentationResource.GetFn = func(id string) (*internal.Fermentation, error) {
+	fermentationResource.GetFn = func(id uint64) (*internal.Fermentation, error) {
 		return fermentation, nil
 	}
 
@@ -198,7 +198,7 @@ func testFermentationToNoFermentation(t *testing.T) {
 		t.Fatal("Fermentation is nil")
 	}
 
-	chamber = createChamber("")
+	chamber = createChamber(0)
 	chamberResource.GetInvoked = false
 	fermentationResource.GetInvoked = false
 
@@ -212,8 +212,8 @@ func testFermentationToNoFermentation(t *testing.T) {
 		t.Fatal("Fermentation.Get invoked")
 	}
 
-	if ctl.Chamber.CurrentFermentationID != "" {
-		t.Fatal("CurrentFermentationID is an empty string")
+	if ctl.Chamber.CurrentFermentationID != 0 {
+		t.Fatal("CurrentFermentationID is not 0")
 	}
 
 	if ctl.Fermentation != nil {
@@ -221,7 +221,7 @@ func testFermentationToNoFermentation(t *testing.T) {
 	}
 }
 
-func createChamber(fermentationID string) *internal.Chamber {
+func createChamber(fermentationID uint64) *internal.Chamber {
 	return &internal.Chamber{
 		MacAddress: mac,
 		Name:       "Chamber " + mac,
@@ -234,7 +234,7 @@ func createChamber(fermentationID string) *internal.Chamber {
 	}
 }
 
-func createFermentation(id string) *internal.Fermentation {
+func createFermentation(id uint64) *internal.Fermentation {
 	var now = time.Now()
 
 	return &internal.Fermentation{
@@ -252,7 +252,7 @@ func createFermentation(id string) *internal.Fermentation {
 			},
 		},
 		Beer: internal.Beer{
-			ID:    "1",
+			ID:    1,
 			Name:  "My Beer",
 			Style: "My Style",
 			Schedule: []internal.FermentationStep{
@@ -273,8 +273,8 @@ func createController(mac string, c client.ChamberProvider, f client.Fermentatio
 	logger := golog.New(os.Stderr, "", golog.LstdFlags)
 
 	return controller.New(mac, pid, c, f, logger,
-		internal.MinimumCooling(3*time.Minute),
-		internal.MinimumHeating(3*time.Minute),
+		internal.MinimumChill(3*time.Minute),
+		internal.MinimumHeat(3*time.Minute),
 		internal.Interval(10*time.Second),
 		internal.Logger(logger))
 }
