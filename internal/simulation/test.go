@@ -45,14 +45,13 @@ func NewTest(name string, initalTemp float64, targetTemp float64, interval time.
 
 	if err := thermostat.Configure(pidCtrl,
 		thermometer, chiller, heater,
-		internal.MinimumCooling(minimumCooling),
-		internal.MinimumHeating(minimumHeating),
+		internal.MinimumChill(minimumCooling),
+		internal.MinimumHeat(minimumHeating),
 		internal.Interval(interval),
-		internal.Logger(logger),
-		internal.Clock(clock)); err != nil {
+		internal.Logger(logger)); err != nil {
 		return nil, err
 	}
-	chamber := NewChamber(thermostat, thermometer, chiller, heater, speed, logger)
+	chamber := NewChamber(thermostat, thermometer, chiller, heater, 1, logger)
 
 	t := &Test{
 		Name:       name,

@@ -38,7 +38,7 @@ export default {
     pinRules: [(v) => isNaN(v) || 'Pin must be numeric']
   }),
 
-  props: ['authenticated', 'macAddress'],
+  props: ['authenticated', 'id'],
 
   created () {
     if (!this.authenticated) {
@@ -57,7 +57,7 @@ export default {
       this.chamber = null
       this.errors = []
       this.loading = true
-      HTTP.get('chambers/' + this.macAddress)
+      HTTP.get('chambers/' + this.id)
         .then(response => {
           this.chamber = response.data
         })
@@ -83,7 +83,7 @@ export default {
       }
     },
     remove () {
-      HTTP.delete('chambers/' + this.chamber.macAddress)
+      HTTP.delete('chambers/' + this.chamber.id)
         .then(response => {
           this.$router.push({ name: 'chambers' })
         })

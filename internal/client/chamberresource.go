@@ -44,7 +44,7 @@ func (r ChamberResource) Get(mac string) (*internal.Chamber, error) {
 
 	req.Header.Add("authorization", "Bearer "+r.token)
 
-	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
+	resp, err := http.DefaultClient.Do(req) // ToDo: Don't use default client...
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not GET Chamber %s", mac)
 	}
@@ -79,7 +79,7 @@ func (r ChamberResource) Save(c *internal.Chamber) error {
 	req.Header.Add("Authorization", "Bearer "+r.token)
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
+	resp, err := http.DefaultClient.Do(req) // ToDo: Don't use default client...
 	if err != nil {
 		return errors.Wrapf(err, "Could not POST Chamber %s", c.MacAddress)
 	}

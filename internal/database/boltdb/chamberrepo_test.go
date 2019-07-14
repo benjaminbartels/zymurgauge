@@ -14,6 +14,7 @@ func TestChamberServiceSaveNew(t *testing.T) {
 	defer func() { testDB.Close() }()
 
 	c := internal.Chamber{
+		ID:         "0",
 		Name:       "My Chamber",
 		MacAddress: mac,
 		Thermostat: &internal.Thermostat{
@@ -40,8 +41,8 @@ func TestChamberServiceSaveExisting(t *testing.T) {
 	testDB := createTestDB()
 	defer func() { testDB.Close() }()
 
-	c1 := &internal.Chamber{Name: "My Chamber 1", MacAddress: "00:11:22:33:44:55"}
-	c2 := &internal.Chamber{Name: "My Chamber 2", MacAddress: "aa:bb:cc:dd:ee:ff"}
+	c1 := &internal.Chamber{ID: "0", Name: "My Chamber 1", MacAddress: "00:11:22:33:44:55"}
+	c2 := &internal.Chamber{ID: "1", Name: "My Chamber 2", MacAddress: "aa:bb:cc:dd:ee:ff"}
 
 	if err := testDB.chamberRepo.Save(c1); err != nil {
 		t.Fatal(err)
@@ -55,13 +56,13 @@ func TestChamberServiceSaveExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if uc1, err := testDB.chamberRepo.Get(c1.MacAddress); err != nil {
+	if uc1, err := testDB.chamberRepo.Get(c1.ID); err != nil {
 		t.Fatal(err)
 	} else if uc1.MacAddress != c1.MacAddress {
 		t.Fatalf("unexpected controller #1 MacAddress: %s", uc1.MacAddress)
 	}
 
-	if uc2, err := testDB.chamberRepo.Get(c2.MacAddress); err != nil {
+	if uc2, err := testDB.chamberRepo.Get(c2.ID); err != nil {
 		t.Fatal(err)
 	} else if uc2.MacAddress != c2.MacAddress {
 		t.Fatalf("unexpected controller #2 MacAddress: %s", uc2.MacAddress)

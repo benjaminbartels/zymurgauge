@@ -16,6 +16,7 @@ type Controller struct {
 	ConfigFunc           func(*internal.Thermostat, *pidctrl.PIDController, ...internal.ThermostatOptionsFunc) error
 	Chamber              *internal.Chamber
 	Fermentation         *internal.Fermentation
+	id                   string
 	mac                  string
 	pid                  *pidctrl.PIDController
 	chamberProvider      client.ChamberProvider
@@ -61,7 +62,7 @@ func (c *Controller) Start(interval time.Duration) {
 // to determine what value to set the thermostat to.
 func (c *Controller) Poll() {
 	var chamber *internal.Chamber
-	chamber, err := c.chamberProvider.Get(c.mac)
+	chamber, err := c.chamberProvider.Get(c.id)
 	if err != nil {
 		if web.ErrNotFound == errors.Cause(err) {
 			c.logger.Println("Chamber does not exist. Creating new chamber")
@@ -91,11 +92,11 @@ func (c *Controller) Stop() {
 func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 	var configChanged bool
 
-	var oldFermID uint64
+	var oldFermID string
 	newFermID := chamber.CurrentFermentationID
 
 	if c.Chamber == nil {
-		oldFermID = 0
+		oldFermID = ""
 		configChanged = true
 		c.Chamber = chamber
 	} else {
@@ -113,13 +114,13 @@ func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 			return err
 		}
 
-		c.Chamber.Thermostat.Subscribe(c.Chamber.MacAddress, c.handleStatusUpdate)
+		c.Chamber.Thermostat.Subscribe(c.Chamber.ID, c.handleStatusUpdate)
 	}
 
 	var err error
 
 	if c.Fermentation == nil {
-		if newFermID != 0 {
+		if newFermID != "" {
 			c.logger.Printf("Fermentation changed from none to %d\n", newFermID)
 			c.Fermentation, err = c.getFermentation(newFermID)
 			if err != nil {
@@ -127,7 +128,7 @@ func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 			}
 		}
 	} else {
-		if newFermID != 0 {
+		if newFermID != "" {
 			if oldFermID != newFermID {
 				c.logger.Printf("Fermentation changed from %d to %d\n", oldFermID, newFermID)
 				c.Chamber.Thermostat.Off()
@@ -184,7 +185,7 @@ func (c *Controller) checkChamber(chamber *internal.Chamber) bool {
 	return false
 }
 
-func (c *Controller) getFermentation(id uint64) (*internal.Fermentation, error) {
+func (c *Controller) getFermentation(id string) (*internal.Fermentation, error) {
 
 	fermentation, err := c.fermentationProvider.Get(id)
 	if err != nil {

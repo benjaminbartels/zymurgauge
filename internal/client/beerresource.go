@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
@@ -28,29 +27,29 @@ func newBeerResource(base, version, token string) (*BeerResource, error) {
 }
 
 // Get returns a beer by id
-func (r *BeerResource) Get(id uint64) (*internal.Beer, error) {
+func (r *BeerResource) Get(id string) (*internal.Beer, error) {
 
-	req, err := http.NewRequest(http.MethodGet, r.url.String()+url.QueryEscape(strconv.FormatUint(id, 10)), nil)
+	req, err := http.NewRequest(http.MethodGet, r.url.String()+url.QueryEscape(id), nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not create GET request for Beer %d", id)
+		return nil, errors.Wrapf(err, "Could not create GET request for Beer %s", id)
 	}
 
 	req.Header.Add("authorization", "Bearer "+r.token)
 
-	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
+	resp, err := http.DefaultClient.Do(req) // ToDo: Don't use default client...
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not GET Beer %d", id)
+		return nil, errors.Wrapf(err, "Could not GET Beer %s", id)
 	}
 
 	defer safeclose.Close(resp.Body, &err)
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.Wrapf(web.ErrNotFound, "Beer %d does not exist", id)
+		return nil, errors.Wrapf(web.ErrNotFound, "Beer %s does not exist", id)
 	}
 
 	var beer *internal.Beer
 	if err = json.NewDecoder(resp.Body).Decode(&beer); err != nil {
-		return nil, errors.Wrapf(err, "Could not decode Beer %d", id)
+		return nil, errors.Wrapf(err, "Could not decode Beer %s", id)
 	}
 
 	return beer, nil
@@ -61,26 +60,26 @@ func (r *BeerResource) Save(b *internal.Beer) error {
 
 	reqBody, err := json.Marshal(b)
 	if err != nil {
-		return errors.Wrapf(err, "Could not marshal Beer %d", b.ID)
+		return errors.Wrapf(err, "Could not marshal Beer %s", b.ID)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, r.url.String(), bytes.NewReader(reqBody))
 	if err != nil {
-		return errors.Wrapf(err, "Could not create POST request for Beer %d", b.ID)
+		return errors.Wrapf(err, "Could not create POST request for Beer %s", b.ID)
 	}
 
 	req.Header.Add("Authorization", "Bearer "+r.token)
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req) // ToDo: Dont use default client...
+	resp, err := http.DefaultClient.Do(req) // ToDo: Don't use default client...
 	if err != nil {
-		return errors.Wrapf(err, "Could not POST Beer %d", b.ID)
+		return errors.Wrapf(err, "Could not POST Beer %s", b.ID)
 	}
 
 	defer safeclose.Close(resp.Body, &err)
 
 	if err := json.NewDecoder(resp.Body).Decode(&b); err != nil {
-		return errors.Wrapf(err, "Could not decode Beer %d", b.ID)
+		return errors.Wrapf(err, "Could not decode Beer %s", b.ID)
 	}
 
 	return nil

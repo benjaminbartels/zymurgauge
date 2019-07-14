@@ -77,7 +77,7 @@ func (r *ChamberRepo) Save(c *internal.Chamber) error {
 		c.ModTime = time.Now()
 		if v, err := json.Marshal(c); err != nil {
 			return errors.Wrapf(err, "Could not marshal Chamber %s", c.MacAddress)
-		} else if err := bu.Put([]byte(c.MacAddress), v); err != nil {
+		} else if err := bu.Put([]byte(c.ID), v); err != nil {
 			return errors.Wrapf(err, "Could not put Chamber %s", c.MacAddress)
 		}
 		return nil
