@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/pkg/errors"
 )
 
@@ -36,7 +36,7 @@ func testRespondOK(t *testing.T) {
 		code = statusCode
 	}
 
-	b := &internal.Beer{
+	b := &storage.Beer{
 		Name: "Golden Stout",
 	}
 
@@ -114,7 +114,7 @@ func testRespondWriteError(t *testing.T) {
 
 	rw.WriteHeaderFn = func(statusCode int) {}
 
-	b := &internal.Beer{
+	b := &storage.Beer{
 		Name: "Golden Stout",
 	}
 

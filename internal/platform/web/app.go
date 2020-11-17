@@ -41,14 +41,16 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Add app specific values to the request context
 	ctx := context.WithValue(r.Context(), CtxValuesKey, v)
 
-	if strings.HasPrefix(r.URL.Path, "/api/") {
+	switch {
+	case strings.HasPrefix(r.URL.Path, "/api/"):
 		// Handle calls to the API
 		_, r.URL.Path = ShiftPath(r.URL.Path)
 		a.api.ServeHTTP(w, r.WithContext(ctx))
-	} else if strings.HasPrefix(r.URL.Path, "/static/") {
+
+	case strings.HasPrefix(r.URL.Path, "/static/"):
 		// Handle calls to static ui files
 		http.StripPrefix("/", a.ui).ServeHTTP(w, r) // ToDo: wrap handlers here to use middleware
-	} else {
+	default:
 		// Everything else gets routed to index.html
 		// We can't tell the http.FileServer to serve a specific file, so we do it http.ServeContent
 		f, err := a.fs.Open("/index.html")
