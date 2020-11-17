@@ -149,7 +149,7 @@ func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 		if c.Fermentation != nil {
 			c.logger.Printf("Setting Fermentation to %d\n", c.Fermentation.ID)
 			c.Chamber.Thermostat.Set(c.Fermentation.Beer.Schedule[0].TargetTemp)
-			if c.Chamber.Thermostat.GetStatus().State == internal.OFF {
+			if c.Chamber.Thermostat.GetStatus().State == internal.Idle {
 				c.Chamber.Thermostat.On()
 			}
 		}

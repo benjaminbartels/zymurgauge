@@ -2,6 +2,7 @@ module github.com/benjaminbartels/zymurgauge
 
 require (
 	github.com/auth0-community/go-auth0 v1.0.0
+	github.com/blend/go-sdk v2.0.0+incompatible // indirect
 	github.com/boltdb/bolt v1.3.1
 	github.com/felixge/pidctrl v0.0.0-20160307080219-7b13bcae7243
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0

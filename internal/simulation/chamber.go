@@ -15,7 +15,7 @@ type Chamber struct {
 	chiller                 *Actuator
 	heater                  *Actuator
 	logger                  log.Logger
-	factor                  int
+	multiplier                  float64
 	wallTemp                float64
 	airTemp                 float64
 	beerTemp                float64
@@ -38,7 +38,7 @@ type Chamber struct {
 // NewChamber creates a new Chamber. Factor the value in which the elapsed time is multiplied by to simulated
 // an longer elapsed time in a shorter time period
 func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
-	chiller, heater *Actuator, factor int, logger log.Logger) *Chamber {
+	chiller, heater *Actuator, multiplier float64, logger log.Logger) *Chamber {
 	c := &Chamber{
 		Thermostat:      thermostat,
 		beerThermometer: beerThermometer,
@@ -49,7 +49,7 @@ func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
 		beerTemp:        beerThermometer.currentTemp,
 		environmentTemp: 20.0,
 		heaterTemp:      20.0,
-		factor:          factor,
+		multiplier:      multiplier,
 		logger:          logger,
 	}
 
@@ -79,9 +79,9 @@ func NewChamber(thermostat *internal.Thermostat, beerThermometer *Thermometer,
 
 func (c *Chamber) update(onTime time.Duration, t ActuatorType) {
 
-	factoredDuration := onTime * time.Duration(c.factor)
+	duration := onTime * time.Duration(c.multiplier)
 
-	ticks := int(factoredDuration.Seconds())
+	ticks := int(duration.Seconds())
 
 	for i := 0; i < ticks; i++ {
 

@@ -1,68 +1,53 @@
 package main
 
-// ToDo: make this a unit test or part of fermmon
 import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	golog "log"
+	"log"
 	"os"
+	"sync"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/simulation"
-	"github.com/felixge/pidctrl"
+
 	chart "github.com/wcharczuk/go-chart"
 )
 
-var logger log.Logger
-var times []time.Time
-var temps, targets []float64
-
-const target = 18.00
-const factor = 600
-const interval = 1 * time.Second
-const minimun = 1 * time.Second
-const testDuration = 20 * time.Second
-
 func main() {
 
-	logger = golog.New(os.Stderr, "", golog.LstdFlags)
-	thermometer := simulation.NewThermometer(20)
-	chiller := &simulation.Actuator{ActuatorType: simulation.Chiller}
-	heater := &simulation.Actuator{ActuatorType: simulation.Heater}
-	pidCtrl := pidctrl.NewPIDController(20, 0, 0)
-	pidCtrl.SetOutputLimits(-10, 10)
+	logger := log.New(os.Stderr, "", log.LstdFlags)
 
-	thermostat := &internal.Thermostat{
-		ChillerPin:    "1",
-		HeaterPin:     "2",
-		ThermometerID: "test",
+	initialTemp := 20.0
+	targetTemp := 18.0
+	speed := 3600.0
+
+	tests := []*simulation.Test{}
+	for i := 1; i <= 1; i++ {
+		test, err := simulation.NewTest(fmt.Sprintf("P = %d", i), initialTemp, targetTemp, 10*time.Minute, 1*time.Minute, 1*time.Minute,
+			float64(i), 0, 0, speed, logger)
+		if err != nil {
+			panic(err)
+		}
+		tests = append(tests, test)
 	}
 
-	err := thermostat.Configure(pidCtrl, thermometer, chiller, heater,
-		internal.MinimumChill(minimun),
-		internal.MinimumHeat(minimun),
-		internal.Interval(interval),
-		internal.Logger(logger),
-	)
-	if err != nil {
-		panic(err)
+	results := make([]*simulation.Test, len(tests))
+
+	var wg sync.WaitGroup
+
+	for i, test := range tests {
+		wg.Add(1)
+		go func(i int, test *simulation.Test) {
+			defer wg.Done()
+			_ = test.Run(5 * time.Second)
+			results[i] = test
+		}(i, test)
 	}
 
-	thermostat.Subscribe("test", processStatus)
+	wg.Wait()
 
-	chamber := simulation.NewChamber(thermostat, thermometer, chiller, heater, factor, logger)
-	chamber.Thermostat.Set(target)
-	chamber.Thermostat.On()
-
-	fmt.Printf("Waiting for %v\n", testDuration)
-	time.Sleep(testDuration)
-
-	chamber.Thermostat.Off()
-
-	err = createGraph(times, temps, targets)
+	err := createGraph(results, targetTemp)
 	if err != nil {
 		panic(err)
 	}
@@ -70,47 +55,74 @@ func main() {
 	fmt.Println("Bye!")
 }
 
-func processStatus(s internal.ThermostatStatus) {
+func createGraph(tests []*simulation.Test, targetTemp float64) error {
 
-	if s.Error != nil {
-		logger.Fatal(s.Error)
-	} else {
-		logger.Println(s.State, *(s.CurrentTemperature))
+	series := []chart.Series{}
 
-		times = append(times, time.Now())
-		temps = append(temps, *(s.CurrentTemperature))
-		targets = append(targets, target)
-	}
-}
+	var maxTime float64
 
-func createGraph(x []time.Time, y []float64, targets []float64) error {
+	for _, test := range tests {
 
-	for i := range x {
-		fmt.Println(x[i], y[i])
+		times := []float64{}
+
+		for _, duration := range test.Result.Durations {
+
+			time := float64(duration) / 3600000000000.0
+
+			if time > maxTime {
+				maxTime = time
+			}
+
+			times = append(times, time)
+		}
+
+		s := chart.ContinuousSeries{
+			Name:    test.Name,
+			XValues: times,
+			YValues: test.Result.Temps,
+		}
+
+		series = append(series, s)
 	}
 
 	graph := chart.Chart{
 		XAxis: chart.XAxis{
-			Style: chart.Style{
-				Show: true,
+			Name:      "Hours",
+			NameStyle: chart.StyleShow(),
+			Style:     chart.StyleShow(),
+			Ticks: []chart.Tick{
+				{0.0, "00:00"},
+				{0.5, "00:30"},
+				{1.0, "01:00"},
+				{1.5, "01:30"},
+				{2.0, "02:00"},
+				{2.5, "02:30"},
+				{3.0, "03:00"},
+				{3.5, "03:30"},
+				{4.0, "04:00"},
+				{4.5, "04:30"},
+				{5.0, "05:00"},
 			},
-			ValueFormatter: chart.TimeMinuteValueFormatter,
+			//	ValueFormatter: chart.TimeMinuteValueFormatter,
 		},
 		YAxis: chart.YAxis{
-			Style: chart.Style{
-				Show: true,
+			Name:      "Temperature",
+			NameStyle: chart.StyleShow(),
+			Style:     chart.StyleShow(),
+			GridMajorStyle: chart.Style{
+				Show:        true,
+				StrokeColor: chart.ColorAlternateGray,
+				StrokeWidth: 1.0,
+			},
+			GridLines: []chart.GridLine{
+				{Value: targetTemp},
 			},
 		},
-		Series: []chart.Series{
-			chart.TimeSeries{
-				XValues: x,
-				YValues: y,
-			},
-			chart.TimeSeries{
-				XValues: x,
-				YValues: targets,
-			},
-		},
+		Series: series,
+	}
+
+	graph.Elements = []chart.Renderable{
+		chart.Legend(&graph),
 	}
 
 	buffer := bytes.NewBuffer([]byte{})
