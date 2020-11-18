@@ -17,6 +17,7 @@ func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, code 
 	// No Content
 	if code == http.StatusNoContent || data == nil {
 		w.WriteHeader(code)
+
 		return nil
 	}
 
