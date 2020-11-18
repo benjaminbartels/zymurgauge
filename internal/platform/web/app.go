@@ -20,7 +20,6 @@ func NewApp(api *API, logger log.Logger) *App {
 		api:    api,
 		logger: logger,
 	}
-
 	return a
 }
 
