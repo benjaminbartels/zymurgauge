@@ -1,4 +1,4 @@
-package database
+package storage
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TemperatureChangeRepo represents a boltdb repository for managing fermentationTemperatureChanges
+// TemperatureChangeRepo represents a boltdb repository for managing fermentationTemperatureChanges.
 type TemperatureChangeRepo struct {
 	db *bolt.DB
 }
@@ -21,19 +21,23 @@ func NewTemperatureChangeRepo(db *bolt.DB) (*TemperatureChangeRepo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not begin transaction")
 	}
+
 	defer rollback(tx, &err)
+
 	if _, err := tx.CreateBucketIfNotExists([]byte("TemperatureChanges")); err != nil {
 		return nil, errors.Wrap(err, "Could not create TemperatureChange bucket")
 	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "Could not commit transaction")
 	}
+
 	return &TemperatureChangeRepo{
 		db: db,
 	}, nil
 }
 
-// GetRangeByFermentationID returns a all temperature changes for the given fermentation id for the given range
+// GetRangeByFermentationID returns a all temperature changes for the given fermentation id for the given range.
 func (r *TemperatureChangeRepo) GetRangeByFermentationID(fermentationID uint64, start,
 	end time.Time) ([]internal.TemperatureChange, error) {
 	temperatureChanges := []internal.TemperatureChange{}
@@ -50,13 +54,12 @@ func (r *TemperatureChangeRepo) GetRangeByFermentationID(fermentationID uint64, 
 			}
 			return nil
 		})
-
 	})
 
 	return temperatureChanges, err
 }
 
-// Save creates or updates a TemperatureChange
+// Save creates or updates a TemperatureChange.
 func (r *TemperatureChangeRepo) Save(b *internal.TemperatureChange) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("TemperatureChanges"))

@@ -1,15 +1,14 @@
-package database
+package storage
 
 import (
 	"encoding/json"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/boltdb/bolt"
 	"github.com/pkg/errors"
 )
 
-// FermentationRepo represents a boltdb repository for managing Fermentations
+// FermentationRepo represents a boltdb repository for managing Fermentations.
 type FermentationRepo struct {
 	db *bolt.DB
 }
@@ -21,21 +20,26 @@ func NewFermentationRepo(db *bolt.DB) (*FermentationRepo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not begin transaction")
 	}
+
 	defer rollback(tx, &err)
+
 	if _, err := tx.CreateBucketIfNotExists([]byte("Fermentations")); err != nil {
 		return nil, errors.Wrap(err, "Could not create Fermentation bucket")
 	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "Could not commit transaction")
 	}
+
 	return &FermentationRepo{
 		db: db,
 	}, nil
 }
 
-// Get returns a Fermentation by its ID
-func (r *FermentationRepo) Get(id uint64) (*internal.Fermentation, error) {
-	var f *internal.Fermentation
+// Get returns a Fermentation by its ID.
+func (r *FermentationRepo) Get(id uint64) (*Fermentation, error) {
+	var f *Fermentation
+
 	err := r.db.View(func(tx *bolt.Tx) error {
 		if v := tx.Bucket([]byte("Fermentations")).Get(itob(id)); v != nil {
 			if err := json.Unmarshal(v, &f); err != nil {
@@ -47,30 +51,30 @@ func (r *FermentationRepo) Get(id uint64) (*internal.Fermentation, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return f, nil
 }
 
-// GetAll returns all Fermentations
-func (r *FermentationRepo) GetAll() ([]internal.Fermentation, error) {
-	fermentations := []internal.Fermentation{} // ToDo: init all array this way in repos
+// GetAll returns all Fermentations.
+func (r *FermentationRepo) GetAll() ([]Fermentation, error) {
+	fermentations := []Fermentation{} // ToDo: init all array this way in repos
 	err := r.db.View(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
 		return bu.ForEach(func(k, v []byte) error {
-			var f internal.Fermentation
+			var f Fermentation
 			if err := json.Unmarshal(v, &f); err != nil {
 				return err
 			}
 			fermentations = append(fermentations, f)
 			return nil
 		})
-
 	})
 
 	return fermentations, err
 }
 
-// Save creates or updates a Fermentation
-func (r *FermentationRepo) Save(f *internal.Fermentation) error {
+// Save creates or updates a Fermentation.
+func (r *FermentationRepo) Save(f *Fermentation) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
 		if v := bu.Get(itob(f.ID)); v == nil {
@@ -88,10 +92,11 @@ func (r *FermentationRepo) Save(f *internal.Fermentation) error {
 		}
 		return nil
 	})
+
 	return err
 }
 
-// Delete permanently removes a Fermentation
+// Delete permanently removes a Fermentation.
 func (r *FermentationRepo) Delete(id uint64) error {
 	err := r.db.Update(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
@@ -100,5 +105,6 @@ func (r *FermentationRepo) Delete(id uint64) error {
 		}
 		return nil
 	})
+
 	return err
 }

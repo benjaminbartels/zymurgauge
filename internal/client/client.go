@@ -2,13 +2,14 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/pkg/errors"
 )
 
@@ -18,8 +19,6 @@ const (
 	grantType = "client_credentials"
 )
 
-// ToDo: Do I really need a client to contail all Resources
-
 // Client provides resources used to manage entities via REST.
 type Client struct {
 	ChamberProvider      ChamberProvider
@@ -27,9 +26,8 @@ type Client struct {
 	FermentationProvider FermentationProvider
 }
 
-// NewClient creates a new instance of the HTTP client
+// NewClient creates a new instance of the HTTP client.
 func NewClient(url fmt.Stringer, version, clientID, clientSecret string, logger log.Logger) (*Client, error) {
-
 	tok, err := authenticate(clientID, clientSecret)
 	if err != nil {
 		return nil, err
@@ -60,25 +58,31 @@ func NewClient(url fmt.Stringer, version, clientID, clientSecret string, logger 
 }
 
 func authenticate(clientID, clientSecret string) (string, error) {
-
-	req := getTokenRequest{
+	tokReq := getTokenRequest{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		Audience:     audience,
 		GrantType:    grantType,
 	}
 
-	reqBody, err := json.Marshal(req)
+	reqBody, err := json.Marshal(tokReq)
 	if err != nil {
 		return "", errors.Wrap(err, "Could not marshal getTokenRequest")
 	}
 
-	resp, err := http.Post(authURL, "application/json", bytes.NewReader(reqBody))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, authURL, bytes.NewReader(reqBody))
+	if err != nil {
+		return "", errors.Wrap(err, "Could not create POST request")
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", errors.Wrap(err, "Could not POST getTokenRequest")
 	}
 
-	defer safeclose.Close(resp.Body, &err)
+	defer resp.Body.Close()
 
 	var t getTokenResponse
 
@@ -101,17 +105,15 @@ type getTokenResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
-// ChamberProvider is a data provider for Chambers
+// ChamberProvider is a data provider for Chambers.
 type ChamberProvider interface {
-	Get(mac string) (*internal.Chamber, error)
-	Save(c *internal.Chamber) error
-	Subscribe(mac string, ch chan internal.Chamber) error
-	Unsubscribe(mac string)
+	Get(mac string) (*storage.Chamber, error)
+	Save(c *storage.Chamber) error
 }
 
-// FermentationProvider is a data provider for Fermentations
+// FermentationProvider is a data provider for Fermentations.
 type FermentationProvider interface {
-	Get(id uint64) (*internal.Fermentation, error)
-	Save(f *internal.Fermentation) error
+	Get(id uint64) (*storage.Fermentation, error)
+	Save(f *storage.Fermentation) error
 	SaveTemperatureChange(t *internal.TemperatureChange) error
 }

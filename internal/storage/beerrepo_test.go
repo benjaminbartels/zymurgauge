@@ -1,17 +1,17 @@
-package database_test
+package storage_test
 
 import (
 	"testing"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 )
 
 func TestBeerServiceSaveNew(t *testing.T) {
-
 	testDB := createTestDB()
+
 	defer func() { testDB.Close() }()
 
-	b := internal.Beer{
+	b := storage.Beer{
 		Name: "My Beer",
 	}
 
@@ -20,22 +20,15 @@ func TestBeerServiceSaveNew(t *testing.T) {
 	} else if b.ID != 1 {
 		t.Fatalf("unexpected id: %d", b.ID)
 	}
-
-	// other, err := testDB.beerRepo.Get(1)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// } else if !reflect.DeepEqual(&b, other) {
-	// 	t.Fatalf("unexpected beer: %#v", other)
-	// }
 }
 
 func TestBeerServiceSaveExisting(t *testing.T) {
-
 	testDB := createTestDB()
+
 	defer func() { testDB.Close() }()
 
-	b1 := &internal.Beer{Name: "My Beer 1"}
-	b2 := &internal.Beer{Name: "My Beer 2"}
+	b1 := &storage.Beer{Name: "My Beer 1"}
+	b2 := &storage.Beer{Name: "My Beer 2"}
 
 	if err := testDB.beerRepo.Save(b1); err != nil {
 		t.Fatal(err)

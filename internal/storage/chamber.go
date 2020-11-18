@@ -1,6 +1,8 @@
-package internal
+package storage
 
-import "time"
+import (
+	"time"
+)
 
 // Chamber represents an insulated box (fridge) with internal heating/cooling elements that reacts to changes in
 // monitored temperatures, by correcting small deviations from your desired fermentation temperature.

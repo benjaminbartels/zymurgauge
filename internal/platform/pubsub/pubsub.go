@@ -1,6 +1,6 @@
 package pubsub
 
-// PubSub allows clients to publish messages to topics and to subscribe or unsubscribe from topics
+// PubSub allows clients to publish messages to topics and to subscribe or unsubscribe from topics.
 type PubSub struct {
 	topics map[string][]chan []byte
 }
@@ -12,21 +12,22 @@ func New() *PubSub {
 	}
 }
 
-// Subscribe returns a channel that caller can consume to receive messages for the given topic
+// Subscribe returns a channel that caller can consume to receive messages for the given topic.
 func (p *PubSub) Subscribe(topic string) chan []byte {
 	ch := make(chan []byte)
+
 	_, ok := p.topics[topic]
 	if ok {
 		p.topics[topic] = append(p.topics[topic], ch)
 	} else {
 		p.topics[topic] = []chan []byte{ch}
 	}
+
 	return ch
 }
 
-// Unsubscribe deletes the given channel so it will no longer be used to send published messages
+// Unsubscribe deletes the given channel so it will no longer be used to send published messages.
 func (p *PubSub) Unsubscribe(ch chan []byte) {
-
 	for topic, channels := range p.topics {
 		for i, c := range channels {
 			if c == ch {

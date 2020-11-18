@@ -1,25 +1,25 @@
-package database_test
+package storage_test
 
 import (
 	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/boltdb/bolt"
 )
 
 // TestClient is a wrapper around the bolt.Client.
 type testDB struct {
 	db               *bolt.DB
-	chamberRepo      *database.ChamberRepo
-	beerRepo         *database.BeerRepo
-	fermentationRepo *database.FermentationRepo
+	chamberRepo      *storage.ChamberRepo
+	beerRepo         *storage.BeerRepo
+	fermentationRepo *storage.FermentationRepo
 }
 
 func createTestDB() *testDB {
-
 	p := "zymurgauge-test-"
+
 	f, err := ioutil.TempFile("", p)
 	if err != nil {
 		panic(err)
@@ -35,17 +35,17 @@ func createTestDB() *testDB {
 		panic(err)
 	}
 
-	chamberRepo, err := database.NewChamberRepo(db)
+	chamberRepo, err := storage.NewChamberRepo(db)
 	if err != nil {
 		panic(err)
 	}
 
-	beerRepo, err := database.NewBeerRepo(db)
+	beerRepo, err := storage.NewBeerRepo(db)
 	if err != nil {
 		panic(err)
 	}
 
-	fermentationRepo, err := database.NewFermentationRepo(db)
+	fermentationRepo, err := storage.NewFermentationRepo(db)
 	if err != nil {
 		panic(err)
 	}
@@ -62,9 +62,11 @@ func createTestDB() *testDB {
 
 func (t *testDB) Close() {
 	p := t.db.Path()
+
 	if err := t.db.Close(); err != nil {
 		panic(err)
 	}
+
 	if err := os.Remove(p); err != nil {
 		panic(err)
 	}

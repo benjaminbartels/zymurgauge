@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net"
 	"net/url"
 	"os"
@@ -11,31 +10,35 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/controller"
-	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
-	"github.com/felixge/pidctrl"
+	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
 	"github.com/kelseyhightower/envconfig"
 )
 
 const clientID = "18CHgJa2D3GyxmZfKdF2uhmSv4aS78Xb"
 
 type config struct {
-	APIAddress   string `required:"true"`
-	ClientSecret string `required:"true"`
-	Interface    string
-	Interval     time.Duration `default:"10m"`
-	MinimumChill time.Duration `default:"3m"`
-	MinimumHeat  time.Duration `default:"3m"`
-	P            float64       `default:"1"`
-	I            float64       `default:"1"`
-	D            float64       `default:"0"`
+	APIAddress          string `required:"true"`
+	ClientSecret        string `required:"true"`
+	Interface           string
+	ChillingMinimum     time.Duration `default:"10m"`
+	HeatingMinimum      time.Duration `default:"10s"`
+	ChillingCyclePeriod time.Duration `default:"30m"`
+	HeatingCyclePeriod  time.Duration `default:"10m"`
+	ChillerP            float64       `default:"-1"`
+	ChillerI            float64       `default:"0"`
+	ChillerD            float64       `default:"0"`
+	HeaterP             float64       `default:"1"`
+	HeaterI             float64       `default:"0"`
+	HeaterD             float64       `default:"0"`
 }
 
 func main() {
-
-	logger := log.New(os.Stderr, "", log.LstdFlags)
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
 
 	// Process env variables
 	var cfg config
@@ -71,14 +74,14 @@ func main() {
 		}
 	}
 
-	// Create PID Controller
-	pid := pidctrl.NewPIDController(cfg.P, cfg.I, cfg.D)
-
-	ctl := controller.New(mac, pid, client.ChamberProvider, client.FermentationProvider, logger,
-		internal.MinimumCooling(cfg.MinimumChill),
-		internal.MinimumHeating(cfg.MinimumHeat),
-		internal.Interval(cfg.Interval),
-		internal.Logger(logger))
+	ctl := controller.New(mac,
+		cfg.ChillerP, cfg.ChillerI, cfg.ChillerD, cfg.HeaterP, cfg.HeaterI, cfg.HeaterD,
+		client.ChamberProvider, client.FermentationProvider, logger,
+		thermostat.SetChillingMinimum(cfg.ChillingMinimum),
+		thermostat.SetHeatingMinimum(cfg.HeatingMinimum),
+		thermostat.SetChillingCyclePeriod(cfg.ChillingCyclePeriod),
+		thermostat.SetHeatingCyclePeriod(cfg.HeatingCyclePeriod),
+	)
 
 	var wg sync.WaitGroup
 	wg.Add(1)

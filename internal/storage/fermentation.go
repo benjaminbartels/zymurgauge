@@ -1,8 +1,8 @@
-package internal
+package storage
 
 import "time"
 
-// Fermentation is a single instance of a fermentation of a beer
+// Fermentation is a single instance of a fermentation of a beer.
 type Fermentation struct {
 	ID            uint64     `json:"id"`
 	Chamber       Chamber    `json:"chamber"`

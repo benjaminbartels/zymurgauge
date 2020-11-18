@@ -1,22 +1,21 @@
-package database_test
+package storage_test
 
 import (
 	"testing"
-
-	"github.com/benjaminbartels/zymurgauge/internal"
-
 	"time"
+
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 )
 
 func TestFermentationServiceSaveNew(t *testing.T) {
-
 	testDB := createTestDB()
+
 	defer func() { testDB.Close() }()
 
 	now := time.Now()
 
-	f := internal.Fermentation{
-		Beer: internal.Beer{
+	f := storage.Fermentation{
+		Beer: storage.Beer{
 			Name:    "My Beer",
 			ModTime: now,
 		},
@@ -29,24 +28,17 @@ func TestFermentationServiceSaveNew(t *testing.T) {
 	} else if f.ID != 1 {
 		t.Fatalf("unexpected id: %d", f.ID)
 	}
-
-	// other, err := testDB.fermentationRepo.Get(1)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// } else if !reflect.DeepEqual(&f, other) {
-	// 	t.Fatalf("unexpected fermentation: %#v", other)
-	// }
 }
 
 func TestFermentationServiceSaveExisting(t *testing.T) {
-
 	testDB := createTestDB()
+
 	defer func() { testDB.Close() }()
 
 	now := time.Now()
 
-	f1 := &internal.Fermentation{
-		Beer: internal.Beer{
+	f1 := &storage.Fermentation{
+		Beer: storage.Beer{
 			Name:    "My Beer 1",
 			ModTime: now,
 		},
@@ -54,8 +46,8 @@ func TestFermentationServiceSaveExisting(t *testing.T) {
 		CompletedTime: &now,
 	}
 
-	f2 := &internal.Fermentation{
-		Beer: internal.Beer{
+	f2 := &storage.Fermentation{
+		Beer: storage.Beer{
 			Name:    "My Beer 2",
 			ModTime: now,
 		},

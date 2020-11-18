@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,15 +10,15 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrv/handlers"
-	_ "github.com/benjaminbartels/zymurgauge/cmd/zymsrv/statik"
-	"github.com/benjaminbartels/zymurgauge/internal/database"
+	// _ "github.com/benjaminbartels/zymurgauge/cmd/zymsrv/statik" // TODO: temporary
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/boltdb/bolt"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rakyll/statik/fs"
+	"github.com/sirupsen/logrus"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/safeclose"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
@@ -30,12 +29,14 @@ type config struct {
 	AuthSecret   string        `required:"true"`
 }
 
+//nolint:funlen
 func main() {
-
-	logger := log.New(os.Stderr, "", log.LstdFlags)
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
 
 	// Process env variables
 	var appCfg config
+
 	err := envconfig.Process("zymsrv", &appCfg)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -52,24 +53,25 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	defer safeclose.Close(db, &err)
 
-	beerRepo, err := database.NewBeerRepo(db)
+	defer db.Close()
+
+	beerRepo, err := storage.NewBeerRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	chamberRepo, err := database.NewChamberRepo(db)
+	chamberRepo, err := storage.NewChamberRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	fermentationRepo, err := database.NewFermentationRepo(db)
+	fermentationRepo, err := storage.NewFermentationRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	temperatureChangeRepo, err := database.NewTemperatureChangeRepo(db)
+	temperatureChangeRepo, err := storage.NewTemperatureChangeRepo(db)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -99,9 +101,10 @@ func main() {
 	logger.Println("Bye!")
 }
 
-func startServer(handler http.Handler, cfg config, logger *log.Logger) {
-
+//nolint:gomnd
+func startServer(handler http.Handler, cfg config, logger *logrus.Logger) {
 	var wg sync.WaitGroup
+
 	wg.Add(1)
 
 	server := http.Server{
@@ -123,10 +126,12 @@ func startServer(handler http.Handler, cfg config, logger *log.Logger) {
 
 	timeout := 5 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Printf("Graceful shutdown did not complete in %v : %v", timeout, err)
+
 		if err := server.Close(); err != nil {
 			logger.Printf("Error killing server : %v", err)
 		}

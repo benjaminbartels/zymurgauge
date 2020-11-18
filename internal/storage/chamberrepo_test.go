@@ -1,22 +1,22 @@
-package database_test
+package storage_test
 
 import (
 	"testing"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 )
 
 func TestChamberServiceSaveNew(t *testing.T) {
-
 	mac := "00:11:22:33:44:55"
 
 	testDB := createTestDB()
+
 	defer func() { testDB.Close() }()
 
-	c := internal.Chamber{
+	c := storage.Chamber{
 		Name:       "My Chamber",
 		MacAddress: mac,
-		Thermostat: &internal.Thermostat{
+		Thermostat: &storage.Thermostat{
 			ThermometerID: "blah",
 		},
 	}
@@ -26,22 +26,15 @@ func TestChamberServiceSaveNew(t *testing.T) {
 	} else if c.MacAddress != mac {
 		t.Fatalf("unexpected mac: %s", c.MacAddress)
 	}
-
-	// other, err := testDB.chamberRepo.Get(mac)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// } else if !reflect.DeepEqual(&c, other) {
-	// 	t.Fatalf("unexpected controller: %#v vs %#v", &c, other)
-	// }
 }
 
 func TestChamberServiceSaveExisting(t *testing.T) {
-
 	testDB := createTestDB()
+
 	defer func() { testDB.Close() }()
 
-	c1 := &internal.Chamber{Name: "My Chamber 1", MacAddress: "00:11:22:33:44:55"}
-	c2 := &internal.Chamber{Name: "My Chamber 2", MacAddress: "aa:bb:cc:dd:ee:ff"}
+	c1 := &storage.Chamber{Name: "My Chamber 1", MacAddress: "00:11:22:33:44:55"}
+	c2 := &storage.Chamber{Name: "My Chamber 2", MacAddress: "aa:bb:cc:dd:ee:ff"}
 
 	if err := testDB.chamberRepo.Save(c1); err != nil {
 		t.Fatal(err)
