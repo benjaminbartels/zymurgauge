@@ -3,37 +3,48 @@ package controller
 import (
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
-	"github.com/felixge/pidctrl"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Controller controls a Chamber. ConfigFunc is the function used to configure the controller's Thermostat.
 type Controller struct {
-	ConfigFunc           func(*thermostat.Thermostat, *pidctrl.PIDController) error
-	Chamber              *internal.Chamber
-	Fermentation         *internal.Fermentation
+	CreateFunc func(string, string, string, float64, float64, float64, float64, float64, float64, *logrus.Logger,
+		...thermostat.OptionsFunc) (*thermostat.Thermostat, error)
+	Chamber              *storage.Chamber
+	Thermostat           *thermostat.Thermostat
+	Fermentation         *storage.Fermentation
 	mac                  string
-	pid                  *pidctrl.PIDController
+	chillerKp            float64
+	chillerKi            float64
+	chillerKd            float64
+	heaterKp             float64
+	heaterKi             float64
+	heaterKd             float64
 	chamberProvider      client.ChamberProvider
 	fermentationProvider client.FermentationProvider
-	logger               log.Logger
+	logger               *logrus.Logger
+	thermostatOptions    []thermostat.OptionsFunc
 	done                 chan bool
 }
 
-// New creates a new Controller with the given parameters
-func New(mac string, pid *pidctrl.PIDController, chamberProvider client.ChamberProvider,
-	fermentationProvider client.FermentationProvider, logger log.Logger,
-	thermostatOptions ...thermostat.ThermostatOptionsFunc) *Controller {
-
+// New creates a new Controller with the given parameters.
+func New(mac string, chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
+	chamberProvider client.ChamberProvider, fermentationProvider client.FermentationProvider, logger *logrus.Logger,
+	thermostatOptions ...thermostat.OptionsFunc) *Controller {
 	return &Controller{
-		ConfigFunc:           ConfigureThermostat,
+		CreateFunc:           CreateThermostat,
 		mac:                  mac,
-		pid:                  pid,
+		chillerKp:            chillerKp,
+		chillerKi:            chillerKi,
+		chillerKd:            chillerKd,
+		heaterKp:             heaterKp,
+		heaterKi:             heaterKi,
+		heaterKd:             heaterKd,
 		chamberProvider:      chamberProvider,
 		fermentationProvider: fermentationProvider,
 		logger:               logger,
@@ -41,9 +52,8 @@ func New(mac string, pid *pidctrl.PIDController, chamberProvider client.ChamberP
 	}
 }
 
-// Start begin the process of polling the service for updates to the chamber
+// Start begin the process of polling the service for updates to the chamber.
 func (c *Controller) Start(interval time.Duration) {
-
 	c.Poll()
 
 	for {
@@ -59,25 +69,23 @@ func (c *Controller) Start(interval time.Duration) {
 // Poll gets a chamber from the server by its mac address. If none is found it create one. It then process the chamber
 // to determine what value to set the thermostat to.
 func (c *Controller) Poll() {
-	var chamber *internal.Chamber
+	var chamber *storage.Chamber
+
 	chamber, err := c.chamberProvider.Get(c.mac)
-	if err != nil {
-		if web.ErrNotFound == errors.Cause(err) {
-			c.logger.Println("Chamber does not exist. Creating new chamber")
-			chamber := &internal.Chamber{
-				Name:       "Chamber " + c.mac,
-				MacAddress: c.mac,
-				Thermostat: &thermostat.Thermostat{},
-			}
-			err := c.chamberProvider.Save(chamber)
-			if err != nil {
-				c.logger.Fatalln(err.Error()) // ToDo: Handle
-			}
+
+	if errors.Is(err, web.ErrNotFound) {
+		c.logger.Println("Chamber does not exist. Creating new chamber")
+
+		chamber := &storage.Chamber{
+			Name:       "Chamber " + c.mac,
+			MacAddress: c.mac,
+			Thermostat: &storage.Thermostat{},
 		}
-	} else {
-		if err = c.processUpdate(chamber); err != nil {
-			c.logger.Println(err.Error()) // ToDo: Handle
+		if err := c.chamberProvider.Save(chamber); err != nil {
+			c.logger.Fatalln(err.Error()) // ToDo: Handle
 		}
+	} else if err = c.processUpdate(chamber); err != nil {
+		c.logger.Println(err.Error()) // ToDo: Handle
 	}
 }
 
@@ -87,10 +95,12 @@ func (c *Controller) Stop() {
 }
 
 // processUpdate evaluates the inbound chamber to determine if any changes have occurred
-func (c *Controller) processUpdate(chamber *internal.Chamber) error {
-	var configChanged bool
+func (c *Controller) processUpdate(chamber *storage.Chamber) error {
+	var (
+		configChanged bool
+		oldFermID     uint64
+	)
 
-	var oldFermID uint64
 	newFermID := chamber.CurrentFermentationID
 
 	if c.Chamber == nil {
@@ -103,23 +113,26 @@ func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 	}
 
 	if configChanged {
-		c.Chamber.Thermostat.Off()
+		c.Thermostat.Off()
 
 		c.Chamber = chamber
 
-		err := c.ConfigFunc(c.Chamber.Thermostat, c.pid, c.thermostatOptions...)
+		newThermostat, err := c.CreateFunc(c.Chamber.Thermostat.ThermometerID,
+			c.Chamber.Thermostat.ChillerPin, c.Chamber.Thermostat.HeaterPin,
+			c.chillerKp, c.chillerKi, c.chillerKd, c.heaterKp, c.heaterKi, c.heaterKd, c.logger, c.thermostatOptions...)
 		if err != nil {
 			return err
 		}
 
-		c.Chamber.Thermostat.Subscribe(c.Chamber.MacAddress, c.handleStatusUpdate)
+		c.Thermostat = newThermostat
 	}
 
 	var err error
 
-	if c.Fermentation == nil {
+	if c.Fermentation != nil {
 		if newFermID != 0 {
 			c.logger.Printf("Fermentation changed from none to %d\n", newFermID)
+
 			c.Fermentation, err = c.getFermentation(newFermID)
 			if err != nil {
 				return err
@@ -129,7 +142,7 @@ func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 		if newFermID != 0 {
 			if oldFermID != newFermID {
 				c.logger.Printf("Fermentation changed from %d to %d\n", oldFermID, newFermID)
-				c.Chamber.Thermostat.Off()
+				c.Thermostat.Off()
 				c.Fermentation, err = c.getFermentation(newFermID)
 				if err != nil {
 					return err
@@ -138,7 +151,7 @@ func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 		} else {
 			c.logger.Printf("Fermentation changed from %d to none\n", oldFermID)
 			c.Fermentation = nil
-			c.Chamber.Thermostat.Off()
+			c.Thermostat.Off()
 		}
 	}
 
@@ -147,34 +160,35 @@ func (c *Controller) processUpdate(chamber *internal.Chamber) error {
 	if oldFermID != newFermID || configChanged {
 		if c.Fermentation != nil {
 			c.logger.Printf("Setting Fermentation to %d\n", c.Fermentation.ID)
-			c.Chamber.Thermostat.Set(c.Fermentation.Beer.Schedule[0].TargetTemp)
-			if c.Chamber.Thermostat.GetStatus().State == internal.Idle {
-				c.Chamber.Thermostat.On()
-			}
+
+			go func() {
+				if err := c.Thermostat.On(c.Fermentation.Beer.Schedule[0].TargetTemp); err != nil {
+					c.logger.WithError(err).Warn("Thermostat failed to turn on")
+				}
+			}()
 		}
 	}
 
 	return nil
 }
 
-func (c *Controller) checkChamber(chamber *internal.Chamber) bool {
-
+func (c *Controller) checkChamber(chamber *storage.Chamber) bool {
 	if c.Chamber.Thermostat.ChillerPin != chamber.Thermostat.ChillerPin {
-		c.logger.Println("Chiller Pin changed from %s to %s",
+		c.logger.Printf("Chiller Pin changed from %s to %s\n",
 			c.Chamber.Thermostat.ChillerPin, chamber.Thermostat.ChillerPin)
 
 		return true
 	}
 
 	if c.Chamber.Thermostat.HeaterPin != chamber.Thermostat.HeaterPin {
-		c.logger.Println("Heater Pin changed from %s to %s",
+		c.logger.Printf("Heater Pin changed from %s to %s\n",
 			c.Chamber.Thermostat.HeaterPin, chamber.Thermostat.HeaterPin)
 
 		return true
 	}
 
 	if c.Chamber.Thermostat.ChillerPin != chamber.Thermostat.ChillerPin {
-		c.logger.Println("Thermometer ID changed from %s to %s",
+		c.logger.Printf("Thermometer ID changed from %s to %s\n",
 			c.Chamber.Thermostat.ChillerPin, chamber.Thermostat.ChillerPin)
 
 		return true
@@ -183,47 +197,11 @@ func (c *Controller) checkChamber(chamber *internal.Chamber) bool {
 	return false
 }
 
-func (c *Controller) getFermentation(id uint64) (*internal.Fermentation, error) {
-
+func (c *Controller) getFermentation(id uint64) (*storage.Fermentation, error) {
 	fermentation, err := c.fermentationProvider.Get(id)
 	if err != nil {
 		return nil, err
 	}
 
 	return fermentation, nil
-}
-
-func (c *Controller) handleStatusUpdate(status thermostat.ThermostatStatus) {
-
-	var temp float64
-	var errMsg string
-
-	if status.CurrentTemperature != nil {
-		temp = *status.CurrentTemperature
-	}
-
-	if status.Error != nil {
-		errMsg = status.Error.Error()
-	}
-
-	c.logger.Printf("State: %v, Temperature: %f, Error: %s\n", status.State, temp, errMsg)
-
-	change := &internal.TemperatureChange{
-		InsertTime:  time.Now(),
-		Chamber:     c.Chamber.Name,
-		Thermometer: c.Chamber.Thermostat.ThermometerID,
-	}
-
-	if c.Fermentation != nil {
-		change.FermentationID = c.Fermentation.ID
-		change.Beer = c.Fermentation.Beer.Name
-	}
-
-	if status.CurrentTemperature != nil {
-		change.Temperature = *status.CurrentTemperature
-	}
-
-	if err := c.fermentationProvider.SaveTemperatureChange(change); err != nil {
-		c.logger.Println(err)
-	}
 }

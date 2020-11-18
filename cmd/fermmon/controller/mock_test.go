@@ -2,12 +2,13 @@ package controller_test
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 )
 
 type chamberResourceMock struct {
-	GetFn         func(string) (*internal.Chamber, error)
-	SaveFn        func(*internal.Chamber) error
-	SubscribeFn   func(string, chan internal.Chamber) error
+	GetFn         func(string) (*storage.Chamber, error)
+	SaveFn        func(*storage.Chamber) error
+	SubscribeFn   func(string, chan storage.Chamber) error
 	UnsubscribeFn func(string)
 
 	GetInvoked         bool
@@ -16,17 +17,17 @@ type chamberResourceMock struct {
 	UnsubscribeInvoked bool
 }
 
-func (m *chamberResourceMock) Get(mac string) (*internal.Chamber, error) {
+func (m *chamberResourceMock) Get(mac string) (*storage.Chamber, error) {
 	m.GetInvoked = true
 	return m.GetFn(mac)
 }
 
-func (m *chamberResourceMock) Save(c *internal.Chamber) error {
+func (m *chamberResourceMock) Save(c *storage.Chamber) error {
 	m.SaveInvoked = true
 	return m.SaveFn(c)
 }
 
-func (m *chamberResourceMock) Subscribe(mac string, ch chan internal.Chamber) error {
+func (m *chamberResourceMock) Subscribe(mac string, ch chan storage.Chamber) error {
 	m.SubscribeInvoked = true
 	return m.SubscribeFn(mac, ch)
 }
@@ -37,8 +38,8 @@ func (m *chamberResourceMock) Unsubscribe(mac string) {
 }
 
 type fermentationResourceMock struct {
-	GetFn                   func(uint64) (*internal.Fermentation, error)
-	SaveFn                  func(*internal.Fermentation) error
+	GetFn                   func(uint64) (*storage.Fermentation, error)
+	SaveFn                  func(*storage.Fermentation) error
 	SaveTemperatureChangeFn func(*internal.TemperatureChange) error
 
 	GetInvoked                   bool
@@ -46,12 +47,12 @@ type fermentationResourceMock struct {
 	SaveTemperatureChangeInvoked bool
 }
 
-func (m *fermentationResourceMock) Get(id uint64) (*internal.Fermentation, error) {
+func (m *fermentationResourceMock) Get(id uint64) (*storage.Fermentation, error) {
 	m.GetInvoked = true
 	return m.GetFn(id)
 }
 
-func (m *fermentationResourceMock) Save(c *internal.Fermentation) error {
+func (m *fermentationResourceMock) Save(c *storage.Fermentation) error {
 	m.SaveInvoked = true
 	return m.SaveFn(c)
 }

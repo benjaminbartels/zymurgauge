@@ -23,12 +23,12 @@ type Actuator interface {
 }
 
 const (
-	pidMin                    float64       = 0
-	pidMax                    float64       = 100
-	defaultChillerCyclePeriod time.Duration = 30 * time.Minute
-	defaultHeatingCyclePeriod time.Duration = 11 * time.Minute
-	defaultChillingMinimum    time.Duration = 10 * time.Minute
-	defaultHeatingMinimum     time.Duration = 10 * time.Second
+	pidMin                     float64       = 0
+	pidMax                     float64       = 100
+	defaultChillingCyclePeriod time.Duration = 30 * time.Minute
+	defaultHeatingCyclePeriod  time.Duration = 11 * time.Minute
+	defaultChillingMinimum     time.Duration = 10 * time.Minute
+	defaultHeatingMinimum      time.Duration = 10 * time.Second
 )
 
 var ErrAlreadyOn = errors.New("thermostat is already on")
@@ -41,10 +41,10 @@ func SetClock(clock Clock) OptionsFunc {
 	}
 }
 
-// ChillerCyclePeriod sets the duration of the chiller's PWM cycle.  Default is 30 minutes.
-func SetChillerCyclePeriod(period time.Duration) OptionsFunc {
+// ChillingCyclePeriod sets the duration of the chiller's PWM cycle.  Default is 30 minutes.
+func SetChillingCyclePeriod(period time.Duration) OptionsFunc {
 	return func(t *Thermostat) {
-		t.chillerCyclePeriod = period
+		t.chillingCyclePeriod = period
 	}
 }
 
@@ -72,45 +72,45 @@ func SetHeatingMinimum(min time.Duration) OptionsFunc {
 }
 
 type Thermostat struct {
-	thermometer        Thermometer
-	chiller            Actuator
-	heater             Actuator
-	chillerKp          float64
-	chillerKi          float64
-	chillerKd          float64
-	heaterKp           float64
-	heaterKi           float64
-	heaterKd           float64
-	chillerCyclePeriod time.Duration
-	chillingMinimum    time.Duration
-	heatingCyclePeriod time.Duration
-	heatingMinimum     time.Duration
-	clock              Clock
-	logger             *logrus.Logger
-	isOn               bool
-	onMutex            sync.Mutex
-	cancelFn           context.CancelFunc
+	thermometer         Thermometer
+	chiller             Actuator
+	heater              Actuator
+	chillerKp           float64
+	chillerKi           float64
+	chillerKd           float64
+	heaterKp            float64
+	heaterKi            float64
+	heaterKd            float64
+	chillingCyclePeriod time.Duration
+	chillingMinimum     time.Duration
+	heatingCyclePeriod  time.Duration
+	heatingMinimum      time.Duration
+	clock               Clock
+	logger              *logrus.Logger
+	isOn                bool
+	onMutex             sync.Mutex
+	cancelFn            context.CancelFunc
 }
 
 func NewThermostat(thermometer Thermometer, chiller, heater Actuator,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...OptionsFunc) *Thermostat {
 	t := &Thermostat{
-		thermometer:        thermometer,
-		chillerKp:          chillerKp,
-		chillerKi:          chillerKi,
-		chillerKd:          chillerKd,
-		heaterKp:           heaterKp,
-		heaterKi:           heaterKi,
-		heaterKd:           heaterKd,
-		chiller:            chiller,
-		chillerCyclePeriod: defaultChillerCyclePeriod,
-		heatingCyclePeriod: defaultHeatingCyclePeriod,
-		chillingMinimum:    defaultChillingMinimum,
-		heatingMinimum:     defaultHeatingMinimum,
-		clock:              NewRealClock(),
-		heater:             heater,
-		logger:             logger,
+		thermometer:         thermometer,
+		chillerKp:           chillerKp,
+		chillerKi:           chillerKi,
+		chillerKd:           chillerKd,
+		heaterKp:            heaterKp,
+		heaterKi:            heaterKi,
+		heaterKd:            heaterKd,
+		chiller:             chiller,
+		chillingCyclePeriod: defaultChillingCyclePeriod,
+		heatingCyclePeriod:  defaultHeatingCyclePeriod,
+		chillingMinimum:     defaultChillingMinimum,
+		heatingMinimum:      defaultHeatingMinimum,
+		clock:               NewRealClock(),
+		heater:              heater,
+		logger:              logger,
 	}
 
 	for _, option := range options {
@@ -201,7 +201,7 @@ func (t *Thermostat) On(setPoint float64) error {
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return t.startCycle(ctx, "chiller", chillerPID, t.chiller, t.chillerCyclePeriod, t.chillingMinimum)
+		return t.startCycle(ctx, "chiller", chillerPID, t.chiller, t.chillingCyclePeriod, t.chillingMinimum)
 	})
 	g.Go(func() error {
 		return t.startCycle(ctx, "heater", heaterPID, t.heater, t.heatingCyclePeriod, t.heatingMinimum)

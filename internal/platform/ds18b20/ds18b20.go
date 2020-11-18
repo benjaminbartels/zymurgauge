@@ -43,10 +43,10 @@ type Thermometer struct {
 }
 
 // ReadTemperature read the current temperature of the Thermometer.
-func (t *Thermometer) Read() (*float64, error) {
+func (t *Thermometer) Read() (float64, error) {
 	file, err := os.Open(path.Join(t.path, t.ID, slave))
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	defer file.Close()
@@ -55,25 +55,25 @@ func (t *Thermometer) Read() (*float64, error) {
 
 	crcLine, err := r.ReadString('\n')
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	crcLine = strings.TrimRight(crcLine, "\n")
 	if !strings.HasSuffix(crcLine, "YES") {
-		return nil, errCRCError
+		return 0, errCRCError
 	}
 
 	dataLine, err := r.ReadString('\n')
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	temp, err := strconv.ParseFloat(strings.Split(strings.TrimSpace(dataLine), "=")[1], 64)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	temp /= 1000
 
-	return &temp, nil
+	return temp, nil
 }

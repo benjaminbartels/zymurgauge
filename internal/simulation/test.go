@@ -39,7 +39,7 @@ func NewTest(name string, chillingMinimum, heatingMinimum, chillerCyclePeriod, h
 		chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd, logger,
 		thermostat.SetChillingMinimum(chillingMinimum),
 		thermostat.SetHeatingMinimum(heatingMinimum),
-		thermostat.SetChillerCyclePeriod(chillerCyclePeriod),
+		thermostat.SetChillingCyclePeriod(chillerCyclePeriod),
 		thermostat.SetHeatingCyclePeriod(heaterCyclePeriod),
 		thermostat.SetClock(clock),
 	)

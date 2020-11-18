@@ -146,7 +146,7 @@ func TestOnDutyCycle(t *testing.T) {
 			}
 
 			therm := thermostat.NewThermostat(thermometer, chiller, heater, chillerKp, chillerKi, chillerKd, heaterKp,
-				heaterKi, heaterKd, l, thermostat.SetChillerCyclePeriod(100*time.Millisecond),
+				heaterKi, heaterKd, l, thermostat.SetChillingCyclePeriod(100*time.Millisecond),
 				thermostat.SetChillingMinimum(10*time.Millisecond))
 
 			wg.Add(1)
@@ -369,7 +369,7 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 	}
 
 	therm := thermostat.NewThermostat(thermometer, chiller, heater, chillerKp, chillerKi, chillerKd, heaterKp,
-		heaterKi, heaterKd, l, thermostat.SetChillerCyclePeriod(100*time.Millisecond),
+		heaterKi, heaterKd, l, thermostat.SetChillingCyclePeriod(100*time.Millisecond),
 		thermostat.SetChillingMinimum(10*time.Millisecond))
 
 	err := therm.On(15)
