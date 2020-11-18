@@ -11,13 +11,17 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrv/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/boltdb/bolt"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/sirupsen/logrus"
+)
 
-	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+const (
+	sigChanSize = 2
+	ctxTimeout  = 5 * time.Second
 )
 
 type config struct {
@@ -27,16 +31,13 @@ type config struct {
 	AuthSecret   string        `required:"true"`
 }
 
-//nolint:funlen
 func main() {
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 
-	// Process env variables
 	var appCfg config
 
-	err := envconfig.Process("zymsrv", &appCfg)
-	if err != nil {
+	if err := envconfig.Process("zymsrv", &appCfg); err != nil {
 		logger.Fatal(err.Error())
 	}
 
@@ -77,7 +78,6 @@ func main() {
 	beerHandler := handlers.NewBeerHandler(beerRepo)
 	chamberHandler := handlers.NewChamberHandler(chamberRepo, pubsub.New(), logger)
 	fermentationHandler := handlers.NewFermentationHandler(fermentationRepo, temperatureChangeRepo, chamberRepo)
-
 	requestLogger := middleware.NewRequestLogger(logger)
 	errorHandler := middleware.NewErrorHandler(logger)
 	authorizer := middleware.NewAuthorizer(appCfg.AuthSecret, logger)
@@ -94,7 +94,6 @@ func main() {
 	logger.Println("Bye!")
 }
 
-//nolint:gomnd
 func startServer(handler http.Handler, cfg config, logger *logrus.Logger) {
 	var wg sync.WaitGroup
 
@@ -113,17 +112,16 @@ func startServer(handler http.Handler, cfg config, logger *logrus.Logger) {
 		wg.Done()
 	}()
 
-	sig := make(chan os.Signal, 2)
+	sig := make(chan os.Signal, sigChanSize)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	<-sig
 
-	timeout := 5 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), ctxTimeout)
 
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Printf("Graceful shutdown did not complete in %v : %v", timeout, err)
+		logger.Printf("Graceful shutdown did not complete in %v : %v", ctxTimeout, err)
 
 		if err := server.Close(); err != nil {
 			logger.Printf("Error killing server : %v", err)

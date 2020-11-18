@@ -5,7 +5,7 @@ type PubSub struct {
 	topics map[string][]chan []byte
 }
 
-// New instantiates a new PubSub
+// New instantiates a new PubSub.
 func New() *PubSub {
 	return &PubSub{
 		topics: make(map[string][]chan []byte),
@@ -32,7 +32,9 @@ func (p *PubSub) Unsubscribe(ch chan []byte) {
 		for i, c := range channels {
 			if c == ch {
 				close(ch)
+
 				channels = append(channels[:i], channels[i+1:]...)
+
 				if len(channels) == 0 {
 					delete(p.topics, topic)
 				}
@@ -41,7 +43,7 @@ func (p *PubSub) Unsubscribe(ch chan []byte) {
 	}
 }
 
-// Send the message to all subscribers of the given topic
+// Send the message to all subscribers of the given topic.
 func (p *PubSub) Send(topic string, msg []byte) {
 	go func() {
 		t, ok := p.topics[topic]

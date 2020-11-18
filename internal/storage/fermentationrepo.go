@@ -1,3 +1,5 @@
+//TODO: pending removal
+//nolint:nlreturn
 package storage
 
 import (
@@ -46,6 +48,7 @@ func (r *FermentationRepo) Get(id uint64) (*Fermentation, error) {
 				return errors.Wrapf(err, "Could not unmarshal Fermentation %d", id)
 			}
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -60,12 +63,14 @@ func (r *FermentationRepo) GetAll() ([]Fermentation, error) {
 	fermentations := []Fermentation{} // ToDo: init all array this way in repos
 	err := r.db.View(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
+
 		return bu.ForEach(func(k, v []byte) error {
 			var f Fermentation
 			if err := json.Unmarshal(v, &f); err != nil {
 				return err
 			}
 			fermentations = append(fermentations, f)
+
 			return nil
 		})
 	})
@@ -90,6 +95,7 @@ func (r *FermentationRepo) Save(f *Fermentation) error {
 		} else if err := bu.Put(itob(f.ID), v); err != nil {
 			return errors.Wrapf(err, "Could not put Fermentation %d", f.ID)
 		}
+
 		return nil
 	})
 
@@ -103,6 +109,7 @@ func (r *FermentationRepo) Delete(id uint64) error {
 		if err := bu.Delete(itob(id)); err != nil {
 			return errors.Wrapf(err, "Could not delete Fermentation %d", id)
 		}
+
 		return nil
 	})
 

@@ -1,3 +1,5 @@
+//TODO: pending removal
+//nolint:nlreturn
 package storage
 
 import (
@@ -77,6 +79,7 @@ func (r *TemperatureChangeRepo) Save(b *internal.TemperatureChange) error {
 		}
 		return nil
 	})
+
 	return err
 }
 

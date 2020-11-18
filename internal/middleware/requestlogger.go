@@ -11,19 +11,18 @@ import (
 
 // ToDo: Make RequestLogger a HandlerFunc itself
 
-// RequestLogger provides a MiddlewareFunc that logs out request details
+// RequestLogger provides a MiddlewareFunc that logs out request details.
 type RequestLogger struct {
 	logger log.Logger
 }
 
-// NewRequestLogger creates a new RequestLogger
+// NewRequestLogger creates a new RequestLogger.
 func NewRequestLogger(logger log.Logger) *RequestLogger {
 	return &RequestLogger{logger: logger}
 }
 
-// Log is a MiddlewareFunc that logs out request details including app specific context values
+// Log is a MiddlewareFunc that logs out request details including app specific context values.
 func (l *RequestLogger) Log(next web.Handler) web.Handler {
-
 	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 		err := next(ctx, w, r)
 
@@ -34,7 +33,6 @@ func (l *RequestLogger) Log(next web.Handler) web.Handler {
 			time.Since(v.StartTime))
 
 		return err
-
 	}
 
 	return h

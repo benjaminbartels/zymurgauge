@@ -12,19 +12,18 @@ import (
 
 // ToDo: Make ErrorHandler a HandlerFunc itself
 
-// ErrorHandler provides a MiddlewareFunc that handles errors from handlers
+// ErrorHandler provides a MiddlewareFunc that handles errors from handlers.
 type ErrorHandler struct {
 	logger log.Logger
 }
 
-// NewErrorHandler creates a new ErrorHandler
+// NewErrorHandler creates a new ErrorHandler.
 func NewErrorHandler(logger log.Logger) *ErrorHandler {
 	return &ErrorHandler{logger: logger}
 }
 
-// HandleError is a MiddlewareFunc that handles errors from handlers
+// HandleError is a MiddlewareFunc that handles errors from handlers.
 func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
-
 	// Create the handler that will be attached in the middleware chain.
 	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 		v := ctx.Value(web.CtxValuesKey).(*web.CtxValues)
@@ -33,7 +32,6 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 		// error down the stack.
 		defer func() {
 			if r := recover(); r != nil {
-
 				// Indicate this request had an error.
 				v.HasError = true
 
@@ -51,7 +49,6 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 		}()
 
 		if err := next(ctx, w, r); err != nil {
-
 			// Indicate this request had an error.
 			v.HasError = true
 

@@ -129,7 +129,7 @@ func testRespondWriteError(t *testing.T) {
 		Name: "Golden Stout",
 	}
 
-	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/beer/1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,6 +168,7 @@ func testRespondMarshalError(t *testing.T) {
 
 	err = web.Respond(ctx, rw, bogusData, http.StatusOK)
 
+	//nolint:errorlint
 	if _, ok := err.(*json.UnsupportedTypeError); !ok {
 		t.Errorf("Unexpected Error %v", err)
 	}
@@ -340,11 +341,13 @@ type responseWriterMock struct {
 
 func (r *responseWriterMock) Header() http.Header {
 	r.HeaderInvoked = true
+
 	return r.HeaderFn()
 }
 
 func (r *responseWriterMock) Write(bytes []byte) (int, error) {
 	r.WriteInvoked = true
+
 	return r.WriteFn(bytes)
 }
 

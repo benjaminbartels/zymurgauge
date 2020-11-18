@@ -17,6 +17,7 @@ func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, code 
 	// No Content
 	if code == http.StatusNoContent || data == nil {
 		w.WriteHeader(code)
+
 		return nil
 	}
 
@@ -56,10 +57,11 @@ type errorResponse struct {
 func Error(ctx context.Context, w http.ResponseWriter, err error) error {
 	var code int
 
+	//nolint:errorlint
 	switch errors.Cause(err) {
 	case ErrNotFound:
 		code = http.StatusNotFound
-	case ErrBadRequest: //ToDo: what was bad?
+	case ErrBadRequest: // ToDo: what was bad?
 		code = http.StatusBadRequest
 	case ErrMethodNotAllowed:
 		code = http.StatusMethodNotAllowed

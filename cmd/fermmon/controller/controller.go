@@ -1,3 +1,4 @@
+//nolint:funlen,gocognit,nestif
 package controller
 
 import (
@@ -89,12 +90,12 @@ func (c *Controller) Poll() {
 	}
 }
 
-// Stop ends the polling process
+// Stop ends the polling process.
 func (c *Controller) Stop() {
 	c.done <- true
 }
 
-// processUpdate evaluates the inbound chamber to determine if any changes have occurred
+// processUpdate evaluates the inbound chamber to determine if any changes have occurred.
 func (c *Controller) processUpdate(chamber *storage.Chamber) error {
 	var (
 		configChanged bool

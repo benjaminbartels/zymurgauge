@@ -10,7 +10,6 @@ import (
 )
 
 func TestPubSub(t *testing.T) {
-
 	topicA := "topicA"
 	topicB := "topicB"
 	msg := "Hello"
@@ -31,9 +30,7 @@ func TestPubSub(t *testing.T) {
 	bDone := false
 
 	go func() {
-
 		for {
-
 			select {
 			case m := <-chA:
 				if string(m) != msg+" A" {
@@ -56,18 +53,14 @@ func TestPubSub(t *testing.T) {
 			if aDone && bDone {
 				result <- nil
 			}
-
 		}
-
 	}()
 
 	ps.Send(topicA, []byte(msg+" A"))
 	ps.Send(topicB, []byte(msg+" B"))
 
 	err := <-result
-
 	if err != nil {
 		t.Error(err)
 	}
-
 }
