@@ -1,3 +1,5 @@
+//TODO: pending removal
+//nolint:nlreturn
 package storage
 
 import (

@@ -1,4 +1,4 @@
-//nolint:gomnd
+//nolint:gomnd,funlen
 package main
 
 import (
@@ -10,7 +10,6 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal/simulation"
 	"github.com/sirupsen/logrus"
-
 	chart "github.com/wcharczuk/go-chart"
 )
 
@@ -66,7 +65,6 @@ func main() {
 	fmt.Println("Bye!")
 }
 
-//nolint:funlen
 func createGraph(tests []*simulation.Test, targetTemp float64) error {
 	series := []chart.Series{}
 

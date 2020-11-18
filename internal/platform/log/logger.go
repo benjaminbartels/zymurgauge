@@ -1,6 +1,6 @@
 package log
 
-// Logger is an interface go the Logger in the standard library
+// Logger is an interface go the Logger in the standard library.
 type Logger interface {
 	// Print calls Output to print to the standard logger.
 	// Arguments are handled in the manner of fmt.Print.

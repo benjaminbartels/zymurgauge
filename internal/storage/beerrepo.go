@@ -46,6 +46,7 @@ func (r *BeerRepo) Get(id uint64) (*Beer, error) {
 				return errors.Wrapf(err, "Could not unmarshal Beer %d", id)
 			}
 		}
+
 		return nil
 	})
 	if err != nil {
@@ -61,12 +62,14 @@ func (r *BeerRepo) GetAll() ([]Beer, error) {
 
 	err := r.db.View(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Beers"))
+
 		return bu.ForEach(func(k, v []byte) error {
 			var b Beer
 			if err := json.Unmarshal(v, &b); err != nil {
 				return err
 			}
 			beers = append(beers, b)
+
 			return nil
 		})
 	})
@@ -94,6 +97,7 @@ func (r *BeerRepo) Save(b *Beer) error {
 		} else if err := bu.Put(itob(b.ID), v); err != nil {
 			return errors.Wrapf(err, "Could not put Beer %d", b.ID)
 		}
+
 		return nil
 	})
 
@@ -107,6 +111,7 @@ func (r *BeerRepo) Delete(id uint64) error {
 		if err := bu.Delete(itob(id)); err != nil {
 			return errors.Wrapf(err, "Could not delete Beer %d", id)
 		}
+
 		return nil
 	})
 

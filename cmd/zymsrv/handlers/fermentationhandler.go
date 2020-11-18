@@ -43,7 +43,6 @@ func (h *FermentationHandler) Handle(ctx context.Context, w http.ResponseWriter,
 	}
 }
 
-//nolint:gomnd
 func (h *FermentationHandler) get(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	var head string
 	head, r.URL.Path = web.ShiftPath(r.URL.Path)
@@ -62,6 +61,7 @@ func (h *FermentationHandler) get(ctx context.Context, w http.ResponseWriter, r 
 	switch {
 	case head == "temperaturechanges":
 		start := time.Now().AddDate(0, 0, -1).UTC()
+		//nolint:gomnd
 		end := time.Unix(1<<63-62135596801, 999999999).UTC()
 
 		if startParam, ok := r.URL.Query()["start"]; ok {

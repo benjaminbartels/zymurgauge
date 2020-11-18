@@ -1,3 +1,4 @@
+//nolint:gomnd
 package main
 
 import (
@@ -9,13 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/controller"
 	"github.com/benjaminbartels/zymurgauge/internal/client"
 	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 const clientID = "18CHgJa2D3GyxmZfKdF2uhmSv4aS78Xb"
@@ -42,8 +42,8 @@ func main() {
 
 	// Process env variables
 	var cfg config
-	err := envconfig.Process("fermmon", &cfg)
-	if err != nil {
+
+	if err := envconfig.Process("fermmon", &cfg); err != nil {
 		logger.Fatal(err.Error())
 	}
 
@@ -53,7 +53,6 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
-	// Create a new client
 	client, err := client.NewClient(addr, "v1", clientID, cfg.ClientSecret, logger)
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -84,40 +83,41 @@ func main() {
 	)
 
 	var wg sync.WaitGroup
+
 	wg.Add(1)
 
-	// Start polling
 	ctl.Start(10 * time.Second)
 
 	sig := make(chan os.Signal, 2)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	<-sig
 
-	// Stop polling
 	ctl.Stop()
 
 	wg.Wait()
 	logger.Println("Bye!")
 }
 
-// getMacAddress returns the first Mac Address of the first network interface found
+// getMacAddress returns the first Mac Address of the first network interface found.
 func getMacAddress() (string, error) {
-
 	mac := ""
 
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return "", errors.New("failed to get host MAC address")
 	}
+
 	for _, iface := range interfaces {
 		if len(iface.HardwareAddr.String()) > 0 {
-			if iface.Name == "eth0" { //ToDo: fix this
+			if iface.Name == "eth0" { // ToDo: fix this
 				mac = iface.HardwareAddr.String()
 			}
-			if iface.Name == "wlan0" { //ToDo: fix this
+
+			if iface.Name == "wlan0" { // ToDo: fix this
 				mac = iface.HardwareAddr.String()
 			}
-			if mac == "" && iface.Name == "en0" { //ToDo: fix this
+
+			if mac == "" && iface.Name == "en0" { // ToDo: fix this
 				mac = iface.HardwareAddr.String()
 			}
 		}
@@ -128,18 +128,17 @@ func getMacAddress() (string, error) {
 	}
 
 	return mac, nil
-
 }
 
-// getMacAddressByIFaceName returns the mac address of the given interface name
+// getMacAddressByIFaceName returns the mac address of the given interface name.
 func getMacAddressByInterfaceName(name string) (string, error) {
-
 	var mac string
 
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		return "", errors.New("Failed to get host MAC address")
 	}
+
 	for _, iface := range interfaces {
 		if iface.Name == name {
 			mac = iface.HardwareAddr.String()
@@ -151,5 +150,4 @@ func getMacAddressByInterfaceName(name string) (string, error) {
 	}
 
 	return mac, nil
-
 }

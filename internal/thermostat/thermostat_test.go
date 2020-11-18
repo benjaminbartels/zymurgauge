@@ -15,15 +15,12 @@ import (
 )
 
 const (
-	chillerKp     float64 = -10
-	chillerKi     float64 = 0
-	chillerKd     float64 = 0
-	heaterKp      float64 = 10
-	heaterKi      float64 = 0
-	heaterKd      float64 = 0
-	thermometerID string  = "testThermometerID"
-	chillerPin    string  = "testChillerPin"
-	heaterPin     string  = "testHeaterPin"
+	chillerKp float64 = -10
+	chillerKi float64 = 0
+	chillerKd float64 = 0
+	heaterKp  float64 = 10
+	heaterKi  float64 = 0
+	heaterKd  float64 = 0
 )
 
 var (
@@ -64,6 +61,7 @@ func TestOnActuatorsOn(t *testing.T) {
 				OnFn: func() error {
 					chillerOn = true
 					wg.Done()
+
 					return nil
 				},
 				OffFn: func() error { return nil },
@@ -73,6 +71,7 @@ func TestOnActuatorsOn(t *testing.T) {
 				OnFn: func() error {
 					heaterOn = true
 					wg.Done()
+
 					return nil
 				},
 				OffFn: func() error { return nil },
@@ -131,6 +130,7 @@ func TestOnDutyCycle(t *testing.T) {
 					if readCalledCount == 3 {
 						wg.Done()
 					}
+
 					return tc.currentTemperature, nil
 				},
 			}
@@ -184,6 +184,7 @@ func TestOff(t *testing.T) {
 	chiller := &mocks.Actuator{
 		OnFn: func() error {
 			wg.Done()
+
 			return nil
 		},
 		OffFn: func() error { return nil },
@@ -228,6 +229,7 @@ func TestDutyTimeLessThanMinimum(t *testing.T) {
 	chiller := &mocks.Actuator{
 		OnFn: func() error {
 			wg.Done()
+
 			return nil
 		},
 		OffFn: func() error { return nil },
@@ -268,6 +270,7 @@ func TestOnAlreadyOnError(t *testing.T) {
 	chiller := &mocks.Actuator{
 		OnFn: func() error {
 			wg.Done()
+
 			return nil
 		},
 		OffFn: func() error { return nil },
@@ -390,6 +393,7 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 	chiller := &mocks.Actuator{
 		OnFn: func() error {
 			wg.Done()
+
 			return nil
 		},
 		OffFn: func() error { return errDeadActuator },

@@ -22,5 +22,6 @@ func NewDilatedClock(speed float64) thermostat.Clock {
 
 func (dc *DilatedClock) Now() time.Time {
 	diff := float64(time.Since(dc.startTime)) / float64(time.Nanosecond)
+
 	return dc.startTime.Add(time.Duration(dc.speed * diff))
 }

@@ -184,6 +184,7 @@ func (t *Thermostat) On(setPoint float64) error {
 	t.onMutex.Lock()
 	if t.isOn {
 		defer t.onMutex.Unlock()
+
 		return ErrAlreadyOn
 	}
 

@@ -63,6 +63,7 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
+
 		return
 	}
 

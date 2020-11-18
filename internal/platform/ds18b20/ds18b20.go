@@ -2,11 +2,12 @@ package ds18b20
 
 import (
 	"bufio"
-	"errors"
 	"os"
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -14,8 +15,6 @@ const (
 	// defaultDevicePath is the location of the thermometer data on the file system.
 	defaultDevicePath = "/sys/bus/w1/devices/"
 )
-
-var errCRCError = errors.New("CRC error")
 
 // NewThermometer Create a new ds18b20 Thermometer.
 func NewThermometer(id string) (*Thermometer, error) {
@@ -27,7 +26,7 @@ func NewThermometer(id string) (*Thermometer, error) {
 func NewWithDevicePath(id, devicePath string) (*Thermometer, error) {
 	_, err := os.Stat(path.Join(devicePath, id))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not file information")
 	}
 
 	return &Thermometer{
@@ -46,7 +45,7 @@ type Thermometer struct {
 func (t *Thermometer) Read() (float64, error) {
 	file, err := os.Open(path.Join(t.path, t.ID, slave))
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "could not open file")
 	}
 
 	defer file.Close()
@@ -55,22 +54,22 @@ func (t *Thermometer) Read() (float64, error) {
 
 	crcLine, err := r.ReadString('\n')
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "could not read crc")
 	}
 
 	crcLine = strings.TrimRight(crcLine, "\n")
 	if !strings.HasSuffix(crcLine, "YES") {
-		return 0, errCRCError
+		return 0, errors.Wrap(err, "crc is invalid")
 	}
 
 	dataLine, err := r.ReadString('\n')
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "could not read data")
 	}
 
 	temp, err := strconv.ParseFloat(strings.Split(strings.TrimSpace(dataLine), "=")[1], 64)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "could not parse temperature value")
 	}
 
 	temp /= 1000
