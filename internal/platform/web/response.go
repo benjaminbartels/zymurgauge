@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Respond sends the JSON response to the client
+// Respond sends the JSON response to the client.
 func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, code int) error {
 	// Set the status code in context
 	v := ctx.Value(CtxValuesKey).(*CtxValues)
@@ -30,36 +30,36 @@ func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, code 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_, err = w.Write(jsonData)
+
 	return err
 }
 
 var (
-	// ErrNotFound is returned when an entity is not found
+	// ErrNotFound is returned when an entity is not found.
 	ErrNotFound = errors.New("not found")
-	// ErrInternal is returned when an internal error has occurred
+	// ErrInternal is returned when an internal error has occurred.
 	ErrInternal = errors.New("internal error")
-	// ErrBadRequest is returned when the request is invalid
+	// ErrBadRequest is returned when the request is invalid.
 	ErrBadRequest = errors.New("bad request")
-	// ErrMethodNotAllowed is returned when the request method (GET, POST, etc.) is not allowed
+	// ErrMethodNotAllowed is returned when the request method (GET, POST, etc.) is not allowed.
 	ErrMethodNotAllowed = errors.New("method not allowed")
-	// ErrUnauthorized is returned when the request is not authorized
+	// ErrUnauthorized is returned when the request is not authorized.
 	ErrUnauthorized = errors.New("unauthorized")
 )
 
-// errorResponse is the response sent to the client in the event of a error
+// errorResponse is the response sent to the client in the event of a error.
 type errorResponse struct {
 	Err string `json:"error,omitempty"`
 }
 
-// Error converts application error to http error code then passes it RespondError
+// Error converts application error to http error code then passes it RespondError.
 func Error(ctx context.Context, w http.ResponseWriter, err error) error {
-
 	var code int
 
 	switch errors.Cause(err) {
 	case ErrNotFound:
 		code = http.StatusNotFound
-	case ErrBadRequest: //ToDO: what was bad?
+	case ErrBadRequest: //ToDo: what was bad?
 		code = http.StatusBadRequest
 	case ErrMethodNotAllowed:
 		code = http.StatusMethodNotAllowed
