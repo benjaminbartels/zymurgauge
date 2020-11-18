@@ -1,6 +1,13 @@
 name: Build
-on: [push, pull_request]
-jobs:
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - '**'
+  pull_request:
+      branches:
+      - '**'jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
