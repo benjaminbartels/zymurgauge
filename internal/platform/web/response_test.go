@@ -12,6 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	errWriteError = errors.New("write error occurred")
+	errSomeError  = errors.New("some error")
+)
+
 func TestRespond(t *testing.T) {
 	t.Run("OK", testRespondOK)
 	t.Run("StatusNoContent", testRespondStatusNoContent)
@@ -40,29 +45,33 @@ func testRespondOK(t *testing.T) {
 		Name: "Golden Stout",
 	}
 
-	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/beer/1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err = web.Respond(ctx, rw, b, http.StatusOK)
 
+	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
+
+	err = web.Respond(ctx, rw, b, http.StatusOK)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
 	}
+
 	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
 	}
+
 	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
 	}
+
 	if code != http.StatusOK {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
-
 }
 
 func testRespondStatusNoContent(t *testing.T) {
@@ -74,42 +83,44 @@ func testRespondStatusNoContent(t *testing.T) {
 		code = statusCode
 	}
 
-	r, err := http.NewRequest(http.MethodGet, "/beer", nil)
+	r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/beer/1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
 	err = web.Respond(ctx, rw, nil, http.StatusNoContent)
 
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if rw.HeaderInvoked {
 		t.Fatal("Header invoked")
 	}
+
 	if rw.WriteInvoked {
 		t.Fatal("Write invoked")
 	}
+
 	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
 	}
+
 	if code != http.StatusNoContent {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
-
 }
 
 func testRespondWriteError(t *testing.T) {
 	rw := &responseWriterMock{}
-
-	var writeError = errors.New("write error occurred")
 
 	rw.HeaderFn = func() http.Header {
 		return make(map[string][]string)
 	}
 
 	rw.WriteFn = func(bytes []byte) (int, error) {
-		return 0, writeError
+		return 0, errWriteError
 	}
 
 	rw.WriteHeaderFn = func(statusCode int) {}
@@ -122,18 +133,22 @@ func testRespondWriteError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err = web.Respond(ctx, rw, b, http.StatusOK)
 
-	if err != writeError {
-		t.Fatalf("Expected Error %v was %v", writeError, err)
+	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
+
+	err = web.Respond(ctx, rw, b, http.StatusOK)
+	if !errors.Is(err, errWriteError) {
+		t.Fatalf("Expected Error %v was %v", errWriteError, err)
 	}
+
 	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
 	}
+
 	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
 	}
+
 	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
 	}
@@ -144,22 +159,27 @@ func testRespondMarshalError(t *testing.T) {
 
 	bogusData := make(chan int)
 
-	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/beer/1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
+
 	err = web.Respond(ctx, rw, bogusData, http.StatusOK)
 
 	if _, ok := err.(*json.UnsupportedTypeError); !ok {
 		t.Errorf("Unexpected Error %v", err)
 	}
+
 	if rw.HeaderInvoked {
 		t.Fatal("Header invoked")
 	}
+
 	if rw.WriteInvoked {
 		t.Fatal("Write invoked")
 	}
+
 	if rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader invoked")
 	}
@@ -188,37 +208,39 @@ func testErrorErrNotFound(t *testing.T) {
 		code = statusCode
 	}
 
-	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/beer/1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
 	err = web.Error(ctx, rw, web.ErrNotFound)
 
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
 	}
+
 	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
 	}
+
 	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
 	}
+
 	if code != http.StatusNotFound {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
-
 }
 
 func testErrorCatchAll(t *testing.T) {
 	rw := &responseWriterMock{}
 
 	var code int
-
-	var someError = errors.New("some error")
 
 	rw.HeaderFn = func() http.Header {
 		return make(map[string][]string)
@@ -232,29 +254,33 @@ func testErrorCatchAll(t *testing.T) {
 		code = statusCode
 	}
 
-	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/beer/1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err = web.Error(ctx, rw, someError)
 
+	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
+
+	err = web.Error(ctx, rw, errSomeError)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
 	}
+
 	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
 	}
+
 	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
 	}
+
 	if code != http.StatusInternalServerError {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
-
 }
 
 func testErrorErrorFromRespond(t *testing.T) {
@@ -262,43 +288,45 @@ func testErrorErrorFromRespond(t *testing.T) {
 
 	var code int
 
-	var writeError = errors.New("write error occurred")
-
 	rw.HeaderFn = func() http.Header {
 		return make(map[string][]string)
 	}
 
 	rw.WriteFn = func(bytes []byte) (int, error) {
-		return 0, writeError
+		return 0, errWriteError
 	}
 
 	rw.WriteHeaderFn = func(statusCode int) {
 		code = statusCode
 	}
 
-	r, err := http.NewRequest(http.MethodGet, "/beer/1", nil)
+	r, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/beer/1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
-	err = web.Error(ctx, rw, web.ErrNotFound)
 
-	if err != writeError {
-		t.Fatalf("Expected Error %v was %v", writeError, err)
+	ctx := context.WithValue(r.Context(), web.CtxValuesKey, &web.CtxValues{StartTime: time.Now()})
+
+	err = web.Error(ctx, rw, web.ErrNotFound)
+	if !errors.Is(err, errWriteError) {
+		t.Fatalf("Expected Error %v was %v", errWriteError, err)
 	}
+
 	if !rw.HeaderInvoked {
 		t.Fatal("Header not invoked")
 	}
+
 	if !rw.WriteInvoked {
 		t.Fatal("Write not invoked")
 	}
+
 	if !rw.WriteHeaderInvoked {
 		t.Fatal("WriteHeader not invoked")
 	}
+
 	if code != http.StatusNotFound {
 		t.Fatalf("Unexpected StatusCode %d", code)
 	}
-
 }
 
 type responseWriterMock struct {

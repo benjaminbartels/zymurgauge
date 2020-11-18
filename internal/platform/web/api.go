@@ -2,10 +2,9 @@ package web
 
 import (
 	"context"
+	"net/http"
 	"path"
 	"strings"
-
-	"net/http"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/log"
@@ -13,10 +12,10 @@ import (
 
 type ctxKey int
 
-// CtxValuesKey is the key used to save and retrieve CtxValues from the context
+// CtxValuesKey is the key used to save and retrieve CtxValues from the context.
 const CtxValuesKey ctxKey = 1
 
-// CtxValues are context values specific to the App
+// CtxValues are context values specific to the App.
 type CtxValues struct {
 	StartTime    time.Time
 	OriginalPath string
@@ -24,15 +23,15 @@ type CtxValues struct {
 	HasError     bool
 }
 
-// Handler extends the http.HandlerFunc buy adding context param and an error
+// Handler extends the http.HandlerFunc buy adding context param and an error.
 type Handler func(context.Context, http.ResponseWriter, *http.Request) error
 
 const (
-	// GET method
+	// GET method.
 	GET string = "GET" // ToDo:  Are these needed?  Wrap html package completely...
-	// POST method
+	// POST method.
 	POST string = "POST"
-	// DELETE method
+	// DELETE method.
 	DELETE string = "DELETE"
 )
 
@@ -46,7 +45,7 @@ type API struct {
 	middlewares []MiddlewareFunc
 }
 
-// NewAPI creates a new API withe the given version and middlewares
+// NewAPI creates a new API withe the given version and middlewares.
 func NewAPI(version string, logger log.Logger, mw ...MiddlewareFunc) *API {
 	return &API{
 		version:     version,
@@ -58,8 +57,7 @@ func NewAPI(version string, logger log.Logger, mw ...MiddlewareFunc) *API {
 
 // ServeHTTP calls f(w, r).
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("Access-Control-Allow-Origin", "*") // ToDo: dont allow just *
+	w.Header().Set("Access-Control-Allow-Origin", "*") // ToDo: don't allow just *
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
 
@@ -86,20 +84,18 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		handler, ok := a.routes[head]
 		if ok {
 			handler.ServeHTTP(w, r)
+
 			handled = true
 		}
 	}
 
 	if !handled {
 		w.WriteHeader(http.StatusNotFound)
-		// ToDo: Wrap in middleware so 404 is logged out
 	}
-
 }
 
-// Register mounts the provided handler to the provided path creating a route
+// Register mounts the provided handler to the provided path creating a route.
 func (a *API) Register(path string, handler Handler, wrapWithMiddlewares bool) {
-
 	// Wrap handler with middlewares
 	if wrapWithMiddlewares {
 		handler = wrap(handler, a.middlewares)
@@ -107,7 +103,6 @@ func (a *API) Register(path string, handler Handler, wrapWithMiddlewares bool) {
 
 	// Handler function that adds the app specific values to the request context, then calls the wrapped handler
 	h := func(w http.ResponseWriter, r *http.Request) {
-
 		// Calls the wrapped handler
 		if err := handler(r.Context(), w, r); err != nil {
 			// This is called when the error handler middleware doesn't handle the error, which is never
@@ -126,8 +121,10 @@ func (a *API) Register(path string, handler Handler, wrapWithMiddlewares bool) {
 func ShiftPath(p string) (head, tail string) {
 	p = path.Clean("/" + p)
 	i := strings.Index(p[1:], "/") + 1
+
 	if i <= 0 {
 		return p[1:], "/"
 	}
+
 	return p[1:i], p[i:]
 }

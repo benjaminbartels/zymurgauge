@@ -11,7 +11,6 @@ require (
 	github.com/google/go-cmp v0.5.3 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
-	github.com/rakyll/statik v0.1.7
 	github.com/sirupsen/logrus v1.7.0
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	gobot.io/x/gobot v1.14.0

@@ -10,12 +10,10 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsrv/handlers"
-	// _ "github.com/benjaminbartels/zymurgauge/cmd/zymsrv/statik" // TODO: temporary
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/boltdb/bolt"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rakyll/statik/fs"
 	"github.com/sirupsen/logrus"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/pubsub"
@@ -84,17 +82,12 @@ func main() {
 	errorHandler := middleware.NewErrorHandler(logger)
 	authorizer := middleware.NewAuthorizer(appCfg.AuthSecret, logger)
 
-	uiFS, err := fs.New()
-	if err != nil {
-		logger.Fatal(err)
-	}
-
 	api := web.NewAPI("v1", logger, requestLogger.Log, errorHandler.HandleError, authorizer.Authorize)
 	api.Register("beers", beerHandler.Handle, true)
 	api.Register("chambers", chamberHandler.Handle, true)
 	api.Register("fermentations", fermentationHandler.Handle, true)
 
-	app := web.NewApp(api, uiFS, logger)
+	app := web.NewApp(api, logger)
 
 	startServer(app, appCfg, logger)
 
