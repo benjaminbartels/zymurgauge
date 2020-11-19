@@ -109,15 +109,15 @@ func getMacAddress() (string, error) {
 
 	for _, iface := range interfaces {
 		if len(iface.HardwareAddr.String()) > 0 {
-			if iface.Name == "eth0" { // ToDo: fix this
+			if iface.Name == "eth0" { // TODO: fix this
 				mac = iface.HardwareAddr.String()
 			}
 
-			if iface.Name == "wlan0" { // ToDo: fix this
+			if iface.Name == "wlan0" { // TODO: fix this
 				mac = iface.HardwareAddr.String()
 			}
 
-			if mac == "" && iface.Name == "en0" { // ToDo: fix this
+			if mac == "" && iface.Name == "en0" { // TODO: fix this
 				mac = iface.HardwareAddr.String()
 			}
 		}

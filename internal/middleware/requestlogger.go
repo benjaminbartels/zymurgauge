@@ -9,7 +9,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 )
 
-// ToDo: Make RequestLogger a HandlerFunc itself
+// TODO: Make RequestLogger a HandlerFunc itself
 
 // RequestLogger provides a MiddlewareFunc that logs out request details.
 type RequestLogger struct {
@@ -28,7 +28,7 @@ func (l *RequestLogger) Log(next web.Handler) web.Handler {
 
 		v := ctx.Value(web.CtxValuesKey).(*web.CtxValues)
 
-		// ToDo: r.URL.Path is getting overwritten, create a value in ctx?
+		// TODO: r.URL.Path is getting overwritten, create a value in ctx?
 		l.logger.Printf("(%d) : %s %s -> %s (%s)", v.StatusCode, r.Method, v.OriginalPath, r.RemoteAddr,
 			time.Since(v.StartTime))
 

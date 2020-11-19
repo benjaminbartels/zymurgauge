@@ -60,7 +60,7 @@ func (r *FermentationRepo) Get(id uint64) (*Fermentation, error) {
 
 // GetAll returns all Fermentations.
 func (r *FermentationRepo) GetAll() ([]Fermentation, error) {
-	fermentations := []Fermentation{} // ToDo: init all array this way in repos
+	fermentations := []Fermentation{} // TODO: init all array this way in repos
 	err := r.db.View(func(tx *bolt.Tx) error {
 		bu := tx.Bucket([]byte("Fermentations"))
 

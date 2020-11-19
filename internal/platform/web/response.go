@@ -61,7 +61,7 @@ func Error(ctx context.Context, w http.ResponseWriter, err error) error {
 	switch errors.Cause(err) {
 	case ErrNotFound:
 		code = http.StatusNotFound
-	case ErrBadRequest: // ToDo: what was bad?
+	case ErrBadRequest: // TODO: what was bad?
 		code = http.StatusBadRequest
 	case ErrMethodNotAllowed:
 		code = http.StatusMethodNotAllowed

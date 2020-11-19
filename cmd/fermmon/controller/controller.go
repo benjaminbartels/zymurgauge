@@ -83,10 +83,10 @@ func (c *Controller) Poll() {
 			Thermostat: &storage.Thermostat{},
 		}
 		if err := c.chamberProvider.Save(chamber); err != nil {
-			c.logger.Fatalln(err.Error()) // ToDo: Handle
+			c.logger.Fatalln(err.Error()) // TODO: Handle
 		}
 	} else if err = c.processUpdate(chamber); err != nil {
-		c.logger.Println(err.Error()) // ToDo: Handle
+		c.logger.Println(err.Error()) // TODO: Handle
 	}
 }
 

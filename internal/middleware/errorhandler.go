@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ToDo: Make ErrorHandler a HandlerFunc itself
+// TODO: Make ErrorHandler a HandlerFunc itself
 
 // ErrorHandler provides a MiddlewareFunc that handles errors from handlers.
 type ErrorHandler struct {
@@ -43,7 +43,7 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 
 				// Respond with the error.
 				if err := web.Error(ctx, w, errors.New("unhandled")); err != nil {
-					e.logger.Printf("Error : %s", errors.Wrap(err, "Could not send error to client")) // ToDo: Check this
+					e.logger.Printf("Error : %s", errors.Wrap(err, "Could not send error to client")) // TODO: Check this
 				}
 			}
 		}()
@@ -56,7 +56,7 @@ func (e *ErrorHandler) HandleError(next web.Handler) web.Handler {
 			e.logger.Printf("Error : %v\n", err)
 
 			// Respond with the error.
-			err = web.Error(ctx, w, err) // ToDo: Make sure that returning err to caller is ok
+			err = web.Error(ctx, w, err) // TODO: Make sure that returning err to caller is ok
 
 			return err
 		}

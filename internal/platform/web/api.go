@@ -28,7 +28,7 @@ type Handler func(context.Context, http.ResponseWriter, *http.Request) error
 
 const (
 	// GET method.
-	GET string = "GET" // ToDo:  Are these needed?  Wrap html package completely...
+	GET string = "GET" // TODO:  Are these needed?  Wrap html package completely...
 	// POST method.
 	POST string = "POST"
 	// DELETE method.
@@ -57,7 +57,7 @@ func NewAPI(version string, logger log.Logger, mw ...MiddlewareFunc) *API {
 
 // ServeHTTP calls f(w, r).
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*") // ToDo: don't allow just *
+	w.Header().Set("Access-Control-Allow-Origin", "*") // TODO: don't allow just *
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization,Content-Type")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE")
 
