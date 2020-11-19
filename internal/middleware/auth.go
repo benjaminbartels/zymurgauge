@@ -34,7 +34,7 @@ func NewAuthorizer(clientSecret string, logger log.Logger) *Authorizer {
 // returned in the response.
 func (a *Authorizer) Authorize(next web.Handler) web.Handler {
 	h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
-		if r.Method == "OPTIONS" { // ToDo: And more to circumvent auth check (login?, get-token?)
+		if r.Method == "OPTIONS" { // TODO: And more to circumvent auth check (login?, get-token?)
 			return next(ctx, w, r)
 		}
 
