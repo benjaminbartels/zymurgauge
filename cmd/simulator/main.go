@@ -208,8 +208,6 @@ func run(ctx context.Context, thermometer *thermometer, chiller, heater *actuato
 			heaterTemp = heaterTempNew
 			thermometer.currentTemp = beerTemp
 		case <-ctx.Done():
-			fmt.Println("COUNT", ctr)
-
 			return
 		}
 	}
@@ -221,8 +219,6 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64)
 	ticks := make([]chart.Tick, len(durations))
 	maxDuration := durations[len(durations)-1]
 	interval := maxDuration / graphInterval
-
-	fmt.Println("MAX", maxDuration)
 
 	for _, duration := range durations {
 		times = append(times, float64(duration))
@@ -237,13 +233,10 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64)
 		ticks[i] = chart.Tick{Value: float64(tickValue), Label: fmt.Sprintf("%02d:%02d", hour, minute)}
 	}
 
-	s := chart.ContinuousSeries{
-		Name:    "myTest",
+	series = append(series, chart.ContinuousSeries{
 		XValues: times,
 		YValues: temps,
-	}
-
-	series = append(series, s)
+	})
 
 	graph := chart.Chart{
 		XAxis: chart.XAxis{
@@ -266,10 +259,6 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64)
 			},
 		},
 		Series: series,
-	}
-
-	graph.Elements = []chart.Renderable{
-		chart.Legend(&graph),
 	}
 
 	buffer := bytes.NewBuffer([]byte{})
