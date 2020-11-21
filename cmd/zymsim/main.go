@@ -17,15 +17,6 @@ import (
 )
 
 const (
-	// startingTemp = 26
-	// targetTemp   = 20
-	// multiplier        = 6000.0 // 100ms = 10m
-	// chillerKp    = -1.0
-	// chillerKi    = 0.0
-	// chillerKd    = 0.0
-	// heaterKp     = 1.0
-	// heaterKi     = 0.0
-	// heaterKd     = 0.0.
 	beerCapacity = 4.2 * 1.0 * 20        // heat capacity water * density of water * 20L volume (in kJ per kelvin).
 	airCapacity  = 1.005 * 1.225 * 0.200 // heat capacity of dry air * density of air * 200L volume (in kJ per kelvin).
 	// Moist air has only slightly higher heat capacity, 1.02 when saturated at 20C.
@@ -79,6 +70,7 @@ func (a *actuator) Off() error {
 type CLI struct {
 	Multiplier   float64       `kong:"default=6000.0,short=m,help='Time dilation multiplier. Defaults to 6000.'"`
 	Runtime      time.Duration `kong:"default=5s,short=r,help='Runtime of simulation. Defaults to 5s.'"`
+	Log          bool          `kong:"default=false,short=l,help='Enable logger. Default is false.'"`
 	StartingTemp float64       `kong:"arg,help='Starting temperature.'"`           // 25.0
 	TargetTemp   float64       `kong:"arg,help='Target temperature.'"`             // 20.0
 	ChillerKp    float64       `kong:"arg,help='Chiller proportional gain (kP).'"` // -1.0
@@ -90,6 +82,7 @@ type CLI struct {
 	FileName     string        `kong:"arg,optional,help='Name of results file. Defaults to chart_{timestamp}.png.'"`
 }
 
+//nolint:funlen
 func main() {
 	cli := CLI{}
 	kong.Parse(&cli,
@@ -103,7 +96,12 @@ func main() {
 	heater := &actuator{}
 	clock := fakes.NewDilatedClock(cli.Multiplier)
 	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
+
+	if cli.Log {
+		logger.SetLevel(logrus.DebugLevel)
+	} else {
+		logger.Out = ioutil.Discard
+	}
 
 	thermostat := thermostat.NewThermostat(thermometer, chiller, heater, cli.ChillerKp, cli.ChillerKi, cli.ChillerKd,
 		cli.HeaterKp, cli.HeaterKi, cli.HeaterKd, logger, thermostat.SetClock(clock))

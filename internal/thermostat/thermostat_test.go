@@ -296,7 +296,7 @@ func TestOnAlreadyOnError(t *testing.T) {
 
 	err := therm.On(66)
 	if !errors.Is(err, thermostat.ErrAlreadyOn) {
-		t.Errorf("Unexpected error. Wanted '%s', Got: '%s'", thermostat.ErrAlreadyOn, err)
+		t.Errorf("Unexpected error. Want: '%s', Got: '%s'", thermostat.ErrAlreadyOn, err)
 	}
 }
 
@@ -322,7 +322,7 @@ func TestThermometerError(t *testing.T) {
 
 	err := therm.On(15)
 	if !errors.Is(err, errDeadThermometer) {
-		t.Errorf("Unexpected error. Wanted '%s', Got: '%s'", errDeadThermometer, err)
+		t.Errorf("Unexpected error. Want: '%s', Got: '%s'", errDeadThermometer, err)
 	}
 }
 
@@ -348,7 +348,7 @@ func TestActuatorOnError(t *testing.T) {
 
 	err := therm.On(15)
 	if !errors.Is(err, errDeadActuator) {
-		t.Errorf("Unexpected error. Wanted '%s', Got: '%s'", errDeadActuator, err)
+		t.Errorf("Unexpected error. Want: '%s', Got: '%s'", errDeadActuator, err)
 	}
 }
 
@@ -360,9 +360,7 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 	}
 
 	chiller := &mocks.Actuator{
-		OnFn: func() error {
-			return nil
-		},
+		OnFn:  func() error { return nil },
 		OffFn: func() error { return errDeadActuator },
 	}
 
@@ -377,7 +375,7 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 
 	err := therm.On(15)
 	if !errors.Is(err, errDeadActuator) {
-		t.Errorf("Unexpected error. Wanted '%s', Got: '%s'", errDeadActuator, err)
+		t.Errorf("Unexpected error. Want: '%s', Got: '%s'", errDeadActuator, err)
 	}
 }
 
@@ -412,7 +410,7 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 	go func() {
 		err := therm.On(15)
 		if !errors.Is(err, errDeadActuator) {
-			t.Errorf("Unexpected error. Wanted '%s', Got: '%s'", errDeadActuator, err)
+			t.Errorf("Unexpected error. Want: '%s', Got: '%s'", errDeadActuator, err)
 		}
 
 		wg.Done()

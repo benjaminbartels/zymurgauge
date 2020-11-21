@@ -82,8 +82,8 @@ type Thermostat struct {
 	heaterKi            float64
 	heaterKd            float64
 	chillingCyclePeriod time.Duration
-	chillingMinimum     time.Duration
 	heatingCyclePeriod  time.Duration
+	chillingMinimum     time.Duration
 	heatingMinimum      time.Duration
 	clock               Clock
 	logger              *logrus.Logger
