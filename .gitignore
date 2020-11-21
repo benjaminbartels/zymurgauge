@@ -32,5 +32,5 @@
 
 # Other junk
 .vscode
-cmd/thermostat_test/*.png
+cmd/simulator/*.png
 coverage.html

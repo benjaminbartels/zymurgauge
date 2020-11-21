@@ -25,3 +25,19 @@ func (dc *DilatedClock) Now() time.Time {
 
 	return dc.startTime.Add(time.Duration(dc.speed * diff))
 }
+
+func (dc *DilatedClock) After(d time.Duration) <-chan time.Time {
+	d /= time.Duration(dc.speed)
+
+	return time.After(d)
+}
+
+func (dc *DilatedClock) Since(t time.Time) time.Duration {
+	return dc.startTime.Sub(t)
+}
+
+func (dc *DilatedClock) NewTimer(d time.Duration) *time.Timer {
+	d /= time.Duration(dc.speed)
+
+	return time.NewTimer(d)
+}

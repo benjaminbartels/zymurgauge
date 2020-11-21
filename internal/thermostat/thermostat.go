@@ -26,7 +26,7 @@ const (
 	pidMin                     float64       = 0
 	pidMax                     float64       = 100
 	defaultChillingCyclePeriod time.Duration = 30 * time.Minute
-	defaultHeatingCyclePeriod  time.Duration = 11 * time.Minute
+	defaultHeatingCyclePeriod  time.Duration = 10 * time.Minute
 	defaultChillingMinimum     time.Duration = 10 * time.Minute
 	defaultHeatingMinimum      time.Duration = 10 * time.Second
 )
@@ -130,12 +130,11 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 			return errors.Wrap(err, "could not read thermometer")
 		}
 
-		output := pid.UpdateDuration(temperature, time.Since(lastUpdateTime))
+		since := t.clock.Since(lastUpdateTime)
+		output := pid.UpdateDuration(temperature, since)
 		dutyCycle := output / pidMax
 		lastUpdateTime = t.clock.Now()
-
 		dutyTime := time.Duration(float64(period.Nanoseconds()) * dutyCycle)
-
 		waitTime := period
 
 		if dutyTime > 0 {
@@ -148,7 +147,7 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 				return errors.Wrapf(err, "could not turn %s actuator on", name)
 			}
 
-			dutyTimer := time.NewTimer(dutyTime)
+			dutyTimer := t.clock.NewTimer(dutyTime)
 
 			t.logger.Infof("Actuator %s acting for %v", name, dutyTime)
 
@@ -159,17 +158,16 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 				if err := actuator.Off(); err != nil {
 					return errors.Wrap(err, "could not turn actuator off after duty cycle")
 				}
-
 			case <-ctx.Done():
 				return t.quit(dutyTimer, actuator)
 			}
 
 			waitTime -= dutyTime
-		} else {
-			t.logger.Infof("Actuator %s waiting for %v", name, waitTime)
 		}
 
-		waitTimer := time.NewTimer(waitTime)
+		t.logger.Infof("Actuator %s waiting for %v", name, waitTime)
+
+		waitTimer := t.clock.NewTimer(waitTime)
 
 		select {
 		case <-waitTimer.C:

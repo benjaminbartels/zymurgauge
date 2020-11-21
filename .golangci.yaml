@@ -71,7 +71,6 @@ linters:
     - exhaustivestruct          # Not recommended globally
     - godox                     # Need to be able to commit code with TODO
     - wrapcheck                 # Too opinionated
-  
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
@@ -84,8 +83,6 @@ issues:
         - funlen                # Tests are long sometimes
         - gomnd                 # Tests can hardcode numbers
         - goerr113              # Tests can return dynamic errors
-
-        # TODO Add More?
     - linters:              
         - lll                   # Exclude lll issues for long lines with go:generate
       source: "^//go:generate "
