@@ -11,14 +11,13 @@ func TestDilation(t *testing.T) {
 		round time.Duration
 		diff  time.Duration
 	}{
-		".01":    {speed: .01, round: 1 * time.Millisecond, diff: 1 * time.Millisecond}, // 100ms = 1ms
-		".1":     {speed: .1, round: 1 * time.Millisecond, diff: 10 * time.Millisecond}, // 100ms = 10ms
-		"10":     {speed: 10, round: 1 * time.Second, diff: 1 * time.Second},            // 100ms = 1s
-		"100":    {speed: 100, round: 1 * time.Second, diff: 10 * time.Second},          // 100ms = 10s
-		"600":    {speed: 600, round: 1 * time.Minute, diff: 1 * time.Minute},           // 100ms = 1m
-		"6000":   {speed: 6000, round: 1 * time.Minute, diff: 10 * time.Minute},         // 100ms = 10m
-		"36000":  {speed: 36000, round: 1 * time.Hour, diff: 1 * time.Hour},             // 100ms = 1h
-		"864000": {speed: 864000, round: 1 * time.Hour, diff: 24 * time.Hour},           // 100ms = 24h
+		".01":   {speed: .01, round: 1 * time.Millisecond, diff: 1 * time.Millisecond}, // 100ms = 1ms
+		".1":    {speed: .1, round: 1 * time.Millisecond, diff: 10 * time.Millisecond}, // 100ms = 10ms
+		"10":    {speed: 10, round: 1 * time.Second, diff: 1 * time.Second},            // 100ms = 1s
+		"100":   {speed: 100, round: 1 * time.Second, diff: 10 * time.Second},          // 100ms = 10s
+		"600":   {speed: 600, round: 1 * time.Minute, diff: 1 * time.Minute},           // 100ms = 1m
+		"6000":  {speed: 6000, round: 1 * time.Minute, diff: 10 * time.Minute},         // 100ms = 10m
+		"36000": {speed: 36000, round: 1 * time.Hour, diff: 1 * time.Hour},             // 100ms = 1h
 	}
 
 	for name, tc := range tests {
