@@ -14,7 +14,7 @@ type Test struct {
 	Name       string
 	Result     Result
 	chamber    *Chamber
-	speed      float64
+	multiplier float64
 	clock      thermostat.Clock
 	targetTemp float64
 	start      time.Time
@@ -28,12 +28,12 @@ type Result struct {
 }
 
 func NewTest(name string, chillingMinimum, heatingMinimum, chillerCyclePeriod, heaterCyclePeriod time.Duration,
-	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd, speed, initalTemp, targetTemp float64,
+	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd, multiplier, initalTemp, targetTemp float64,
 	logger *logrus.Logger) (*Test, error) {
 	thermometer := NewThermometer(initalTemp)
 	chiller := &Actuator{ActuatorType: Chiller}
 	heater := &Actuator{ActuatorType: Heater}
-	clock := fakes.NewDilatedClock(speed)
+	clock := fakes.NewDilatedClock(multiplier)
 
 	thermostat := thermostat.NewThermostat(thermometer, chiller, heater,
 		chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd, logger,
@@ -44,13 +44,13 @@ func NewTest(name string, chillingMinimum, heatingMinimum, chillerCyclePeriod, h
 		thermostat.SetClock(clock),
 	)
 
-	chamber := NewChamber(thermostat, thermometer, chiller, heater, speed, logger)
+	chamber := NewChamber(thermostat, thermometer, chiller, heater, multiplier, logger)
 
 	t := &Test{
 		Name:       name,
 		chamber:    chamber,
 		targetTemp: targetTemp,
-		speed:      speed,
+		multiplier: multiplier,
 		clock:      clock,
 		logger:     logger,
 	}

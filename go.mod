@@ -3,6 +3,7 @@ module github.com/benjaminbartels/zymurgauge
 go 1.15
 
 require (
+	github.com/alecthomas/kong v0.2.11
 	github.com/auth0-community/go-auth0 v1.0.0
 	github.com/blend/go-sdk v2.0.0+incompatible // indirect
 	github.com/boltdb/bolt v1.3.1

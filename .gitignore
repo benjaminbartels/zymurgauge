@@ -21,10 +21,13 @@
 # Code Coverage
 .cover
 
-# Extentionless binaries in cmd directories
-/cmd/zymsrv/zymsrv
-/cmd/fermmon/fermmon
-/cmd/client_test/client_test
+# Every non go file in cmd paths
+cmd/zymsim/*
+!cmd/zymsim/*.go
+cmd/zymsrv/*
+!cmd/zymsrv/*.go
+cmd/fermmon/*
+!cmd/fermmon/*.go
 
 # BoltDB Databases
 **/zymurgaugedb
@@ -32,5 +35,3 @@
 
 # Other junk
 .vscode
-cmd/thermostat_test/*.png
-coverage.html
