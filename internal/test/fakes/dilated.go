@@ -26,14 +26,8 @@ func (dc *DilatedClock) Now() time.Time {
 	return dc.startTime.Add(time.Duration(dc.multiplier * diff))
 }
 
-func (dc *DilatedClock) After(d time.Duration) <-chan time.Time {
-	d /= time.Duration(dc.multiplier)
-
-	return time.After(d)
-}
-
 func (dc *DilatedClock) Since(t time.Time) time.Duration {
-	return dc.startTime.Sub(t)
+	return dc.Now().Sub(t)
 }
 
 func (dc *DilatedClock) NewTimer(d time.Duration) *time.Timer {

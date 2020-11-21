@@ -6,7 +6,6 @@ var _ Clock = (*RealClock)(nil)
 
 type Clock interface {
 	Now() time.Time
-	After(d time.Duration) <-chan time.Time
 	Since(t time.Time) time.Duration
 	NewTimer(d time.Duration) *time.Timer
 }
@@ -22,12 +21,6 @@ func NewRealClock() Clock {
 // Now returns the current local time.
 func (*RealClock) Now() time.Time {
 	return time.Now()
-}
-
-// After waits for the duration to elapse and then sends the current time
-// on the returned channel.
-func (*RealClock) After(d time.Duration) <-chan time.Time {
-	return time.After(d)
 }
 
 // Since returns the time elapsed since t.
