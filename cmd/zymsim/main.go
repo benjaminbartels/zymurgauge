@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
 	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
 	"github.com/sirupsen/logrus"
@@ -16,15 +17,15 @@ import (
 )
 
 const (
-	startingTemp = 26
-	targetTemp   = 20
-	speed        = 6000.0 // 100ms = 10m
-	chillerKp    = -1.0
-	chillerKi    = 0.0
-	chillerKd    = 0.0
-	heaterKp     = 1.0
-	heaterKi     = 0.0
-	heaterKd     = 0.0
+	// startingTemp = 26
+	// targetTemp   = 20
+	// multiplier        = 6000.0 // 100ms = 10m
+	// chillerKp    = -1.0
+	// chillerKi    = 0.0
+	// chillerKd    = 0.0
+	// heaterKp     = 1.0
+	// heaterKi     = 0.0
+	// heaterKd     = 0.0.
 	beerCapacity = 4.2 * 1.0 * 20        // heat capacity water * density of water * 20L volume (in kJ per kelvin).
 	airCapacity  = 1.005 * 1.225 * 0.200 // heat capacity of dry air * density of air * 200L volume (in kJ per kelvin).
 	// Moist air has only slightly higher heat capacity, 1.02 when saturated at 20C.
@@ -44,7 +45,6 @@ const (
 
 //nolint:gochecknoglobals
 var (
-	runtime      = 5 * time.Second
 	readInterval = 100 * time.Millisecond
 )
 
@@ -76,20 +76,41 @@ func (a *actuator) Off() error {
 	return nil
 }
 
+type CLI struct {
+	Multiplier   float64       `kong:"default=6000.0,short=m,help='Time dilation multiplier. Defaults to 6000.'"`
+	Runtime      time.Duration `kong:"default=5s,short=r,help='Runtime of simulation. Defaults to 5s.'"`
+	StartingTemp float64       `kong:"arg,help='Starting temperature.'"`           // 25.0
+	TargetTemp   float64       `kong:"arg,help='Target temperature.'"`             // 20.0
+	ChillerKp    float64       `kong:"arg,help='Chiller proportional gain (kP).'"` // -1.0
+	ChillerKi    float64       `kong:"arg,help='Chiller integral gain (kI).'"`     // 0.0
+	ChillerKd    float64       `kong:"arg,help='Chiller derivative gain (kd).'"`   // 0.0
+	HeaterKp     float64       `kong:"arg,help='Heater proportional gain (kP).'"`  // 1.0
+	HeaterKi     float64       `kong:"arg,help='Heater integral gain (kI).'"`      // 0.0
+	HeaterKd     float64       `kong:"arg,help='Heater derivative gain (kD).'"`    // 0.0
+	FileName     string        `kong:"arg,optional,help='Name of results file. Defaults to chart_{timestamp}.png.'"`
+}
+
 func main() {
-	thermometer := &thermometer{currentTemp: startingTemp}
+	cli := CLI{}
+	kong.Parse(&cli,
+		kong.Name("zymsim"),
+		kong.Description("Zymurgauge Thermostat Simulator"),
+		kong.UsageOnError(),
+	)
+
+	thermometer := &thermometer{currentTemp: cli.StartingTemp}
 	chiller := &actuator{}
 	heater := &actuator{}
-	clock := fakes.NewDilatedClock(speed)
+	clock := fakes.NewDilatedClock(cli.Multiplier)
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 
-	thermostat := thermostat.NewThermostat(thermometer, chiller, heater,
-		chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd, logger, thermostat.SetClock(clock))
+	thermostat := thermostat.NewThermostat(thermometer, chiller, heater, cli.ChillerKp, cli.ChillerKi, cli.ChillerKd,
+		cli.HeaterKp, cli.HeaterKi, cli.HeaterKd, logger, thermostat.SetClock(clock))
 
 	ctx, stop := context.WithCancel(context.Background())
 
-	go run(ctx, thermometer, chiller, heater)
+	go run(ctx, thermometer, chiller, heater, cli.Multiplier)
 
 	startTime := time.Now()
 
@@ -98,7 +119,7 @@ func main() {
 	wg.Add(1)
 
 	go func() {
-		if err := thermostat.On(targetTemp); err != nil {
+		if err := thermostat.On(cli.TargetTemp); err != nil {
 			logger.WithError(err).Warn("Thermostat failed to turn on")
 		}
 
@@ -113,7 +134,7 @@ func main() {
 	go func() {
 		var err error
 
-		durations, temps, err = read(ctx, thermometer, startTime)
+		durations, temps, err = read(ctx, thermometer, startTime, cli.Multiplier)
 
 		if err != nil {
 			logger.WithError(err).Warn("Failed to get thermometer readings")
@@ -122,21 +143,18 @@ func main() {
 		wg.Done()
 	}()
 
-	<-time.After(runtime)
-
+	<-time.After(cli.Runtime)
 	thermostat.Off()
-
 	stop()
-
 	wg.Wait()
 
-	if err := createGraph(durations, temps, targetTemp); err != nil {
+	if err := createGraph(durations, temps, cli.TargetTemp, cli.FileName); err != nil {
 		logger.WithError(err).Warn("Failed to create graph")
 	}
 }
 
-func read(ctx context.Context, thermometer thermostat.Thermometer,
-	startTime time.Time) ([]time.Duration, []float64, error) {
+func read(ctx context.Context, thermometer thermostat.Thermometer, startTime time.Time,
+	multiplier float64) ([]time.Duration, []float64, error) {
 	durations := []time.Duration{}
 	temps := []float64{}
 	tick := time.Tick(readInterval)
@@ -149,7 +167,7 @@ func read(ctx context.Context, thermometer thermostat.Thermometer,
 				return durations, temps, err
 			}
 
-			d := time.Duration(float64(time.Since(startTime)) * speed)
+			d := time.Duration(float64(time.Since(startTime)) * multiplier)
 			durations = append(durations, d)
 
 			temps = append(temps, temp)
@@ -159,8 +177,8 @@ func read(ctx context.Context, thermometer thermostat.Thermometer,
 	}
 }
 
-func run(ctx context.Context, thermometer *thermometer, chiller, heater *actuator) {
-	updateCycle := time.Duration(int64(math.Round(1 / speed * (1e9))))
+func run(ctx context.Context, thermometer *thermometer, chiller, heater *actuator, multiplier float64) {
+	updateCycle := time.Duration(int64(math.Round(1 / multiplier * (1e9))))
 	tick := time.Tick(updateCycle)
 
 	var (
@@ -213,18 +231,22 @@ func run(ctx context.Context, thermometer *thermometer, chiller, heater *actuato
 	}
 }
 
-func createGraph(durations []time.Duration, temps []float64, targetTemp float64) error {
-	series := []chart.Series{}
+func createGraph(durations []time.Duration, temps []float64, targetTemp float64, fileName string) error {
 	times := []float64{}
 	ticks := make([]chart.Tick, len(durations))
 	maxDuration := durations[len(durations)-1]
 	interval := maxDuration / graphInterval
+	numOfTick := 10
 
 	for _, duration := range durations {
 		times = append(times, float64(duration))
 	}
 
-	for i := 0; i < 10; i++ {
+	if len(durations) < numOfTick {
+		numOfTick = len(durations)
+	}
+
+	for i := 0; i < numOfTick; i++ {
 		tickValue := int64(interval) * int64(i)
 		d := time.Duration(tickValue).Round(time.Minute)
 		hour := d / time.Hour
@@ -233,10 +255,10 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64)
 		ticks[i] = chart.Tick{Value: float64(tickValue), Label: fmt.Sprintf("%02d:%02d", hour, minute)}
 	}
 
-	series = append(series, chart.ContinuousSeries{
+	series := []chart.Series{chart.ContinuousSeries{
 		XValues: times,
 		YValues: temps,
-	})
+	}}
 
 	graph := chart.Chart{
 		XAxis: chart.XAxis{
@@ -261,8 +283,12 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64)
 		Series: series,
 	}
 
+	return writeChart(graph, fileName)
+}
+
+func writeChart(c chart.Chart, fileName string) error {
 	buffer := bytes.NewBuffer([]byte{})
-	if err := graph.Render(chart.PNG, buffer); err != nil {
+	if err := c.Render(chart.PNG, buffer); err != nil {
 		return err
 	}
 
@@ -271,5 +297,9 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64)
 		return err
 	}
 
-	return ioutil.WriteFile("chart_"+time.Now().Format("20060102150405")+".png", readBuf, 0600)
+	if fileName == "" {
+		fileName = "chart_" + time.Now().Format("20060102150405") + ".png"
+	}
+
+	return ioutil.WriteFile(fileName, readBuf, 0600)
 }

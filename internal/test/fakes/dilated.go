@@ -9,25 +9,25 @@ import (
 var _ thermostat.Clock = (*DilatedClock)(nil)
 
 type DilatedClock struct {
-	speed     float64
-	startTime time.Time
+	multiplier float64
+	startTime  time.Time
 }
 
-func NewDilatedClock(speed float64) thermostat.Clock {
+func NewDilatedClock(multiplier float64) thermostat.Clock {
 	return &DilatedClock{
-		speed:     speed,
-		startTime: time.Now(),
+		multiplier: multiplier,
+		startTime:  time.Now(),
 	}
 }
 
 func (dc *DilatedClock) Now() time.Time {
 	diff := float64(time.Since(dc.startTime)) / float64(time.Nanosecond)
 
-	return dc.startTime.Add(time.Duration(dc.speed * diff))
+	return dc.startTime.Add(time.Duration(dc.multiplier * diff))
 }
 
 func (dc *DilatedClock) After(d time.Duration) <-chan time.Time {
-	d /= time.Duration(dc.speed)
+	d /= time.Duration(dc.multiplier)
 
 	return time.After(d)
 }
@@ -37,7 +37,7 @@ func (dc *DilatedClock) Since(t time.Time) time.Duration {
 }
 
 func (dc *DilatedClock) NewTimer(d time.Duration) *time.Timer {
-	d /= time.Duration(dc.speed)
+	d /= time.Duration(dc.multiplier)
 
 	return time.NewTimer(d)
 }

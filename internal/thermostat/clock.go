@@ -2,6 +2,8 @@ package thermostat
 
 import "time"
 
+var _ Clock = (*RealClock)(nil)
+
 type Clock interface {
 	Now() time.Time
 	After(d time.Duration) <-chan time.Time
