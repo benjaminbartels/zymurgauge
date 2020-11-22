@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/alecthomas/kong"
@@ -28,10 +27,15 @@ var (
 	readInterval = 100 * time.Millisecond
 )
 
-type CLI struct {
+type reading struct {
+	Duration time.Duration
+	Temp     float64
+}
+
+type cli struct {
 	Multiplier   float64       `kong:"default=6000.0,short=m,help='Time dilation multiplier. Defaults to 6000.'"`
 	Runtime      time.Duration `kong:"default=5s,short=r,help='Runtime of simulation. Defaults to 5s.'"`
-	Debug        bool          `kong:"default=false,short=l,help='Enable debug logging. Default is false.'"`
+	Debug        bool          `kong:"default=false,short=d,help='Enable debug logging. Default is false.'"`
 	StartingTemp float64       `kong:"arg,help='Starting temperature.'"`           // 25.0
 	TargetTemp   float64       `kong:"arg,help='Target temperature.'"`             // 20.0
 	ChillerKp    float64       `kong:"arg,help='Chiller proportional gain (kP).'"` // -1.0
@@ -43,16 +47,14 @@ type CLI struct {
 	FileName     string        `kong:"arg,optional,help='Name of results file. Defaults to chart_{timestamp}.png.'"`
 }
 
-//nolint:funlen
 func main() {
-	cli := CLI{}
+	cli := cli{}
 	kong.Parse(&cli,
 		kong.Name("zymsim"),
 		kong.Description("Zymurgauge Thermostat Simulator"),
 		kong.UsageOnError(),
 	)
 
-	clock := fakes.NewDilatedClock(cli.Multiplier)
 	logger := logrus.New()
 
 	if cli.Debug {
@@ -60,51 +62,40 @@ func main() {
 	}
 
 	sim := simulator.New(cli.StartingTemp)
+	clock := fakes.NewDilatedClock(cli.Multiplier)
 	thermostat := thermostat.NewThermostat(sim.Thermometer, sim.Chiller, sim.Heater,
 		cli.ChillerKp, cli.ChillerKi, cli.ChillerKd, cli.HeaterKp, cli.HeaterKi, cli.HeaterKd,
 		logger, thermostat.SetClock(clock))
-
 	ctx, stop := context.WithCancel(context.Background())
-
-	go run(ctx, sim, cli.Multiplier)
-
 	startTime := time.Now()
 
-	var wg sync.WaitGroup
-
-	wg.Add(1)
+	go runSimulator(ctx, sim, cli.Multiplier)
 
 	go func() {
 		if err := thermostat.On(cli.TargetTemp); err != nil {
 			fmt.Println("Failed to turn thermostat on:", err)
 			os.Exit(1)
 		}
+	}()
 
-		wg.Done()
+	readings := make(chan reading)
+
+	go runTemperatureReader(ctx, sim.Thermometer, startTime, cli.Multiplier, readings)
+
+	go func() {
+		<-time.After(cli.Runtime)
+		thermostat.Off()
+		stop()
+		close(readings)
 	}()
 
 	durations := []time.Duration{}
 	temps := []float64{}
 
-	wg.Add(1)
-
-	go func() {
-		var err error
-
-		durations, temps, err = read(ctx, sim.Thermometer, startTime, cli.Multiplier)
-
-		if err != nil {
-			fmt.Println("Failed to get thermometer readings:", err)
-			os.Exit(1)
-		}
-
-		wg.Done()
-	}()
-
-	<-time.After(cli.Runtime)
-	thermostat.Off()
-	stop()
-	wg.Wait()
+	for reading := range readings {
+		durations = append(durations, reading.Duration)
+		temps = append(temps, reading.Temp)
+	}
 
 	if err := createGraph(durations, temps, cli.TargetTemp, cli.FileName); err != nil {
 		fmt.Println("Failed to create graph", err)
@@ -112,31 +103,7 @@ func main() {
 	}
 }
 
-func read(ctx context.Context, thermometer thermostat.Thermometer, startTime time.Time,
-	multiplier float64) ([]time.Duration, []float64, error) {
-	durations := []time.Duration{}
-	temps := []float64{}
-	tick := time.Tick(readInterval)
-
-	for {
-		select {
-		case <-tick:
-			temp, err := thermometer.Read()
-			if err != nil {
-				return durations, temps, err
-			}
-
-			d := time.Duration(float64(time.Since(startTime)) * multiplier)
-			durations = append(durations, d)
-
-			temps = append(temps, temp)
-		case <-ctx.Done():
-			return durations, temps, nil
-		}
-	}
-}
-
-func run(ctx context.Context, simulator *simulator.Simulator, multiplier float64) {
+func runSimulator(ctx context.Context, simulator *simulator.Simulator, multiplier float64) {
 	updateCycle := time.Duration(int64(math.Round(1 / multiplier * (1e9))))
 	tick := time.Tick(updateCycle)
 
@@ -144,6 +111,27 @@ func run(ctx context.Context, simulator *simulator.Simulator, multiplier float64
 		select {
 		case <-tick:
 			simulator.Update()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func runTemperatureReader(ctx context.Context, thermometer thermostat.Thermometer, startTime time.Time,
+	multiplier float64, readings chan reading) {
+	tick := time.Tick(readInterval)
+
+	for {
+		select {
+		case <-tick:
+			temp, err := thermometer.Read()
+			if err != nil {
+				os.Exit(1)
+			}
+			readings <- reading{
+				Duration: time.Duration(float64(time.Since(startTime)) * multiplier),
+				Temp:     temp,
+			}
 		case <-ctx.Done():
 			return
 		}
