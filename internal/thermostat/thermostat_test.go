@@ -118,6 +118,7 @@ func TestOnDutyCycle(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			l, hook := logtest.NewNullLogger()
+			l.Level = logrus.DebugLevel
 
 			var (
 				wg              sync.WaitGroup
@@ -160,12 +161,12 @@ func TestOnDutyCycle(t *testing.T) {
 			wg.Wait()
 
 			if tc.dutyTime > 0 {
-				if !logContains(hook.AllEntries(), logrus.InfoLevel, fmt.Sprintf("Actuator chiller acted for %s", tc.dutyTime)) {
+				if !logContains(hook.AllEntries(), logrus.DebugLevel, fmt.Sprintf("Actuator chiller acted for %s", tc.dutyTime)) {
 					t.Errorf("Expected '%s' to be logged", fmt.Sprintf("Actuator chiller acted for %s", tc.dutyTime))
 				}
 			}
 
-			if !logContains(hook.AllEntries(), logrus.InfoLevel, fmt.Sprintf("Actuator chiller waited for %s", tc.waitTime)) {
+			if !logContains(hook.AllEntries(), logrus.DebugLevel, fmt.Sprintf("Actuator chiller waited for %s", tc.waitTime)) {
 				t.Errorf("Expected '%s' to be logged", fmt.Sprintf("Actuator chiller waited for %s", tc.waitTime))
 			}
 		})
@@ -219,6 +220,7 @@ func TestOff(t *testing.T) {
 
 func TestDutyTimeLessThanMinimum(t *testing.T) {
 	l, hook := logtest.NewNullLogger()
+	l.Level = logrus.DebugLevel
 
 	var wg sync.WaitGroup
 
@@ -253,7 +255,7 @@ func TestDutyTimeLessThanMinimum(t *testing.T) {
 
 	wg.Wait()
 
-	if !logContains(hook.AllEntries(), logrus.InfoLevel, "Forcing chiller actuator to a run for a minimum") {
+	if !logContains(hook.AllEntries(), logrus.DebugLevel, "Forcing chiller actuator to a run for a minimum") {
 		t.Errorf("Expected '%s' to be logged", "Forcing chiller actuator to a run for a minimum")
 	}
 }

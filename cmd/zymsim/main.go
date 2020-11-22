@@ -43,6 +43,7 @@ type CLI struct {
 	FileName     string        `kong:"arg,optional,help='Name of results file. Defaults to chart_{timestamp}.png.'"`
 }
 
+//nolint:funlen
 func main() {
 	cli := CLI{}
 	kong.Parse(&cli,
