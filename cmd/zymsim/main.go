@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/benjaminbartels/zymurgauge/cmd/zymsim/simulator"
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
 	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
 	"github.com/sirupsen/logrus"
@@ -17,19 +19,6 @@ import (
 )
 
 const (
-	beerCapacity = 4.2 * 1.0 * 20        // heat capacity water * density of water * 20L volume (in kJ per kelvin).
-	airCapacity  = 1.005 * 1.225 * 0.200 // heat capacity of dry air * density of air * 200L volume (in kJ per kelvin).
-	// Moist air has only slightly higher heat capacity, 1.02 when saturated at 20C.
-	wallCapacity            = 5.0 // just a guess
-	heaterCapacity          = 1.0 // also a guess, to simulate that heater first heats itself, then starts heating the air
-	heaterPower             = 0.1 // 100W, in kW.
-	coolerPower             = 0.1 // 100W, in kW. Assuming 200W at 50% efficiency
-	airBeerTransfer         = 1.0 / 300
-	wallAirTransfer         = 1.0 / 300
-	heaterAirTransfer       = 1.0 / 30
-	environmentWallTransfer = 0.001 // losses to environment
-	// heaterToBeer            = 0.0   // ratio of heater transferred directly to beer instead of fridge air
-	// heaterToAir             = 1.0 - heaterToBeer.
 	graphInterval    = 9
 	graphStrokeWidth = 1.0
 )
@@ -39,38 +28,10 @@ var (
 	readInterval = 100 * time.Millisecond
 )
 
-type thermometer struct {
-	currentTemp float64
-}
-
-func (t *thermometer) Read() (float64, error) {
-	return t.currentTemp, nil
-}
-
-type actuator struct {
-	isOn bool
-}
-
-func (a *actuator) On() error {
-	if !a.isOn {
-		a.isOn = true
-	}
-
-	return nil
-}
-
-func (a *actuator) Off() error {
-	if a.isOn {
-		a.isOn = false
-	}
-
-	return nil
-}
-
 type CLI struct {
 	Multiplier   float64       `kong:"default=6000.0,short=m,help='Time dilation multiplier. Defaults to 6000.'"`
 	Runtime      time.Duration `kong:"default=5s,short=r,help='Runtime of simulation. Defaults to 5s.'"`
-	Log          bool          `kong:"default=false,short=l,help='Enable logger. Default is false.'"`
+	Debug        bool          `kong:"default=false,short=l,help='Enable debug logging. Default is false.'"`
 	StartingTemp float64       `kong:"arg,help='Starting temperature.'"`           // 25.0
 	TargetTemp   float64       `kong:"arg,help='Target temperature.'"`             // 20.0
 	ChillerKp    float64       `kong:"arg,help='Chiller proportional gain (kP).'"` // -1.0
@@ -82,7 +43,6 @@ type CLI struct {
 	FileName     string        `kong:"arg,optional,help='Name of results file. Defaults to chart_{timestamp}.png.'"`
 }
 
-//nolint:funlen
 func main() {
 	cli := CLI{}
 	kong.Parse(&cli,
@@ -91,24 +51,21 @@ func main() {
 		kong.UsageOnError(),
 	)
 
-	thermometer := &thermometer{currentTemp: cli.StartingTemp}
-	chiller := &actuator{}
-	heater := &actuator{}
 	clock := fakes.NewDilatedClock(cli.Multiplier)
 	logger := logrus.New()
 
-	if cli.Log {
+	if cli.Debug {
 		logger.SetLevel(logrus.DebugLevel)
-	} else {
-		logger.Out = ioutil.Discard
 	}
 
-	thermostat := thermostat.NewThermostat(thermometer, chiller, heater, cli.ChillerKp, cli.ChillerKi, cli.ChillerKd,
-		cli.HeaterKp, cli.HeaterKi, cli.HeaterKd, logger, thermostat.SetClock(clock))
+	sim := simulator.New(cli.StartingTemp)
+	thermostat := thermostat.NewThermostat(sim.Thermometer, sim.Chiller, sim.Heater,
+		cli.ChillerKp, cli.ChillerKi, cli.ChillerKd, cli.HeaterKp, cli.HeaterKi, cli.HeaterKd,
+		logger, thermostat.SetClock(clock))
 
 	ctx, stop := context.WithCancel(context.Background())
 
-	go run(ctx, thermometer, chiller, heater, cli.Multiplier)
+	go run(ctx, sim, cli.Multiplier)
 
 	startTime := time.Now()
 
@@ -118,7 +75,8 @@ func main() {
 
 	go func() {
 		if err := thermostat.On(cli.TargetTemp); err != nil {
-			logger.WithError(err).Warn("Thermostat failed to turn on")
+			fmt.Println("Failed to turn thermostat on:", err)
+			os.Exit(1)
 		}
 
 		wg.Done()
@@ -132,10 +90,11 @@ func main() {
 	go func() {
 		var err error
 
-		durations, temps, err = read(ctx, thermometer, startTime, cli.Multiplier)
+		durations, temps, err = read(ctx, sim.Thermometer, startTime, cli.Multiplier)
 
 		if err != nil {
-			logger.WithError(err).Warn("Failed to get thermometer readings")
+			fmt.Println("Failed to get thermometer readings:", err)
+			os.Exit(1)
 		}
 
 		wg.Done()
@@ -147,7 +106,8 @@ func main() {
 	wg.Wait()
 
 	if err := createGraph(durations, temps, cli.TargetTemp, cli.FileName); err != nil {
-		logger.WithError(err).Warn("Failed to create graph")
+		fmt.Println("Failed to create graph", err)
+		os.Exit(1)
 	}
 }
 
@@ -175,54 +135,14 @@ func read(ctx context.Context, thermometer thermostat.Thermometer, startTime tim
 	}
 }
 
-func run(ctx context.Context, thermometer *thermometer, chiller, heater *actuator, multiplier float64) {
+func run(ctx context.Context, simulator *simulator.Simulator, multiplier float64) {
 	updateCycle := time.Duration(int64(math.Round(1 / multiplier * (1e9))))
 	tick := time.Tick(updateCycle)
-
-	var (
-		wallTemp        = 20.0
-		airTemp         = 20.0
-		beerTemp        = thermometer.currentTemp
-		heaterTemp      = 20.0
-		environmentTemp = 20.0
-	)
-
-	var ctr int
 
 	for {
 		select {
 		case <-tick:
-			ctr++
-
-			beerTempNew := beerTemp
-			airTempNew := airTemp
-			wallTempNew := wallTemp
-			heaterTempNew := heaterTemp
-
-			beerTempNew += (airTemp - beerTemp) * airBeerTransfer / beerCapacity
-
-			if chiller.isOn {
-				wallTempNew -= coolerPower / wallCapacity
-			} else if heater.isOn {
-				heaterTempNew += heaterPower / heaterCapacity
-			}
-
-			airTempNew += (heaterTemp - airTemp) * heaterAirTransfer / airCapacity
-			airTempNew += (wallTemp - airTemp) * wallAirTransfer / airCapacity
-			airTempNew += (beerTemp - airTemp) * airBeerTransfer / airCapacity
-
-			beerTempNew += (airTemp - beerTemp) * airBeerTransfer / beerCapacity
-
-			heaterTempNew += (airTemp - heaterTemp) * heaterAirTransfer / heaterCapacity
-
-			wallTempNew += (environmentTemp - wallTemp) * environmentWallTransfer / wallCapacity
-			wallTempNew += (airTemp - wallTemp) * wallAirTransfer / wallCapacity
-
-			airTemp = airTempNew
-			beerTemp = beerTempNew
-			wallTemp = wallTempNew
-			heaterTemp = heaterTempNew
-			thermometer.currentTemp = beerTemp
+			simulator.Update()
 		case <-ctx.Done():
 			return
 		}
