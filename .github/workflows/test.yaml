@@ -22,11 +22,11 @@ jobs:
           go get -v -t -d ./...
       - name: Generate coverage report
         run: |
-          go test `go list ./... | grep -v examples` -coverprofile=coverage.txt -covermode=atomic
+          go test -v -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./...
       - name: Upload coverage report
         uses: codecov/codecov-action@v1.0.15
         with:
           token: ddd9c571-814f-48d7-ad54-2bac7319737e
-          file: ./coverage.txt
+          file: ./coverage.out
           flags: unittests
           name: codecov-umbrella
