@@ -139,7 +139,7 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 
 		if dutyTime > 0 {
 			if dutyTime < minimum {
-				t.logger.Infof("Forcing %s actuator to a run for a minimum of %s", name, minimum)
+				t.logger.Debugf("Forcing %s actuator to a run for a minimum of %s", name, minimum)
 				dutyTime = minimum
 			}
 
@@ -149,11 +149,11 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 
 			dutyTimer := t.clock.NewTimer(dutyTime)
 
-			t.logger.Infof("Actuator %s acting for %v", name, dutyTime)
+			t.logger.Debugf("Actuator %s acting for %v", name, dutyTime)
 
 			select {
 			case <-dutyTimer.C:
-				t.logger.Infof("Actuator %s acted for %v", name, dutyTime)
+				t.logger.Debugf("Actuator %s acted for %v", name, dutyTime)
 
 				if err := actuator.Off(); err != nil {
 					return errors.Wrap(err, "could not turn actuator off after duty cycle")
@@ -165,13 +165,13 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 			waitTime -= dutyTime
 		}
 
-		t.logger.Infof("Actuator %s waiting for %v", name, waitTime)
+		t.logger.Debugf("Actuator %s waiting for %v", name, waitTime)
 
 		waitTimer := t.clock.NewTimer(waitTime)
 
 		select {
 		case <-waitTimer.C:
-			t.logger.Infof("Actuator %s waited for %v", name, waitTime)
+			t.logger.Debugf("Actuator %s waited for %v", name, waitTime)
 		case <-ctx.Done():
 			return t.quit(waitTimer, actuator)
 		}
