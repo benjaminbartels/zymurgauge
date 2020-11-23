@@ -1,4 +1,4 @@
-add simulatorpackage simulator_test
+package simulator_test
 
 import (
 	"testing"
