@@ -81,10 +81,12 @@ func (s *Simulator) Update() {
 
 	beerTempNew += (s.airTemp - s.beerTemp) * airBeerTransfer / beerCapacity
 
+	if s.Heater.isOn {
+		heaterTempNew += heaterPower / heaterCapacity
+	}
+
 	if s.Chiller.isOn {
 		wallTempNew -= coolerPower / wallCapacity
-	} else if s.Heater.isOn {
-		heaterTempNew += heaterPower / heaterCapacity
 	}
 
 	airTempNew += (s.heaterTemp - s.airTemp) * heaterAirTransfer / airCapacity
