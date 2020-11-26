@@ -34,3 +34,4 @@
 .vscode
 cmd/zymsim/*.png
 coverage.html
+.env

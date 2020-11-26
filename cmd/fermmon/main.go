@@ -1,153 +1,132 @@
-//nolint:gomnd
 package main
 
 import (
-	"net"
-	"net/url"
+	"context"
+	"fmt"
 	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/controller"
-	"github.com/benjaminbartels/zymurgauge/internal/client"
-	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
+	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/brewfather"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/pkg/errors"
+	"github.com/manifoldco/promptui"
 	"github.com/sirupsen/logrus"
 )
 
-const clientID = "18CHgJa2D3GyxmZfKdF2uhmSv4aS78Xb"
+const hours = 24
 
 type config struct {
-	APIAddress          string `required:"true"`
-	ClientSecret        string `required:"true"`
-	Interface           string
-	ChillingMinimum     time.Duration `default:"10m"`
-	HeatingMinimum      time.Duration `default:"10s"`
-	ChillingCyclePeriod time.Duration `default:"30m"`
-	HeatingCyclePeriod  time.Duration `default:"10m"`
-	ChillerP            float64       `default:"-1"`
-	ChillerI            float64       `default:"0"`
-	ChillerD            float64       `default:"0"`
-	HeaterP             float64       `default:"1"`
-	HeaterI             float64       `default:"0"`
-	HeaterD             float64       `default:"0"`
+	APIUserID     string  `required:"true"`
+	APIKey        string  `required:"true"`
+	ThermometerID string  `required:"true"`
+	ChillerPIN    string  `required:"true"`
+	HeaterPIN     string  `required:"true"`
+	ChillerKp     float64 `required:"true"`
+	ChillerKi     float64 `required:"true"`
+	ChillerKd     float64 `required:"true"`
+	HeaterKp      float64 `required:"true"`
+	HeaterKi      float64 `required:"true"`
+	HeaterKd      float64 `required:"true"`
+	Debug         bool    `default:"false"`
 }
 
 func main() {
-	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
-
-	// Process env variables
 	var cfg config
 
 	if err := envconfig.Process("fermmon", &cfg); err != nil {
-		logger.Fatal(err.Error())
+		fmt.Println("Could not process env vars:", err)
+		os.Exit(1)
 	}
 
-	// Parse server url
-	addr, err := url.Parse(cfg.APIAddress)
+	logger := logrus.New()
+
+	if cfg.Debug {
+		logger.SetLevel(logrus.DebugLevel)
+	}
+
+	createFunc := CreateThermostat
+
+	thermostat, err := createFunc(cfg.ThermometerID, cfg.ChillerPIN, cfg.HeaterPIN, cfg.ChillerKp, cfg.ChillerKi,
+		cfg.ChillerKd, cfg.HeaterKp, cfg.HeaterKi, cfg.HeaterKd, logger)
 	if err != nil {
-		logger.Fatal(err.Error())
+		fmt.Println("Could not create thermostat :", err)
+		os.Exit(1)
 	}
 
-	client, err := client.NewClient(addr, "v1", clientID, cfg.ClientSecret, logger)
+	service := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
+
+	recipes, err := service.GetRecipes(context.Background())
 	if err != nil {
-		logger.Fatal(err.Error())
+		fmt.Println("Could not get Recipes:", err)
+		os.Exit(1)
 	}
 
-	var mac string
-
-	// Get mac address
-	if cfg.Interface != "" {
-		mac, err = getMacAddressByInterfaceName(cfg.Interface)
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-	} else {
-		mac, err = getMacAddress()
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
+	id, err := runRecipesPrompt(recipes)
+	if err != nil {
+		fmt.Println("Could not run prompt for Recipes:", err)
+		os.Exit(1)
 	}
 
-	ctl := controller.New(mac,
-		cfg.ChillerP, cfg.ChillerI, cfg.ChillerD, cfg.HeaterP, cfg.HeaterI, cfg.HeaterD,
-		client.ChamberProvider, client.FermentationProvider, logger,
-		thermostat.SetChillingMinimum(cfg.ChillingMinimum),
-		thermostat.SetHeatingMinimum(cfg.HeatingMinimum),
-		thermostat.SetChillingCyclePeriod(cfg.ChillingCyclePeriod),
-		thermostat.SetHeatingCyclePeriod(cfg.HeatingCyclePeriod),
-	)
+	recipe, err := service.GetRecipe(context.Background(), id)
+	if err != nil {
+		fmt.Println("Could not run get Recipes:", err)
+		os.Exit(1)
+	}
 
-	var wg sync.WaitGroup
+	startingStep, err := runFermentationStepsPrompt(recipe.Fermentation.Steps)
+	if err != nil {
+		fmt.Println("Could not run prompt for Fermentation Steps:", err)
+		os.Exit(1)
+	}
 
-	wg.Add(1)
+	for i := startingStep; i < len(recipe.Fermentation.Steps); i++ {
+		step := recipe.Fermentation.Steps[i]
+		if err := thermostat.On(step.StepTemp); err != nil {
+			fmt.Println("Could not turn thermostat on:", err)
+			os.Exit(1)
+		}
 
-	ctl.Start(10 * time.Second)
-
-	sig := make(chan os.Signal, 2)
-	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-	<-sig
-
-	ctl.Stop()
-
-	wg.Wait()
-	logger.Println("Bye!")
+		waitTimer := time.NewTimer(time.Duration(step.StepTime*hours) * time.Hour)
+		<-waitTimer.C
+		thermostat.Off()
+	}
 }
 
-// getMacAddress returns the first Mac Address of the first network interface found.
-func getMacAddress() (string, error) {
-	mac := ""
+func runRecipesPrompt(recipes []brewfather.Recipe) (string, error) {
+	prompt := promptui.Select{
+		Label: "Select Recipe",
+		Items: recipes,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}?",
+			Active:   "\U0001F37A {{ .Name | cyan }} ({{ .Style.Name | yellow }})",
+			Inactive: "  {{ .Name | cyan }} ({{ .Style.Name | yellow }})",
+			Selected: "\U0001F37A {{ .Name | cyan }}",
+		},
+	}
 
-	interfaces, err := net.Interfaces()
+	i, _, err := prompt.Run()
 	if err != nil {
-		return "", errors.New("failed to get host MAC address")
+		return "", err
 	}
 
-	for _, iface := range interfaces {
-		if len(iface.HardwareAddr.String()) > 0 {
-			if iface.Name == "eth0" { // TODO: fix this
-				mac = iface.HardwareAddr.String()
-			}
-
-			if iface.Name == "wlan0" { // TODO: fix this
-				mac = iface.HardwareAddr.String()
-			}
-
-			if mac == "" && iface.Name == "en0" { // TODO: fix this
-				mac = iface.HardwareAddr.String()
-			}
-		}
-	}
-
-	if mac == "" {
-		return mac, errors.New("Failed to get host MAC address. No valid interfaces found")
-	}
-
-	return mac, nil
+	return recipes[i].ID, nil
 }
 
-// getMacAddressByIFaceName returns the mac address of the given interface name.
-func getMacAddressByInterfaceName(name string) (string, error) {
-	var mac string
+func runFermentationStepsPrompt(steps []brewfather.FermentationStep) (int, error) {
+	prompt := promptui.Select{
+		Label: "Select Fermentation Step",
+		Items: steps,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}?",
+			Active:   "\U0001F37A {{ .Type | cyan }} ({{ .DisplayStepTemp | yellow }}, {{ .StepTime | yellow }} Days)",
+			Inactive: "  {{ .Type | cyan }} ({{ .DisplayStepTemp | yellow }}°F, {{ .StepTime | yellow }} Days)",
+			Selected: "\U0001F37A {{ .Type | cyan }} ({{ .DisplayStepTemp | yellow }}°F, {{ .StepTime | yellow }} Days)",
+		},
+	}
 
-	interfaces, err := net.Interfaces()
+	i, _, err := prompt.Run()
 	if err != nil {
-		return "", errors.New("Failed to get host MAC address")
+		return 0, err
 	}
 
-	for _, iface := range interfaces {
-		if iface.Name == name {
-			mac = iface.HardwareAddr.String()
-		}
-	}
-
-	if mac == "" {
-		return mac, errors.Errorf("Failed to get host MAC address for interface %s.", name)
-	}
-
-	return mac, nil
+	return i, nil
 }
