@@ -137,6 +137,9 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 		dutyTime := time.Duration(float64(period.Nanoseconds()) * dutyCycle)
 		waitTime := period
 
+		t.logger.Debugf("Actuator %s current temperature is %.4f°C", name, temperature)
+		t.logger.Debugf("Actuator %s dutyCycle is %.2f%%", name, dutyCycle*100) //nolint:gomnd
+
 		if dutyTime > 0 {
 			if dutyTime < minimum {
 				t.logger.Debugf("Forcing %s actuator to a run for a minimum of %s", name, minimum)

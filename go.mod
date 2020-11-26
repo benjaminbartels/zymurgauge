@@ -11,6 +11,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/go-cmp v0.5.3 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/manifoldco/promptui v0.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/wcharczuk/go-chart v2.0.1+incompatible

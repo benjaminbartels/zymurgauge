@@ -1,4 +1,4 @@
-package controller
+package main
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/platform/ds18b20"
