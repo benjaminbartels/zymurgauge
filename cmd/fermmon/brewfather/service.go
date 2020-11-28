@@ -38,7 +38,7 @@ func New(baseURL, userID, apiKey string) *Service {
 	}
 
 	return &Service{
-		client:  &http.Client{Transport: &t},
+		client:  &http.Client{Transport: &t}, // TODO: add more settings
 		baseURL: baseURL,
 	}
 }

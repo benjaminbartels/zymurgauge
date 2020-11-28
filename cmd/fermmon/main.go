@@ -3,18 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/brewfather"
+	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/handlers"
+	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/manifoldco/promptui"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-const hours = 24
-
 type config struct {
+	Host          string  `default:":8080"`
 	APIUserID     string  `required:"true"`
 	APIKey        string  `required:"true"`
 	ThermometerID string  `required:"true"`
@@ -43,90 +45,42 @@ func main() {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	createFunc := CreateThermostat
+	bf := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
 
-	thermostat, err := createFunc(cfg.ThermometerID, cfg.ChillerPIN, cfg.HeaterPIN, cfg.ChillerKp, cfg.ChillerKi,
-		cfg.ChillerKd, cfg.HeaterKp, cfg.HeaterKi, cfg.HeaterKd, logger)
-	if err != nil {
-		fmt.Println("Could not create thermostat :", err)
-		os.Exit(1)
+	api := handlers.NewAPI(bf)
+
+	httpServer := &http.Server{
+		Addr:    cfg.Host,
+		Handler: api, // TODO: add more settings
 	}
 
-	service := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
+	httpServerErrors := make(chan error, 1)
 
-	recipes, err := service.GetRecipes(context.Background())
-	if err != nil {
-		fmt.Println("Could not get Recipes:", err)
-		os.Exit(1)
-	}
+	go func() {
+		logger.Infof("fermmon started, listening at %s", cfg.Host)
+		httpServerErrors <- httpServer.ListenAndServe()
+	}()
 
-	id, err := runRecipesPrompt(recipes)
-	if err != nil {
-		fmt.Println("Could not run prompt for Recipes:", err)
-		os.Exit(1)
-	}
+	ctx, interruptCancel := c.WithInterrupt(context.Background())
+	defer interruptCancel()
 
-	recipe, err := service.GetRecipe(context.Background(), id)
-	if err != nil {
-		fmt.Println("Could not run get Recipes:", err)
-		os.Exit(1)
-	}
+	select {
+	case err := <-httpServerErrors:
+		logger.Error(errors.Wrap(err, "fatal http server error occurred"))
+	case <-ctx.Done():
+		logger.Info("Stopping fermmon")
 
-	startingStep, err := runFermentationStepsPrompt(recipe.Fermentation.Steps)
-	if err != nil {
-		fmt.Println("Could not run prompt for Fermentation Steps:", err)
-		os.Exit(1)
-	}
+		ctx, timeoutCancel := context.WithTimeout(context.Background(), 5*time.Second) //nolint:gomnd
+		defer timeoutCancel()
 
-	for i := startingStep; i < len(recipe.Fermentation.Steps); i++ {
-		step := recipe.Fermentation.Steps[i]
-		if err := thermostat.On(step.StepTemp); err != nil {
-			fmt.Println("Could not turn thermostat on:", err)
-			os.Exit(1)
+		if err := httpServer.Shutdown(ctx); err != nil {
+			logger.Error(errors.Wrap(err, "could not shutdown http server"))
+
+			if err := httpServer.Close(); err != nil {
+				logger.Error(errors.Wrap(err, "could not close http server"))
+			}
 		}
-
-		waitTimer := time.NewTimer(time.Duration(step.StepTime*hours) * time.Hour)
-		<-waitTimer.C
-		thermostat.Off()
-	}
-}
-
-func runRecipesPrompt(recipes []brewfather.Recipe) (string, error) {
-	prompt := promptui.Select{
-		Label: "Select Recipe",
-		Items: recipes,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . }}?",
-			Active:   "\U0001F37A {{ .Name | cyan }} ({{ .Style.Name | yellow }})",
-			Inactive: "  {{ .Name | cyan }} ({{ .Style.Name | yellow }})",
-			Selected: "\U0001F37A {{ .Name | cyan }}",
-		},
 	}
 
-	i, _, err := prompt.Run()
-	if err != nil {
-		return "", err
-	}
-
-	return recipes[i].ID, nil
-}
-
-func runFermentationStepsPrompt(steps []brewfather.FermentationStep) (int, error) {
-	prompt := promptui.Select{
-		Label: "Select Fermentation Step",
-		Items: steps,
-		Templates: &promptui.SelectTemplates{
-			Label:    "{{ . }}?",
-			Active:   "\U0001F37A {{ .Type | cyan }} ({{ .DisplayStepTemp | yellow }}, {{ .StepTime | yellow }} Days)",
-			Inactive: "  {{ .Type | cyan }} ({{ .DisplayStepTemp | yellow }}°F, {{ .StepTime | yellow }} Days)",
-			Selected: "\U0001F37A {{ .Type | cyan }} ({{ .DisplayStepTemp | yellow }}°F, {{ .StepTime | yellow }} Days)",
-		},
-	}
-
-	i, _, err := prompt.Run()
-	if err != nil {
-		return 0, err
-	}
-
-	return i, nil
+	logger.Info("fermmon stopped")
 }
