@@ -10,9 +10,11 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/brewfather"
 	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/handlers"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
+	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"go.etcd.io/bbolt"
 )
 
 type config struct {
@@ -45,9 +47,25 @@ func main() {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	bf := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
+	if _, err := os.Stat("data"); os.IsNotExist(err) {
+		err = os.MkdirAll("data", 0666)
+		if err != nil {
+			logger.Fatal(errors.Wrap(err, "could not create directory"))
+		}
+	}
 
-	api := handlers.NewAPI(bf)
+	db, err := bbolt.Open("data/zymurgaugedb", 0666, &bbolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		logger.Fatal(errors.Wrap(err, "could not open database"))
+	}
+
+	chamberRepo, err := storage.NewChamberRepo(db)
+	if err != nil {
+		logger.Fatal(errors.Wrap(err, "could not create chamber repo"))
+	}
+
+	brewfather := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
+	api := handlers.NewAPI(chamberRepo, brewfather)
 
 	httpServer := &http.Server{
 		Addr:    cfg.Host,
