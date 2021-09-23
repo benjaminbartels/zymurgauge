@@ -1,0 +1,90 @@
+run:
+  timeout: 1m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+linters:
+  enable:
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unused
+    - varcheck
+    - asciicheck
+    - bodyclose
+    - depguard
+    - dogsled
+    - dupl
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - funlen
+    - gci
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - goerr113
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    - golint
+    - gomnd
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - interfacer
+    - lll
+    - maligned
+    - misspell
+    - nakedret
+    - nestif
+    - nlreturn
+    - noctx
+    - nolintlint
+    - prealloc
+    - rowserrcheck
+    - scopelint
+    - sqlclosecheck
+    - stylecheck
+    - testpackage
+    - tparallel
+    - unconvert
+    - unparam
+    - whitespace
+    - wsl
+  disable:
+    - exhaustivestruct          # Not recommended globally
+    - godox                     # Need to be able to commit code with TODO
+    - wrapcheck                 # Too opinionated
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-use-default: true
+  exclude-rules:
+    - path: _test\.go           # Exclude some linters from running on tests files.
+      linters:
+        - gocyclo               # Tests are complicated sometimes
+        - dupl                  # Tests are similar sometimes    
+        - funlen                # Tests are long sometimes
+        - gomnd                 # Tests can hardcode numbers
+        - goerr113              # Tests can return dynamic errors
+    - linters:              
+        - lll                   # Exclude lll issues for long lines with go:generate
+      source: "^//go:generate "
+  # include:
+  #   - EXC0002                   # disable excluding of issues about comments from golint
