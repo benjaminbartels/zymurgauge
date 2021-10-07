@@ -5,16 +5,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/felixge/pidctrl"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
-
-// Thermometer represents a device that and read temperatures.
-type Thermometer interface {
-	Read() (float64, error)
-}
 
 // Actuator represents a device that can be switched on and off.
 type Actuator interface {
@@ -72,7 +68,7 @@ func SetHeatingMinimum(min time.Duration) OptionsFunc {
 }
 
 type Thermostat struct {
-	thermometer         Thermometer
+	thermometer         thermometer.Thermometer
 	chiller             Actuator
 	heater              Actuator
 	chillerKp           float64
@@ -92,7 +88,7 @@ type Thermostat struct {
 	cancelFn            context.CancelFunc
 }
 
-func NewThermostat(thermometer Thermometer, chiller, heater Actuator,
+func NewThermostat(thermometer thermometer.Thermometer, chiller, heater Actuator,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...OptionsFunc) *Thermostat {
 	t := &Thermostat{

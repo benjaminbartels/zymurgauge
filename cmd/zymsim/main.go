@@ -12,6 +12,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsim/simulator"
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
 	"github.com/sirupsen/logrus"
 	"github.com/wcharczuk/go-chart"
@@ -117,7 +118,7 @@ func runSimulator(ctx context.Context, simulator *simulator.Simulator, multiplie
 	}
 }
 
-func runTemperatureReader(ctx context.Context, thermometer thermostat.Thermometer, startTime time.Time,
+func runTemperatureReader(ctx context.Context, thermometer thermometer.Thermometer, startTime time.Time,
 	multiplier float64, readings chan reading) {
 	tick := time.Tick(readInterval)
 

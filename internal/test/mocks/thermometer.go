@@ -1,8 +1,8 @@
 package mocks
 
-import "github.com/benjaminbartels/zymurgauge/internal/thermostat"
+import "github.com/benjaminbartels/zymurgauge/internal/thermometer"
 
-var _ thermostat.Thermometer = (*Thermometer)(nil)
+var _ thermometer.Thermometer = (*Thermometer)(nil)
 
 type Thermometer struct {
 	ReadFn func() (float64, error)

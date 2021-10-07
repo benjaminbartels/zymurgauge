@@ -3,21 +3,27 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
+	"runtime"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/fermmon/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/manifoldco/promptui"
 	"github.com/sirupsen/logrus"
+	"periph.io/x/periph/conn/onewire/onewirereg"
 )
 
-const hours = 24
+const (
+	hours              = 24
+	thermometerAddress = 2233785441622197288
+	resolutionBits     = 10
+)
 
 type config struct {
 	APIUserID     string  `required:"true"`
 	APIKey        string  `required:"true"`
-	ThermometerID string  `required:"true"`
+	ThermometerID uint64  `required:"true"`
 	ChillerPIN    string  `required:"true"`
 	HeaterPIN     string  `required:"true"`
 	ChillerKp     float64 `required:"true"`
@@ -34,7 +40,7 @@ func main() {
 
 	if err := envconfig.Process("fermmon", &cfg); err != nil {
 		fmt.Println("Could not process env vars:", err)
-		os.Exit(1)
+		runtime.Goexit()
 	}
 
 	logger := logrus.New()
@@ -43,13 +49,27 @@ func main() {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
+	bus, err := onewirereg.Open("")
+	if err != nil {
+		fmt.Println("Could not open 1-wire bus:", err)
+		runtime.Goexit()
+	}
+
+	defer bus.Close()
+
+	ds18b20, err := thermometer.NewDs18b20(bus, thermometerAddress, resolutionBits)
+	if err != nil {
+		fmt.Println("Could not create ds18b20 thermometer:", err)
+		runtime.Goexit()
+	}
+
 	createFunc := CreateThermostat
 
-	thermostat, err := createFunc(cfg.ThermometerID, cfg.ChillerPIN, cfg.HeaterPIN, cfg.ChillerKp, cfg.ChillerKi,
+	thermostat, err := createFunc(ds18b20, cfg.ChillerPIN, cfg.HeaterPIN, cfg.ChillerKp, cfg.ChillerKi,
 		cfg.ChillerKd, cfg.HeaterKp, cfg.HeaterKi, cfg.HeaterKd, logger)
 	if err != nil {
-		fmt.Println("Could not create thermostat :", err)
-		os.Exit(1)
+		fmt.Println("Could not create thermostat:", err)
+		runtime.Goexit()
 	}
 
 	service := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
@@ -57,32 +77,32 @@ func main() {
 	recipes, err := service.GetRecipes(context.Background())
 	if err != nil {
 		fmt.Println("Could not get Recipes:", err)
-		os.Exit(1)
+		runtime.Goexit()
 	}
 
 	id, err := runRecipesPrompt(recipes)
 	if err != nil {
 		fmt.Println("Could not run prompt for Recipes:", err)
-		os.Exit(1)
+		runtime.Goexit()
 	}
 
 	recipe, err := service.GetRecipe(context.Background(), id)
 	if err != nil {
 		fmt.Println("Could not run get Recipes:", err)
-		os.Exit(1)
+		runtime.Goexit()
 	}
 
 	startingStep, err := runFermentationStepsPrompt(recipe.Fermentation.Steps)
 	if err != nil {
 		fmt.Println("Could not run prompt for Fermentation Steps:", err)
-		os.Exit(1)
+		runtime.Goexit()
 	}
 
 	for i := startingStep; i < len(recipe.Fermentation.Steps); i++ {
 		step := recipe.Fermentation.Steps[i]
 		if err := thermostat.On(step.StepTemp); err != nil {
 			fmt.Println("Could not turn thermostat on:", err)
-			os.Exit(1)
+			runtime.Goexit()
 		}
 
 		waitTimer := time.NewTimer(time.Duration(step.StepTime*hours) * time.Hour)

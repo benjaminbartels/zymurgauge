@@ -1,28 +1,23 @@
 package main
 
 import (
-	"github.com/benjaminbartels/zymurgauge/internal/platform/ds18b20"
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
 	"github.com/sirupsen/logrus"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/raspi"
 )
 
-func CreateThermostat(thermometerID, chillerPin, heaterPin string,
+func CreateThermostat(thermometer thermometer.Thermometer, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...thermostat.OptionsFunc) (*thermostat.Thermostat, error) {
-	return CreatePiThermostat(thermometerID, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd, heaterKp, heaterKi,
+	return CreatePiThermostat(thermometer, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd, heaterKp, heaterKi,
 		heaterKd, logger, options...)
 }
 
-func CreatePiThermostat(thermometerID, chillerPin, heaterPin string,
+func CreatePiThermostat(thermometer thermometer.Thermometer, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...thermostat.OptionsFunc) (*thermostat.Thermostat, error) {
-
-	thermometer, err := ds18b20.NewThermometer(thermometerID)
-	if err != nil {
-		return nil, err
-	}
 
 	adapter := raspi.NewAdaptor()
 
