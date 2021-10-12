@@ -18,20 +18,22 @@
 
 ## Project specific
 
+# Env files
+*.env
+
 # Code Coverage
 .cover
 
-# Extentionless binaries in cmd directories
+# binaries
+out/bin
+/cmd/zym/zym
 /cmd/zymsim/zymsim
-/cmd/zymsrv/zymsrv
-/cmd/fermmon/fermmon
 
 # BoltDB Databases
 **/zymurgaugedb
 **/zymurgaugedb.lock
 
-# Other junk
+# Other
 .vscode
 cmd/zymsim/*.png
 coverage.html
-.env

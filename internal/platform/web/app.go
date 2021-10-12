@@ -1,66 +1,65 @@
+// Package web contains a small web framework extension.
 package web
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"os"
+	"syscall"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-// CtxValuesKey is the key used to save and retrieve CtxValues from the context.
-const CtxValuesKey ctxKey = 1
-
-type ctxKey int
-
-// CtxValues are context values specific to the App.
-type CtxValues struct {
-	Now        time.Time
-	StatusCode int
-	HasError   bool
-}
-
-type App struct {
-	router     *httprouter.Router
-	middleware []MiddlewareFunc
-}
-
-// Handler extends the http.HandlerFunc buy adding context param and an error.
+// Handler extends the http.HandlerFunc buy adding a context, params and an error to return.
 type Handler func(context.Context, http.ResponseWriter, *http.Request, httprouter.Params) error
 
-func NewApp(middleware ...MiddlewareFunc) *App {
+// App represents a web application that hosts a REST API.
+type App struct {
+	router      *httprouter.Router
+	shutdown    chan os.Signal
+	middlewares []Middleware
+}
+
+// NewApp creates an App that handle a set of routes for the application.
+func NewApp(shutdown chan os.Signal, middlewares ...Middleware) *App {
+	router := httprouter.New()
+
 	return &App{
-		router:     httprouter.New(),
-		middleware: middleware,
+		router:      router,
+		shutdown:    shutdown,
+		middlewares: middlewares,
 	}
 }
 
-func (a *App) Handle(method string, path string, handler Handler, wrapWithMiddlewares bool) {
-	// Wrap handler with middlewares
-	if wrapWithMiddlewares {
-		handler = wrap(handler, a.middleware)
-	}
-	// Handler function that adds the app specific values to the request context, then calls the wrapped handler
+// ServeHTTP implements the http.Handler interface.
+func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	a.router.ServeHTTP(w, r)
+}
+
+// Register mounts the provided handler to the provided path creating a route.
+func (a *App) Register(method string, path string, handler Handler) {
+	handler = wrap(a.middlewares, handler)
+
 	h := func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		v := &CtxValues{
-			Now: time.Now(),
+		v := CtxValues{
+			Path: r.URL.Path,
+			Now:  time.Now(),
 		}
+		ctx := context.WithValue(r.Context(), key, &v)
 
-		// Add app specific values to the request context
-		ctx := context.WithValue(r.Context(), CtxValuesKey, v)
-
-		// Calls the wrapped handler
 		if err := handler(ctx, w, r, p); err != nil {
-			// This is called when the error handler middleware doesn't handle the error, which is never
-			fmt.Printf("ERROR : %v\n", err)
+			// TODO: log here?
+			a.SignalShutdown()
+
+			return
 		}
 	}
 
-	// Mount the handler to the path
 	a.router.Handle(method, path, h)
 }
 
-func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	a.router.ServeHTTP(w, r)
+// SignalShutdown is used to gracefully shutdown the app.
+func (a *App) SignalShutdown() {
+	a.shutdown <- syscall.SIGTERM
 }

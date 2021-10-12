@@ -7,6 +7,8 @@ import (
 )
 
 func TestChamberServiceSaveNew(t *testing.T) {
+	t.Parallel()
+
 	id := "59679696-1263-4340-a256-6c46876b4a13"
 
 	testDB := createTestDB()
@@ -26,6 +28,8 @@ func TestChamberServiceSaveNew(t *testing.T) {
 }
 
 func TestChamberServiceSaveExisting(t *testing.T) {
+	t.Parallel()
+
 	testDB := createTestDB()
 
 	defer func() { testDB.Close() }()

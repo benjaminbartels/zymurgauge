@@ -28,7 +28,7 @@ func createTestDB() *testDB {
 		panic(err)
 	}
 
-	db, err := bbolt.Open(f.Name(), 0666, &bbolt.Options{Timeout: 1 * time.Second})
+	db, err := bbolt.Open(f.Name(), 0o666, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		panic(err)
 	}

@@ -1,5 +1,7 @@
-//nolint:maligned
+//nolint:tagliatelle
 package brewfather
+
+// TODO: Remove uneeded properties
 
 type Recipe struct {
 	AvgWeightedHopstandTemp  int              `json:"avgWeightedHopstandTemp"`

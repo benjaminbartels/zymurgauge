@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/julienschmidt/httprouter"
+	"github.com/pkg/errors"
 )
 
 type Chambers struct {
@@ -19,10 +19,14 @@ type Chambers struct {
 func (h *Chambers) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	chambers, err := h.repo.GetAll()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not get all chambers from repository")
 	}
 
-	return web.Respond(ctx, w, chambers, http.StatusOK)
+	if err = web.Respond(ctx, w, chambers, http.StatusOK); err != nil {
+		return errors.Wrap(err, "problem responding to client")
+	}
+
+	return nil
 }
 
 func (h *Chambers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
@@ -30,28 +34,35 @@ func (h *Chambers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 
 	chamber, err := h.repo.Get(id)
 	if err != nil {
-		fmt.Println("Could not get Chambers:", err)
-		os.Exit(1)
+		return errors.Wrap(err, "could not get chamber from repository")
 	}
 
 	if chamber == nil {
-		return web.ErrNotFound
+		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}
 
-	return web.Respond(ctx, w, chamber, http.StatusOK)
+	if err = web.Respond(ctx, w, chamber, http.StatusOK); err != nil {
+		return errors.Wrap(err, "problem responding to client")
+	}
+
+	return nil
 }
 
 func (h *Chambers) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	chamber, err := parseChamber(r)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not parse chamber")
 	}
 
 	if err = h.repo.Save(&chamber); err != nil {
-		return err
+		return errors.Wrap(err, "could not save chamber to repository")
 	}
 
-	return web.Respond(ctx, w, chamber, http.StatusOK)
+	if err = web.Respond(ctx, w, chamber, http.StatusOK); err != nil {
+		return errors.Wrap(err, "problem responding to client")
+	}
+
+	return nil
 }
 
 func (h *Chambers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
@@ -59,24 +70,27 @@ func (h *Chambers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 
 	c, err := h.repo.Get(id)
 	if err != nil {
-		fmt.Println("Could not get Chambers:", err)
-		os.Exit(1)
+		return errors.Wrap(err, "could not get chamber from repository")
 	}
 
 	if c == nil {
-		return web.ErrNotFound
+		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}
 
 	if err := h.repo.Delete(id); err != nil {
-		return err
+		return errors.Wrap(err, "could not delete chamber from repository")
 	}
 
-	return web.Respond(ctx, w, nil, http.StatusOK)
+	if err = web.Respond(ctx, w, nil, http.StatusOK); err != nil {
+		return errors.Wrap(err, "problem responding to client")
+	}
+
+	return nil
 }
 
 func parseChamber(r *http.Request) (storage.Chamber, error) {
 	var chamber storage.Chamber
 	err := json.NewDecoder(r.Body).Decode(&chamber)
 
-	return chamber, err
+	return chamber, errors.Wrap(err, "could not decode chamber from request body")
 }
