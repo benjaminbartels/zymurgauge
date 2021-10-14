@@ -42,6 +42,8 @@ func TestOnActuatorsOn(t *testing.T) {
 	}
 
 	for name, tc := range tests {
+		tc := tc // TODO: fix these
+
 		t.Run(name, func(t *testing.T) {
 			l, _ := logtest.NewNullLogger()
 
@@ -112,6 +114,8 @@ func TestOnDutyCycle(t *testing.T) {
 	}
 
 	for name, tc := range tests {
+		tc := tc
+
 		t.Run(name, func(t *testing.T) {
 			l, hook := logtest.NewNullLogger()
 			l.Level = logrus.DebugLevel
