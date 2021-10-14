@@ -1,5 +1,3 @@
-// +build !linux !arm
-
 package main
 
 import (

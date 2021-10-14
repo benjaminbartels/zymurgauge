@@ -1,23 +1,37 @@
 module github.com/benjaminbartels/zymurgauge
 
-go 1.15
+go 1.17
 
 require (
 	github.com/alecthomas/kong v0.2.11
-	github.com/auth0-community/go-auth0 v1.0.0
 	github.com/blend/go-sdk v2.0.0+incompatible // indirect
-	github.com/boltdb/bolt v1.3.1
 	github.com/felixge/pidctrl v0.0.0-20160307080219-7b13bcae7243
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
-	github.com/google/go-cmp v0.5.3 // indirect
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/manifoldco/promptui v0.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0
+	github.com/stretchr/testify v1.7.0
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
-	gobot.io/x/gobot v1.14.0
-	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9 // indirect
+	go.etcd.io/bbolt v1.3.5
 	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	gopkg.in/square/go-jose.v2 v2.5.1
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/gobuffalo/uuid v2.0.5+incompatible // indirect
+	github.com/gofrs/uuid v3.2.0+incompatible // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-multierror v1.0.0 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/sigurn/crc8 v0.0.0-20160107002456-e55481d6f45c // indirect
+	github.com/sigurn/utils v0.0.0-20190728110027-e1fefb11a144 // indirect
+	github.com/stretchr/objx v0.1.1 // indirect
+	gobot.io/x/gobot v1.14.0 // indirect
+	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	periph.io/x/periph v3.6.2+incompatible // indirect
 )
