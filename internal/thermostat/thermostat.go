@@ -120,8 +120,9 @@ func NewThermostat(thermometer Thermometer, chiller, heater Actuator,
 	return t
 }
 
-func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController,
-	actuator Actuator, period, minimum time.Duration) error {
+// nolint:cyclop // TODO: Fix later
+func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController, actuator Actuator,
+	period, minimum time.Duration) error {
 	lastUpdateTime := t.clock.Now()
 
 	for {
@@ -170,22 +171,15 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 
 		t.logger.Debugf("Actuator %s waiting for %v", name, waitTime)
 
-		if err := t.wait(ctx, actuator, name, waitTime); err != nil {
-			return errors.Wrap(err, "error occurred while waiting")
+		waitTimer := t.clock.NewTimer(waitTime)
+
+		select {
+		case <-waitTimer.C:
+			t.logger.Debugf("Actuator %s waited for %v", name, waitTime)
+		case <-ctx.Done():
+			return t.quit(waitTimer, actuator)
 		}
 	}
-}
-
-func (t *Thermostat) wait(ctx context.Context, actuator Actuator, name string, waitTime time.Duration) error {
-	waitTimer := t.clock.NewTimer(waitTime)
-	select {
-	case <-waitTimer.C:
-		t.logger.Debugf("Actuator %s waited for %v", name, waitTime)
-	case <-ctx.Done():
-		return t.quit(waitTimer, actuator)
-	}
-
-	return nil
 }
 
 func (t *Thermostat) On(setPoint float64) error {
