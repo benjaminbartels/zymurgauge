@@ -170,15 +170,22 @@ func (t *Thermostat) startCycle(ctx context.Context, name string, pid *pidctrl.P
 
 		t.logger.Debugf("Actuator %s waiting for %v", name, waitTime)
 
-		waitTimer := t.clock.NewTimer(waitTime)
-
-		select {
-		case <-waitTimer.C:
-			t.logger.Debugf("Actuator %s waited for %v", name, waitTime)
-		case <-ctx.Done():
-			return t.quit(waitTimer, actuator)
+		if err := t.wait(ctx, actuator, name, waitTime); err != nil {
+			return errors.Wrap(err, "error occurred while waiting")
 		}
 	}
+}
+
+func (t *Thermostat) wait(ctx context.Context, actuator Actuator, name string, waitTime time.Duration) error {
+	waitTimer := t.clock.NewTimer(waitTime)
+	select {
+	case <-waitTimer.C:
+		t.logger.Debugf("Actuator %s waited for %v", name, waitTime)
+	case <-ctx.Done():
+		return t.quit(waitTimer, actuator)
+	}
+
+	return nil
 }
 
 func (t *Thermostat) On(setPoint float64) error {
@@ -209,7 +216,11 @@ func (t *Thermostat) On(setPoint float64) error {
 		return t.startCycle(ctx, "heater", heaterPID, t.heater, t.heatingCyclePeriod, t.heatingMinimum)
 	})
 
-	return g.Wait()
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "failure while waiting")
+	}
+
+	return nil
 }
 
 func (t *Thermostat) Off() {

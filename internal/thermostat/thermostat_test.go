@@ -42,11 +42,8 @@ func TestOnActuatorsOn(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			l, _ := logtest.NewNullLogger()
-
 			var (
 				wg        sync.WaitGroup
 				chillerOn bool
@@ -81,13 +78,11 @@ func TestOnActuatorsOn(t *testing.T) {
 				heaterKi, heaterKd, l)
 
 			wg.Add(tc.waitCount)
-
 			go func() {
 				if err := therm.On(tc.setPoint); err != nil {
 					t.Errorf("Unexpected error. Got: %+v", err)
 				}
 			}()
-
 			wg.Wait()
 
 			if tc.chillerOn != chillerOn {
@@ -114,8 +109,6 @@ func TestOnDutyCycle(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			l, hook := logtest.NewNullLogger()
 			l.Level = logrus.DebugLevel
@@ -296,8 +289,7 @@ func TestOnAlreadyOnError(t *testing.T) {
 
 	wg.Wait()
 
-	err := therm.On(66)
-	if !errors.Is(err, thermostat.ErrAlreadyOn) {
+	if err := therm.On(66); !errors.Is(err, thermostat.ErrAlreadyOn) {
 		t.Errorf("Unexpected error. Want: '%s', Got: '%s'", thermostat.ErrAlreadyOn, err)
 	}
 }
@@ -322,8 +314,7 @@ func TestThermometerError(t *testing.T) {
 	therm := thermostat.NewThermostat(thermometer, chiller, heater, chillerKp, chillerKi, chillerKd, heaterKp,
 		heaterKi, heaterKd, l)
 
-	err := therm.On(15)
-	if !errors.Is(err, errDeadThermometer) {
+	if err := therm.On(15); !errors.Is(err, errDeadThermometer) {
 		t.Errorf("Unexpected error. Want: '%s', Got: '%s'", errDeadThermometer, err)
 	}
 }
@@ -348,8 +339,7 @@ func TestActuatorOnError(t *testing.T) {
 	therm := thermostat.NewThermostat(thermometer, chiller, heater, chillerKp, chillerKi, chillerKd, heaterKp,
 		heaterKi, heaterKd, l)
 
-	err := therm.On(15)
-	if !errors.Is(err, errDeadActuator) {
+	if err := therm.On(15); !errors.Is(err, errDeadActuator) {
 		t.Errorf("Unexpected error. Want: '%s', Got: '%s'", errDeadActuator, err)
 	}
 }
@@ -375,8 +365,7 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 		heaterKi, heaterKd, l, thermostat.SetChillingCyclePeriod(100*time.Millisecond),
 		thermostat.SetChillingMinimum(10*time.Millisecond))
 
-	err := therm.On(15)
-	if !errors.Is(err, errDeadActuator) {
+	if err := therm.On(15); !errors.Is(err, errDeadActuator) {
 		t.Errorf("Unexpected error. Want: '%s', Got: '%s'", errDeadActuator, err)
 	}
 }

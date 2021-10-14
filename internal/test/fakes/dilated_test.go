@@ -1,18 +1,19 @@
 package fakes_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
 )
 
-func TestNow(t *testing.T) {
-	tests := map[string]struct {
-		multiplier float64
-		round      time.Duration
-	}{
+type dilationTestParams struct {
+	multiplier float64
+	round      time.Duration
+}
+
+func get01to36000Tests() map[string]dilationTestParams {
+	return map[string]dilationTestParams{
 		".01":   {multiplier: .01, round: 1 * time.Millisecond}, // 100ms = 1ms
 		".1":    {multiplier: .1, round: 1 * time.Millisecond},  // 100ms = 10ms
 		"10":    {multiplier: 10, round: 1 * time.Second},       // 100ms = 1s
@@ -21,10 +22,12 @@ func TestNow(t *testing.T) {
 		"6000":  {multiplier: 6000, round: 1 * time.Minute},     // 100ms = 10m
 		"36000": {multiplier: 36000, round: 1 * time.Hour},      // 100ms = 1h
 	}
+}
+
+func TestNow(t *testing.T) {
+	tests := get01to36000Tests()
 
 	for name, tc := range tests {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			c := fakes.NewDilatedClock(tc.multiplier)
 			start := time.Now()
@@ -42,22 +45,9 @@ func TestNow(t *testing.T) {
 }
 
 func TestSince(t *testing.T) {
-	tests := map[string]struct {
-		multiplier float64
-		round      time.Duration
-	}{
-		".01":   {multiplier: .01, round: 1 * time.Millisecond},
-		".1":    {multiplier: .1, round: 1 * time.Millisecond},
-		"10":    {multiplier: 10, round: 1 * time.Second},
-		"100":   {multiplier: 100, round: 1 * time.Second},
-		"600":   {multiplier: 600, round: 1 * time.Minute},
-		"6000":  {multiplier: 6000, round: 1 * time.Minute},
-		"36000": {multiplier: 36000, round: 1 * time.Hour},
-	}
+	tests := get01to36000Tests()
 
 	for name, tc := range tests {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			c := fakes.NewDilatedClock(tc.multiplier)
 			start := c.Now()
@@ -87,8 +77,6 @@ func TestNewTimer(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			expected := 100 * time.Millisecond
 			c := fakes.NewDilatedClock(tc.multiplier)
@@ -98,8 +86,6 @@ func TestNewTimer(t *testing.T) {
 			<-timer.C // should be 100ms in real time
 
 			since := time.Since(start)
-
-			fmt.Println("since", since)
 
 			if expected != since.Truncate(100*time.Millisecond) {
 				t.Errorf("Unexpected diff. Want: '%s', Got: '%s'", expected, since.Truncate(100*time.Millisecond))
