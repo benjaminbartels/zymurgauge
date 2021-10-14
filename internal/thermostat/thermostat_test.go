@@ -42,7 +42,7 @@ func TestOnActuatorsOn(t *testing.T) {
 	}
 
 	for name, tc := range tests {
-		tc := tc
+		tc := tc // TODO: fix these
 
 		t.Run(name, func(t *testing.T) {
 			l, _ := logtest.NewNullLogger()
