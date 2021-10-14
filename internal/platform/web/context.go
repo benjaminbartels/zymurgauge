@@ -29,6 +29,11 @@ func GetContextValues(ctx context.Context) (*CtxValues, error) {
 	return v, nil
 }
 
+// InitContextValues initializes the CtxValues in the context with the given values and return the updated context.
+func InitContextValues(ctx context.Context, v *CtxValues) context.Context {
+	return context.WithValue(ctx, key, v)
+}
+
 // SetStatusCode sets the status code on the context.
 func SetStatusCode(ctx context.Context, statusCode int) error {
 	v, ok := ctx.Value(key).(*CtxValues)

@@ -27,7 +27,7 @@ func (r *RequestError) Error() string {
 // Respond sends the JSON response to the client.
 func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, statusCode int) error {
 	if err := SetStatusCode(ctx, statusCode); err != nil {
-		return err
+		return errors.Wrap(err, "could not set status code in context")
 	}
 
 	if statusCode == http.StatusNoContent {

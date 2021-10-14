@@ -21,14 +21,14 @@ var (
 	ErrTooManyRequests  = errors.New("too many request")
 )
 
-type Client struct {
-	client  *http.Client
-	baseURL string
-}
-
 type transport struct {
 	userID string
 	apiKey string
+}
+
+type Client struct {
+	client  *http.Client
+	baseURL string
 }
 
 func New(baseURL, userID, apiKey string) *Client {

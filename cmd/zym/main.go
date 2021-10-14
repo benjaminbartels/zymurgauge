@@ -8,10 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/cmd/zym/brewfather"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/benjaminbartels/zymurgauge/internal/storage"
+	"github.com/benjaminbartels/zymurgauge/internal/storage/localdb"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -28,16 +29,7 @@ type config struct {
 	ShutdownTimeout time.Duration `default:"20s"`
 	APIUserID       string        `required:"true"`
 	APIKey          string        `required:"true"`
-	// ThermometerID   string        `required:"true"`
-	// ChillerPIN      string        `required:"true"`
-	// HeaterPIN       string        `required:"true"`
-	// ChillerKp       float64       `required:"true"`
-	// ChillerKi       float64       `required:"true"`
-	// ChillerKd       float64       `required:"true"`
-	// HeaterKp        float64       `required:"true"`
-	// HeaterKi        float64       `required:"true"`
-	// HeaterKd        float64       `required:"true"`
-	Debug bool `default:"false"`
+	Debug           bool          `default:"false"`
 }
 
 func main() {
@@ -64,18 +56,10 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not open database")
 	}
 
-	chamberRepo, err := storage.NewChamberRepo(db)
+	chamberRepo, err := localdb.NewChamberRepo(db)
 	if err != nil {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
-
-	// createFunc := CreateThermostat
-
-	// thermostat, err := createFunc(cfg.ThermometerID, cfg.ChillerPIN, cfg.HeaterPIN, cfg.ChillerKp, cfg.ChillerKi,
-	// 	cfg.ChillerKd, cfg.HeaterKp, cfg.HeaterKi, cfg.HeaterKd, logger)
-	// if err != nil {
-	// 	return errors.Wrap(err, "could not create thermostat")
-	// }
 
 	brewfather := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
 
@@ -100,7 +84,40 @@ func run(logger *logrus.Logger) error {
 		httpServerErrors <- httpServer.ListenAndServe()
 	}()
 
+	if err := startThermostatTest(chamberRepo, logger); err != nil {
+		return errors.Wrap(err, "could not start start thermostat test")
+	}
+
 	return wait(ctx, httpServer, httpServerErrors, cfg.ShutdownTimeout, logger)
+}
+
+func startThermostatTest(chamberRepo storage.ChamberRepo, logger *logrus.Logger) error {
+	chambers, err := chamberRepo.GetAll()
+	if err != nil {
+		return errors.Wrap(err, "could not get all chambers")
+	}
+
+	if len(chambers) > 0 {
+		chamber := chambers[0]
+
+		logger.Infof("Using Chamber %d", chamber.ID)
+
+		createFunc := CreateThermostat
+
+		thermostat, err := createFunc(chamber.ThermometerID, chamber.ChillerPIN, chamber.HeaterPIN, chamber.ChillerKp,
+			chamber.ChillerKi, chamber.ChillerKd, chamber.HeaterKp, chamber.HeaterKi, chamber.HeaterKd, logger)
+		if err != nil {
+			return errors.Wrap(err, "could not create thermostat")
+		}
+
+		if err := thermostat.On(55); err != nil { //nolint:gomnd
+			return errors.Wrap(err, "could not turn thermostart on")
+		}
+	} else {
+		logger.Info("No chambers found")
+	}
+
+	return nil
 }
 
 func wait(ctx context.Context, server *http.Server, serverErrors chan error, timeout time.Duration,

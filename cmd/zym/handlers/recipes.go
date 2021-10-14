@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/benjaminbartels/zymurgauge/cmd/zym/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 )
 
-type Recipes struct {
-	brewfatherClient *brewfather.Client
+type RecipesHandler struct {
+	Repo brewfather.RecipeRepo
 }
 
-func (h *Recipes) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	recipes, err := h.brewfatherClient.GetRecipes(ctx)
+func (h *RecipesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	p httprouter.Params) error {
+	recipes, err := h.Repo.GetRecipes(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get all recipes from repository")
 	}
@@ -28,10 +29,10 @@ func (h *Recipes) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Req
 	return nil
 }
 
-func (h *Recipes) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *RecipesHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
-	recipe, err := h.brewfatherClient.GetRecipe(ctx, id)
+	recipe, err := h.Repo.GetRecipe(ctx, id)
 	if err != nil {
 		if errors.Is(err, brewfather.ErrNotFound) {
 			return web.NewRequestError(fmt.Sprintf("recipe '%s' not found", id), http.StatusNotFound)

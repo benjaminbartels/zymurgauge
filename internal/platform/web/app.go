@@ -46,7 +46,8 @@ func (a *App) Register(method string, path string, handler Handler) {
 			Path: r.URL.Path,
 			Now:  time.Now(),
 		}
-		ctx := context.WithValue(r.Context(), key, &v)
+
+		ctx := InitContextValues(r.Context(), &v)
 
 		if err := handler(ctx, w, r, p); err != nil {
 			// TODO: log here?

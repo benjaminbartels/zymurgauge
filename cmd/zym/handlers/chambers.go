@@ -12,12 +12,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Chambers struct {
-	repo *storage.ChamberRepo
+type ChambersHandler struct {
+	Repo storage.ChamberRepo
 }
 
-func (h *Chambers) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	chambers, err := h.repo.GetAll()
+func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	p httprouter.Params) error {
+	chambers, err := h.Repo.GetAll()
 	if err != nil {
 		return errors.Wrap(err, "could not get all chambers from repository")
 	}
@@ -29,10 +30,10 @@ func (h *Chambers) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Re
 	return nil
 }
 
-func (h *Chambers) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *ChambersHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
-	chamber, err := h.repo.Get(id)
+	chamber, err := h.Repo.Get(id)
 	if err != nil {
 		return errors.Wrap(err, "could not get chamber from repository")
 	}
@@ -48,13 +49,13 @@ func (h *Chambers) Get(ctx context.Context, w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
-func (h *Chambers) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	chamber, err := parseChamber(r)
 	if err != nil {
 		return errors.Wrap(err, "could not parse chamber")
 	}
 
-	if err = h.repo.Save(&chamber); err != nil {
+	if err = h.Repo.Save(&chamber); err != nil {
 		return errors.Wrap(err, "could not save chamber to repository")
 	}
 
@@ -65,10 +66,11 @@ func (h *Chambers) Save(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
-func (h *Chambers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request,
+	p httprouter.Params) error {
 	id := p.ByName("id")
 
-	c, err := h.repo.Get(id)
+	c, err := h.Repo.Get(id)
 	if err != nil {
 		return errors.Wrap(err, "could not get chamber from repository")
 	}
@@ -77,7 +79,7 @@ func (h *Chambers) Delete(ctx context.Context, w http.ResponseWriter, r *http.Re
 		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}
 
-	if err := h.repo.Delete(id); err != nil {
+	if err := h.Repo.Delete(id); err != nil {
 		return errors.Wrap(err, "could not delete chamber from repository")
 	}
 

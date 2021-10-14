@@ -1,18 +1,18 @@
-package storage_test
+package localdb_test
 
 import (
 	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/storage"
+	"github.com/benjaminbartels/zymurgauge/internal/storage/localdb"
 	"go.etcd.io/bbolt"
 )
 
 // TestClient is a wrapper around the bbolt.Client.
 type testDB struct {
 	db          *bbolt.DB
-	chamberRepo *storage.ChamberRepo
+	chamberRepo *localdb.ChamberRepo
 }
 
 func createTestDB() *testDB {
@@ -33,7 +33,7 @@ func createTestDB() *testDB {
 		panic(err)
 	}
 
-	chamberRepo, err := storage.NewChamberRepo(db)
+	chamberRepo, err := localdb.NewChamberRepo(db)
 	if err != nil {
 		panic(err)
 	}
