@@ -100,7 +100,7 @@ func startThermostatTest(chamberRepo storage.ChamberRepo, logger *logrus.Logger)
 	if len(chambers) > 0 {
 		chamber := chambers[0]
 
-		logger.Infof("Using Chamber %d", chamber.ID)
+		logger.Infof("Using Chamber %s", chamber.ID)
 
 		createFunc := CreateThermostat
 

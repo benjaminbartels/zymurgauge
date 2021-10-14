@@ -55,6 +55,7 @@ func TestRoutes(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc // TODO: Remove this with new linter config
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			w := httptest.NewRecorder()
