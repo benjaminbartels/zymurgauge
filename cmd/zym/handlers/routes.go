@@ -31,8 +31,6 @@ func NewAPI(chamberRepo chamber.Repo, recipeRepo brewfather.RecipeRepo, shutdown
 		Repo: recipeRepo,
 	}
 
-	// TODO: Allow for Versions
-
 	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger))
 
 	app.Register(http.MethodGet, version, chambersPath, chambersHandler.GetAll)
