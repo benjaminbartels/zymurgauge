@@ -19,10 +19,14 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-const dbFilePermissions = 0o600
+const (
+	build             = "development"
+	dbFilePermissions = 0o600
+)
 
 type config struct {
 	Host            string        `default:":8080"`
+	DebugHost       string        `default:":4000"`
 	ReadTimeout     time.Duration `default:"5s"`
 	WriteTimeout    time.Duration `default:"10s"`
 	IdleTimeout     time.Duration `default:"120s"`
@@ -50,6 +54,12 @@ func run(logger *logrus.Logger) error {
 	if cfg.Debug {
 		logger.SetLevel(logrus.DebugLevel)
 	}
+
+	go func() {
+		if err := http.ListenAndServe(cfg.DebugHost, handlers.DebugMux()); err != nil {
+			logger.WithError(err).Errorf("Debug endpoint %s closed.", cfg.DebugHost)
+		}
+	}()
 
 	db, err := bbolt.Open("zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
@@ -80,7 +90,7 @@ func run(logger *logrus.Logger) error {
 	defer interruptCancel()
 
 	go func() {
-		logger.Infof("fermmon started, listening at %s", cfg.Host)
+		logger.Infof("fermmon started version %s, listening at %s", build, cfg.Host)
 		httpServerErrors <- httpServer.ListenAndServe()
 	}()
 
@@ -132,7 +142,7 @@ func wait(ctx context.Context, server *http.Server, serverErrors chan error, tim
 		defer timeoutCancel()
 
 		if err := server.Shutdown(ctx); err != nil {
-			logger.WithError(err).Error("could not shutdown http server")
+			logger.WithError(err).Error("Could not shutdown http server.")
 
 			if err := server.Close(); err != nil {
 				logger.Error(errors.Wrap(err, "could not close http server"))
