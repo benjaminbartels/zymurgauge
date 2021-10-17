@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
-	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
+	"github.com/benjaminbartels/zymurgauge/internal/pid"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/ds18b20"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gobot.io/x/gobot/drivers/gpio"
 	"gobot.io/x/gobot/platforms/raspi"
@@ -10,14 +11,18 @@ import (
 
 func CreateThermostat(thermometer thermometer.Thermometer, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
-	logger *logrus.Logger, options ...thermostat.OptionsFunc) (*thermostat.Thermostat, error) {
-	return CreatePiThermostat(thermometer, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd, heaterKp, heaterKi,
+	logger *logrus.Logger, options ...pid.OptionsFunc) (*pid.Thermostat, error) {
+	return CreatePiThermostat(thermometerID, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd, heaterKp, heaterKi,
 		heaterKd, logger, options...)
 }
 
 func CreatePiThermostat(thermometer thermometer.Thermometer, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
-	logger *logrus.Logger, options ...thermostat.OptionsFunc) (*thermostat.Thermostat, error) {
+	logger *logrus.Logger, options ...pid.OptionsFunc) (*pid.Thermostat, error) {
+	thermometer, err := ds18b20.NewThermometer(thermometerID)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create new thermometer")
+	}
 
 	adapter := raspi.NewAdaptor()
 
@@ -32,6 +37,6 @@ func CreatePiThermostat(thermometer thermometer.Thermometer, chillerPin, heaterP
 	}
 
 	// Setup the new Thermostat
-	return thermostat.NewThermostat(thermometer, chiller, heater, chillerKp, chillerKi, chillerKd, heaterKp,
+	return pid.NewThermostat(thermometer, chiller, heater, chillerKp, chillerKi, chillerKd, heaterKp,
 		heaterKi, heaterKd, logger, options...), nil
 }

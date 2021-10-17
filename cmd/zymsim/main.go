@@ -11,16 +11,17 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsim/simulator"
+	"github.com/benjaminbartels/zymurgauge/internal/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
-	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
-	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wcharczuk/go-chart"
 )
 
 const (
-	graphInterval    = 9
-	graphStrokeWidth = 1.0
+	graphInterval        = 9
+	graphStrokeWidth     = 1.0
+	chartFilePermissions = 0o600
 )
 
 //nolint:gochecknoglobals
@@ -49,6 +50,14 @@ type cli struct {
 }
 
 func main() {
+	logger := logrus.New()
+	if err := run(logger); err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
+}
+
+func run(logger *logrus.Logger) error {
 	cli := cli{}
 	kong.Parse(&cli,
 		kong.Name("zymsim"),
@@ -56,25 +65,23 @@ func main() {
 		kong.UsageOnError(),
 	)
 
-	logger := logrus.New()
-
 	if cli.Debug {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
 	sim := simulator.New(cli.StartingTemp)
 	clock := fakes.NewDilatedClock(cli.Multiplier)
-	thermostat := thermostat.NewThermostat(sim.Thermometer, sim.Chiller, sim.Heater,
+	pid := pid.NewTemperatureController(sim.Thermometer, sim.Chiller, sim.Heater,
 		cli.ChillerKp, cli.ChillerKi, cli.ChillerKd, cli.HeaterKp, cli.HeaterKi, cli.HeaterKd,
-		logger, thermostat.SetClock(clock))
+		logger, pid.SetClock(clock))
 	ctx, stop := context.WithCancel(context.Background())
 	startTime := time.Now()
 
 	go runSimulator(ctx, sim, cli.Multiplier)
 
 	go func() {
-		if err := thermostat.On(cli.TargetTemp); err != nil {
-			fmt.Println("Failed to turn thermostat on:", err)
+		if err := pid.On(cli.TargetTemp); err != nil {
+			logger.Error("Failed to turn pid on:", err)
 			os.Exit(1)
 		}
 	}()
@@ -85,7 +92,7 @@ func main() {
 
 	go func() {
 		<-time.After(cli.Runtime)
-		thermostat.Off()
+		pid.Off()
 		stop()
 		close(readings)
 	}()
@@ -99,9 +106,10 @@ func main() {
 	}
 
 	if err := createGraph(durations, temps, cli.TargetTemp, cli.FileName); err != nil {
-		fmt.Println("Failed to create graph", err)
-		os.Exit(1)
+		return errors.Wrap(err, "could not create graph")
 	}
+
+	return nil
 }
 
 func runSimulator(ctx context.Context, simulator *simulator.Simulator, multiplier float64) {
@@ -118,14 +126,14 @@ func runSimulator(ctx context.Context, simulator *simulator.Simulator, multiplie
 	}
 }
 
-func runTemperatureReader(ctx context.Context, thermometer thermometer.Thermometer, startTime time.Time,
+func runTemperatureReader(ctx context.Context, thermometer pid.Thermometer, startTime time.Time,
 	multiplier float64, readings chan reading) {
 	tick := time.Tick(readInterval)
 
 	for {
 		select {
 		case <-tick:
-			temp, err := thermometer.Read()
+			temp, err := thermometer.GetTemperature()
 			if err != nil {
 				os.Exit(1)
 			}
@@ -158,7 +166,7 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64,
 		tickValue := int64(interval) * int64(i)
 		d := time.Duration(tickValue).Round(time.Minute)
 		hour := d / time.Hour
-		d -= hour * time.Hour
+		d -= hour * time.Hour //nolint: durationcheck // TODO: fix durationcheck later
 		minute := d / time.Minute
 		ticks[i] = chart.Tick{Value: float64(tickValue), Label: fmt.Sprintf("%02d:%02d", hour, minute)}
 	}
@@ -197,17 +205,21 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64,
 func writeChart(c chart.Chart, fileName string) error {
 	buffer := bytes.NewBuffer([]byte{})
 	if err := c.Render(chart.PNG, buffer); err != nil {
-		return err
+		return errors.Wrap(err, "could not render chart")
 	}
 
 	readBuf, err := ioutil.ReadAll(buffer)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not real buffer")
 	}
 
 	if fileName == "" {
 		fileName = "chart_" + time.Now().Format("20060102150405") + ".png"
 	}
 
-	return ioutil.WriteFile(fileName, readBuf, 0600)
+	if err := ioutil.WriteFile(fileName, readBuf, chartFilePermissions); err != nil {
+		return errors.Wrap(err, "could not write file")
+	}
+
+	return nil
 }

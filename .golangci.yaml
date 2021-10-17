@@ -22,12 +22,17 @@ linters:
     - varcheck
     - asciicheck
     - bodyclose
+    - cyclop
     - depguard
     - dogsled
     - dupl
+    - durationcheck
+    - errname
     - errorlint
     - exhaustive
     - exportloopref
+    - forbidigo
+    - forcetypeassert
     - funlen
     - gci
     - gochecknoglobals
@@ -42,35 +47,59 @@ linters:
     - gofumpt
     - goheader
     - goimports
-    - golint
     - gomnd
+    - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
-    - interfacer
+    - ifshort
+    - importas
     - lll
-    - maligned
+    - makezero
     - misspell
     - nakedret
     - nestif
+    - nilerr
     - nlreturn
     - noctx
     - nolintlint
+    - paralleltest 
     - prealloc
+    - predeclared
+    - promlinter
+    - revive
     - rowserrcheck
-    - scopelint
     - sqlclosecheck
     - stylecheck
+    - tagliatelle
     - testpackage
+    - thelper
     - tparallel
     - unconvert
     - unparam
+    - wastedassign
     - whitespace
+    - wrapcheck
     - wsl
   disable:
     - exhaustivestruct          # Not recommended globally
     - godox                     # Need to be able to commit code with TODO
-    - wrapcheck                 # Too opinionated
+linters-settings:
+  wrapcheck:
+    ignoreSigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+      - .WithMessage(
+      - .WithMessagef(
+      - .WithStack(
+      - .NewRequestError(       # used in create RequestError
+  gomnd:
+    settings:
+      mnd:
+        ignored-functions: strconv.ParseFloat
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
@@ -78,11 +107,9 @@ issues:
   exclude-rules:
     - path: _test\.go           # Exclude some linters from running on tests files.
       linters:
-        - gocyclo               # Tests are complicated sometimes
-        - dupl                  # Tests are similar sometimes    
         - funlen                # Tests are long sometimes
-        - gomnd                 # Tests can hardcode numbers
         - goerr113              # Tests can return dynamic errors
+        - ifshort               # 'expected' variables don't need use short syntax
     - linters:              
         - lll                   # Exclude lll issues for long lines with go:generate
       source: "^//go:generate "
