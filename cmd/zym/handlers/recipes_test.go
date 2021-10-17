@@ -3,10 +3,8 @@ package handlers_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
@@ -16,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint: paralleltest // False positives with r.Run not in a loop
 func TestGetAllRecipes(t *testing.T) {
 	t.Parallel()
 	t.Run("getAllRecipes", getAllRecipes)
@@ -27,7 +26,7 @@ func TestGetAllRecipes(t *testing.T) {
 func getAllRecipes(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/recipes", nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	expected := []brewfather.Recipe{
 		{ID: recipeID},
@@ -53,7 +52,7 @@ func getAllRecipes(t *testing.T) {
 func getAllRecipesEmpty(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/recipes", nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	expected := []brewfather.Recipe{}
 	repoMock := &mocks.RecipeRepo{}
@@ -76,21 +75,21 @@ func getAllRecipesEmpty(t *testing.T) {
 func getAllRecipesRepoError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/recipes", nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	repoMock := &mocks.RecipeRepo{}
-	repoMock.On("GetRecipes", ctx).Return([]brewfather.Recipe{}, errors.New("repoMock error"))
+	repoMock.On("GetRecipes", ctx).Return([]brewfather.Recipe{}, errDeadDatabase)
 
 	handler := &handlers.RecipesHandler{Repo: repoMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
-	// TODO: Use ErrorContains() when a release contain this PR is tagged: https://github.com/stretchr/testify/pull/1022
+	// TODO: Waiting on PR for ErrorContains(): https://github.com/stretchr/testify/pull/1022
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all recipes from"))
 }
 
 func getAllRecipesRespondError(t *testing.T) {
 	t.Parallel()
 
-	w, r, _ := setupRequest(http.MethodGet, "/recipes", nil)
+	w, r, _ := setupHandlerTest(nil)
 	ctx := context.Background()
 
 	repoMock := &mocks.RecipeRepo{}
@@ -102,6 +101,7 @@ func getAllRecipesRespondError(t *testing.T) {
 	assert.Contains(t, err.Error(), respondErrMsg)
 }
 
+//nolint: paralleltest // False positives with r.Run not in a loop
 func TestGetRecipe(t *testing.T) {
 	t.Parallel()
 	t.Run("getRecipeFound", getRecipeFound)
@@ -114,7 +114,7 @@ func TestGetRecipe(t *testing.T) {
 func getRecipeFound(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/recipes/"+recipeID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	expected := brewfather.Recipe{ID: recipeID}
 	repoMock := &mocks.RecipeRepo{}
@@ -137,7 +137,7 @@ func getRecipeFound(t *testing.T) {
 func getRecipeNotFound(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/recipes/"+recipeID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	var expected *brewfather.Recipe
 
@@ -152,7 +152,7 @@ func getRecipeNotFound(t *testing.T) {
 func getRecipeNotFoundError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/recipes/"+recipeID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	var expected *brewfather.Recipe
 
@@ -167,12 +167,12 @@ func getRecipeNotFoundError(t *testing.T) {
 func getRecipeRepoError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/recipes/"+recipeID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	var expected *brewfather.Recipe
 
 	repoMock := &mocks.RecipeRepo{}
-	repoMock.On("GetRecipe", ctx, recipeID).Return(expected, errors.New("repoMock error"))
+	repoMock.On("GetRecipe", ctx, recipeID).Return(expected, errDeadDatabase)
 
 	handler := &handlers.RecipesHandler{Repo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: recipeID}})
@@ -182,7 +182,7 @@ func getRecipeRepoError(t *testing.T) {
 func getRecipeRespondError(t *testing.T) {
 	t.Parallel()
 
-	w, r, _ := setupRequest(http.MethodGet, "/recipes/"+recipeID, nil)
+	w, r, _ := setupHandlerTest(nil)
 	ctx := context.Background()
 
 	expected := brewfather.Recipe{ID: recipeID}

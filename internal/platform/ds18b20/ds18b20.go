@@ -41,8 +41,8 @@ type Thermometer struct {
 	path string
 }
 
-// ReadTemperature read the current temperature of the Thermometer.
-func (t *Thermometer) Read() (float64, error) {
+// GetTemperature read the current temperature of the Thermometer.
+func (t *Thermometer) GetTemperature() (float64, error) {
 	file, err := os.Open(path.Join(t.path, t.ID, slave))
 	if err != nil {
 		return 0, errors.Wrap(err, "could not open file")

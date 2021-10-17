@@ -20,7 +20,7 @@ func TestChill(t *testing.T) {
 		sim.Update()
 	}
 
-	temp, err := sim.Thermometer.Read()
+	temp, err := sim.Thermometer.GetTemperature()
 	if err != nil {
 		t.Errorf("Unexpected error. Got: %+v", err)
 	}
@@ -42,7 +42,7 @@ func TestHeat(t *testing.T) {
 		sim.Update()
 	}
 
-	temp, err := sim.Thermometer.Read()
+	temp, err := sim.Thermometer.GetTemperature()
 	if err != nil {
 		t.Errorf("Unexpected error. Got: %+v", err)
 	}
@@ -72,7 +72,7 @@ func TestOnOf(t *testing.T) {
 		sim.Update()
 	}
 
-	temp, err := sim.Thermometer.Read()
+	temp, err := sim.Thermometer.GetTemperature()
 	if err != nil {
 		t.Errorf("Unexpected error. Got: %+v", err)
 	}

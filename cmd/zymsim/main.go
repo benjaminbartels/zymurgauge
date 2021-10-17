@@ -11,8 +11,8 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsim/simulator"
+	"github.com/benjaminbartels/zymurgauge/internal/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
-	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wcharczuk/go-chart"
@@ -71,17 +71,17 @@ func run(logger *logrus.Logger) error {
 
 	sim := simulator.New(cli.StartingTemp)
 	clock := fakes.NewDilatedClock(cli.Multiplier)
-	thermostat := thermostat.NewThermostat(sim.Thermometer, sim.Chiller, sim.Heater,
+	pid := pid.NewTemperatureController(sim.Thermometer, sim.Chiller, sim.Heater,
 		cli.ChillerKp, cli.ChillerKi, cli.ChillerKd, cli.HeaterKp, cli.HeaterKi, cli.HeaterKd,
-		logger, thermostat.SetClock(clock))
+		logger, pid.SetClock(clock))
 	ctx, stop := context.WithCancel(context.Background())
 	startTime := time.Now()
 
 	go runSimulator(ctx, sim, cli.Multiplier)
 
 	go func() {
-		if err := thermostat.On(cli.TargetTemp); err != nil {
-			logger.Error("Failed to turn thermostat on:", err)
+		if err := pid.On(cli.TargetTemp); err != nil {
+			logger.Error("Failed to turn pid on:", err)
 			os.Exit(1)
 		}
 	}()
@@ -92,7 +92,7 @@ func run(logger *logrus.Logger) error {
 
 	go func() {
 		<-time.After(cli.Runtime)
-		thermostat.Off()
+		pid.Off()
 		stop()
 		close(readings)
 	}()
@@ -126,14 +126,14 @@ func runSimulator(ctx context.Context, simulator *simulator.Simulator, multiplie
 	}
 }
 
-func runTemperatureReader(ctx context.Context, thermometer thermostat.Thermometer, startTime time.Time,
+func runTemperatureReader(ctx context.Context, thermometer pid.Thermometer, startTime time.Time,
 	multiplier float64, readings chan reading) {
 	tick := time.Tick(readInterval)
 
 	for {
 		select {
 		case <-tick:
-			temp, err := thermometer.Read()
+			temp, err := thermometer.GetTemperature()
 			if err != nil {
 				os.Exit(1)
 			}
@@ -166,7 +166,7 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64,
 		tickValue := int64(interval) * int64(i)
 		d := time.Duration(tickValue).Round(time.Minute)
 		hour := d / time.Hour
-		d -= hour * time.Hour //nolint: durationcheck // TODO: fix later
+		d -= hour * time.Hour //nolint: durationcheck // TODO: fix durationcheck later
 		minute := d / time.Minute
 		ticks[i] = chart.Tick{Value: float64(tickValue), Label: fmt.Sprintf("%02d:%02d", hour, minute)}
 	}

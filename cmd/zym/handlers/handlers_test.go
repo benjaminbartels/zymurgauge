@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,10 +20,11 @@ const (
 	parseErrorMsg    = "could not parse chamber"
 )
 
-func setupRequest(method, path string, body io.Reader) (w *httptest.ResponseRecorder, r *http.Request,
-	ctx context.Context) {
+var errDeadDatabase = errors.New("database is dead")
+
+func setupHandlerTest(body io.Reader) (w *httptest.ResponseRecorder, r *http.Request, ctx context.Context) {
 	w = httptest.NewRecorder()
-	r = httptest.NewRequest(method, path, body)
+	r = httptest.NewRequest("", "/", body)
 	v := web.CtxValues{
 		Path: r.URL.Path,
 		Now:  time.Now(),

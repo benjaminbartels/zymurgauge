@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
+	"github.com/benjaminbartels/zymurgauge/internal/pid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,16 +12,16 @@ const temp = 22
 
 func CreateThermostat(thermometerID, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
-	logger *logrus.Logger, options ...thermostat.OptionsFunc) (*thermostat.Thermostat, error) {
+	logger *logrus.Logger, options ...pid.OptionsFunc) (*pid.TemperatureController, error) {
 	return CreateStubThermostat(thermometerID, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd, heaterKp,
 		heaterKi, heaterKd, logger, options...)
 }
 
 func CreateStubThermostat(thermometerID, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
-	logger *logrus.Logger, options ...thermostat.OptionsFunc) (*thermostat.Thermostat, error) {
-	return thermostat.NewThermostat(&stubThermometer{thermometerID}, &stubActuator{chillerPin}, &stubActuator{heaterPin},
-		chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd, logger,
+	logger *logrus.Logger, options ...pid.OptionsFunc) (*pid.TemperatureController, error) {
+	return pid.NewTemperatureController(&stubThermometer{thermometerID}, &stubActuator{chillerPin},
+		&stubActuator{heaterPin}, chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd, logger,
 		options...), nil
 }
 
@@ -29,7 +29,7 @@ type stubThermometer struct {
 	thermometerID string
 }
 
-func (t *stubThermometer) Read() (float64, error) {
+func (t *stubThermometer) GetTemperature() (float64, error) {
 	return temp, nil
 }
 

@@ -7,16 +7,16 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/storage"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint: paralleltest // False positives with r.Run not in a loop
 func TestGetAllChambers(t *testing.T) {
 	t.Parallel()
 	t.Run("getAllChambers", getAllChambers)
@@ -28,9 +28,9 @@ func TestGetAllChambers(t *testing.T) {
 func getAllChambers(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/chamberss", nil)
+	w, r, ctx := setupHandlerTest(nil)
 
-	expected := []storage.Chamber{
+	expected := []chamber.Chamber{
 		{ID: chamberID},
 		{ID: "dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1"},
 	}
@@ -46,7 +46,7 @@ func getAllChambers(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := []storage.Chamber{}
+	result := []chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
@@ -55,9 +55,9 @@ func getAllChambers(t *testing.T) {
 func getAllChambersEmpty(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/chamberss", nil)
+	w, r, ctx := setupHandlerTest(nil)
 
-	expected := []storage.Chamber{}
+	expected := []chamber.Chamber{}
 
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("GetAll").Return(expected, nil)
@@ -70,7 +70,7 @@ func getAllChambersEmpty(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := []storage.Chamber{}
+	result := []chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
@@ -79,24 +79,24 @@ func getAllChambersEmpty(t *testing.T) {
 func getAllChambersRepoError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/chamberss", nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAll").Return([]storage.Chamber{}, errors.New("repoMock error"))
+	repoMock.On("GetAll").Return([]chamber.Chamber{}, errDeadDatabase)
 
 	handler := &handlers.ChambersHandler{Repo: repoMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
-	// TODO: Use ErrorContains() when a release contain this PR is tagged: https://github.com/stretchr/testify/pull/1022
+	// TODO: Waiting on PR for ErrorContains(): https://github.com/stretchr/testify/pull/1022
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all chambers from"))
 }
 
 func getAllChambersRespondError(t *testing.T) {
 	t.Parallel()
 
-	w, r, _ := setupRequest(http.MethodGet, "/chamberss", nil)
+	w, r, _ := setupHandlerTest(nil)
 
 	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAll").Return([]storage.Chamber{}, nil)
+	repoMock.On("GetAll").Return([]chamber.Chamber{}, nil)
 
 	handler := &handlers.ChambersHandler{Repo: repoMock}
 	// use new ctx to force error
@@ -104,6 +104,7 @@ func getAllChambersRespondError(t *testing.T) {
 	assert.Contains(t, err.Error(), respondErrMsg)
 }
 
+//nolint: paralleltest // False positives with r.Run not in a loop
 func TestGetChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("getChamberFound", getChamberFound)
@@ -115,9 +116,9 @@ func TestGetChamber(t *testing.T) {
 func getChamberFound(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/chambers/"+chamberID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
-	expected := storage.Chamber{ID: chamberID}
+	expected := chamber.Chamber{ID: chamberID}
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Get", chamberID).Return(&expected, nil)
 
@@ -129,7 +130,7 @@ func getChamberFound(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	chamber := storage.Chamber{}
+	chamber := chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &chamber)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, chamber)
@@ -138,9 +139,9 @@ func getChamberFound(t *testing.T) {
 func getChamberNotFound(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/chambers/"+chamberID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
-	var expected *storage.Chamber
+	var expected *chamber.Chamber
 
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Get", chamberID).Return(expected, nil)
@@ -153,12 +154,12 @@ func getChamberNotFound(t *testing.T) {
 func getChamberRepoError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodGet, "/chambers/"+chamberID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
-	var expected *storage.Chamber
+	var expected *chamber.Chamber
 
 	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("Get", chamberID).Return(expected, errors.New("repoMock error"))
+	repoMock.On("Get", chamberID).Return(expected, errDeadDatabase)
 
 	handler := &handlers.ChambersHandler{Repo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
@@ -168,9 +169,9 @@ func getChamberRepoError(t *testing.T) {
 func getChamberRespondError(t *testing.T) {
 	t.Parallel()
 
-	w, r, _ := setupRequest(http.MethodGet, "/chambers/"+chamberID, nil)
+	w, r, _ := setupHandlerTest(nil)
 
-	expected := storage.Chamber{ID: chamberID}
+	expected := chamber.Chamber{ID: chamberID}
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Get", chamberID).Return(&expected, nil)
 
@@ -180,6 +181,7 @@ func getChamberRespondError(t *testing.T) {
 	assert.Contains(t, err.Error(), respondErrMsg)
 }
 
+//nolint: paralleltest // False positives with r.Run not in a loop
 func TestSaveChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("saveChamber", saveChamber)
@@ -191,12 +193,12 @@ func TestSaveChamber(t *testing.T) {
 func saveChamber(t *testing.T) {
 	t.Parallel()
 
-	chamber := storage.Chamber{ID: chamberID}
-	jsonBytes, _ := json.Marshal(chamber)
-	w, r, ctx := setupRequest(http.MethodPost, "/chambers", bytes.NewBuffer(jsonBytes))
+	c := chamber.Chamber{ID: chamberID}
+	jsonBytes, _ := json.Marshal(c)
+	w, r, ctx := setupHandlerTest(bytes.NewBuffer(jsonBytes))
 
 	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("Save", &chamber).Return(nil)
+	repoMock.On("Save", &c).Return(nil)
 
 	handler := &handlers.ChambersHandler{Repo: repoMock}
 	err := handler.Save(ctx, w, r, httprouter.Params{})
@@ -206,7 +208,7 @@ func saveChamber(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := storage.Chamber{}
+	result := chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 }
@@ -214,7 +216,7 @@ func saveChamber(t *testing.T) {
 func saveChamberParseError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodPost, "/chambers", nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	repoMock := &mocks.ChamberRepo{}
 
@@ -226,9 +228,9 @@ func saveChamberParseError(t *testing.T) {
 func saveChamberRepoError(t *testing.T) {
 	t.Parallel()
 
-	chamber := storage.Chamber{ID: chamberID}
+	chamber := chamber.Chamber{ID: chamberID}
 	jsonBytes, _ := json.Marshal(chamber)
-	w, r, ctx := setupRequest(http.MethodPost, "/chambers", bytes.NewBuffer(jsonBytes))
+	w, r, ctx := setupHandlerTest(bytes.NewBuffer(jsonBytes))
 
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Save", &chamber).Return(errors.New("repoMock error"))
@@ -241,9 +243,9 @@ func saveChamberRepoError(t *testing.T) {
 func saveChamberRespondError(t *testing.T) {
 	t.Parallel()
 
-	chamber := storage.Chamber{ID: chamberID}
+	chamber := chamber.Chamber{ID: chamberID}
 	jsonBytes, _ := json.Marshal(chamber)
-	w, r, _ := setupRequest(http.MethodPost, "/chambers", bytes.NewBuffer(jsonBytes))
+	w, r, _ := setupHandlerTest(bytes.NewBuffer(jsonBytes))
 
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Save", &chamber).Return(nil)
@@ -254,6 +256,7 @@ func saveChamberRespondError(t *testing.T) {
 	assert.Contains(t, err.Error(), respondErrMsg)
 }
 
+//nolint: paralleltest // False positives with r.Run not in a loop
 func TestDeleteChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("deleteChamberFound", deleteChamberFound)
@@ -266,9 +269,9 @@ func TestDeleteChamber(t *testing.T) {
 func deleteChamberFound(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodDelete, "/chambers/"+chamberID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
-	chamber := storage.Chamber{ID: chamberID}
+	chamber := chamber.Chamber{ID: chamberID}
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Get", chamberID).Return(&chamber, nil)
 	repoMock.On("Delete", chamberID).Return(nil)
@@ -281,7 +284,7 @@ func deleteChamberFound(t *testing.T) {
 func deleteChamberNotFound(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodDelete, "/chambers/"+chamberID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Get", chamberID).Return(nil, nil)
@@ -294,12 +297,12 @@ func deleteChamberNotFound(t *testing.T) {
 func deleteChamberRepoGetError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodDelete, "/chambers/"+chamberID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
-	var chamber *storage.Chamber
+	var chamber *chamber.Chamber
 
 	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("Get", chamberID).Return(chamber, errors.New("repoMock error"))
+	repoMock.On("Get", chamberID).Return(chamber, errDeadDatabase)
 
 	handler := &handlers.ChambersHandler{Repo: repoMock}
 	err := handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
@@ -309,12 +312,12 @@ func deleteChamberRepoGetError(t *testing.T) {
 func deleteChamberRepoDeleteError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupRequest(http.MethodDelete, "/chambers/"+chamberID, nil)
+	w, r, ctx := setupHandlerTest(nil)
 
-	chamber := storage.Chamber{ID: chamberID}
+	chamber := chamber.Chamber{ID: chamberID}
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Get", chamberID).Return(&chamber, nil)
-	repoMock.On("Delete", chamberID).Return(errors.New("repoMock error"))
+	repoMock.On("Delete", chamberID).Return(errDeadDatabase)
 
 	handler := &handlers.ChambersHandler{Repo: repoMock}
 	err := handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
@@ -324,9 +327,9 @@ func deleteChamberRepoDeleteError(t *testing.T) {
 func deleteChamberRespondError(t *testing.T) {
 	t.Parallel()
 
-	w, r, _ := setupRequest(http.MethodDelete, "/chambers/"+chamberID, nil)
+	w, r, _ := setupHandlerTest(nil)
 
-	chamber := storage.Chamber{ID: chamberID}
+	chamber := chamber.Chamber{ID: chamberID}
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("Get", chamberID).Return(&chamber, nil)
 	repoMock.On("Delete", chamberID).Return(nil)

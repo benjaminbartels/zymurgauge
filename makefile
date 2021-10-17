@@ -28,8 +28,7 @@ run: ## Run the default package main
 
 ## Test:
 test: ## Run the tests of the project
-# TODO: add race flag '-race'
-	go test -v ./...
+	go test -v ./... -race
 
 ## Lint:
 lint: ## Use golintci-lint on your project

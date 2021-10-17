@@ -10,7 +10,7 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
-	"github.com/benjaminbartels/zymurgauge/internal/storage"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -20,12 +20,12 @@ import (
 func TestRoutes(t *testing.T) {
 	t.Parallel()
 
-	chamber := storage.Chamber{ID: chamberID}
+	c := chamber.Chamber{ID: chamberID}
 	recipe := brewfather.Recipe{ID: recipeID}
 
 	chamberRepoMock := &mocks.ChamberRepo{}
-	chamberRepoMock.On("GetAll").Return([]storage.Chamber{}, nil)
-	chamberRepoMock.On("Get", mock.Anything).Return(&chamber, nil)
+	chamberRepoMock.On("GetAll").Return([]chamber.Chamber{}, nil)
+	chamberRepoMock.On("Get", mock.Anything).Return(&c, nil)
 	chamberRepoMock.On("Save", mock.Anything).Return(nil)
 	chamberRepoMock.On("Delete", mock.Anything).Return(nil)
 
@@ -48,14 +48,14 @@ func TestRoutes(t *testing.T) {
 	testCases := []test{
 		{name: "GetAllChambers", method: http.MethodGet, path: "/chambers", body: nil},
 		{name: "GetChamber", method: http.MethodGet, path: "/chambers/" + chamberID, body: nil},
-		{name: "SaveChamber", method: http.MethodPost, path: "/chambers", body: chamber},
+		{name: "SaveChamber", method: http.MethodPost, path: "/chambers", body: c},
 		{name: "DeleteChamber", method: http.MethodDelete, path: "/chambers/" + chamberID, body: nil},
 		{name: "GetAllRecipes", method: http.MethodGet, path: "/recipes", body: nil},
 		{name: "GetRecipe", method: http.MethodGet, path: "/recipes/" + recipeID, body: nil},
 	}
 
 	for _, tc := range testCases {
-		tc := tc // TODO: Remove this with new linter config
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			w := httptest.NewRecorder()

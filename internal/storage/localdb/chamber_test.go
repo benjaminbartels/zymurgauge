@@ -3,7 +3,7 @@ package localdb_test
 import (
 	"testing"
 
-	"github.com/benjaminbartels/zymurgauge/internal/storage"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 )
 
 func TestChamberServiceSaveNew(t *testing.T) {
@@ -15,7 +15,7 @@ func TestChamberServiceSaveNew(t *testing.T) {
 
 	defer func() { testDB.Close() }()
 
-	c := storage.Chamber{
+	c := chamber.Chamber{
 		Name: "My Chamber",
 		ID:   id,
 	}
@@ -34,8 +34,8 @@ func TestChamberServiceSaveExisting(t *testing.T) {
 
 	defer func() { testDB.Close() }()
 
-	c1 := &storage.Chamber{Name: "My Chamber 1", ID: "59679696-1263-4340-a256-6c46876b4a13"}
-	c2 := &storage.Chamber{Name: "My Chamber 2", ID: "d9d075b4-6b45-44cc-945b-c5b9ce13e442"}
+	c1 := &chamber.Chamber{Name: "My Chamber 1", ID: "59679696-1263-4340-a256-6c46876b4a13"}
+	c2 := &chamber.Chamber{Name: "My Chamber 2", ID: "d9d075b4-6b45-44cc-945b-c5b9ce13e442"}
 
 	if err := testDB.chamberRepo.Save(c1); err != nil {
 		t.Fatal(err)
