@@ -39,30 +39,64 @@ func TestRoutes(t *testing.T) {
 	app := handlers.NewAPI(chamberRepoMock, recipeMock, shutdown, logger)
 
 	type test struct {
-		name   string
-		method string
 		path   string
+		method string
 		body   interface{}
+		code   int
 	}
 
 	testCases := []test{
-		{name: "GetAllChambers", method: http.MethodGet, path: "/v1/chambers", body: nil},
-		{name: "GetChamber", method: http.MethodGet, path: "/v1/chambers/" + chamberID, body: nil},
-		{name: "SaveChamber", method: http.MethodPost, path: "/v1/chambers", body: c},
-		{name: "DeleteChamber", method: http.MethodDelete, path: "/v1/chambers/" + chamberID, body: nil},
-		{name: "GetAllRecipes", method: http.MethodGet, path: "/v1/recipes", body: nil},
-		{name: "GetRecipe", method: http.MethodGet, path: "/v1/recipes/" + recipeID, body: nil},
+		{path: "/v1/chambers", method: http.MethodGet, body: nil, code: http.StatusOK},
+		{path: "/v1/chambers/" + chamberID, method: http.MethodGet, body: nil, code: http.StatusOK},
+		{path: "/v1/chambers", method: http.MethodPost, body: c, code: http.StatusOK},
+		{path: "/v1/chambers/" + chamberID, method: http.MethodDelete, body: nil, code: http.StatusOK},
+		{path: "/v1/recipes", method: http.MethodGet, body: nil, code: http.StatusOK},
+		{path: "/v1/recipes/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusOK},
+		{path: "/v1/bad_path/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusNotFound},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
 			w := httptest.NewRecorder()
 			jsonBytes, _ := json.Marshal(tc.body)
 			r := httptest.NewRequest(tc.method, tc.path, bytes.NewBuffer(jsonBytes))
 			app.ServeHTTP(w, r)
-			assert.Equal(t, http.StatusOK, w.Code)
+			assert.Equal(t, tc.code, w.Code)
+		})
+	}
+}
+
+func TestDebugMux(t *testing.T) {
+	t.Parallel()
+
+	mux := handlers.DebugMux()
+
+	type test struct {
+		path   string
+		method string
+		code   int
+	}
+
+	testCases := []test{
+		{path: "/debug/pprof/", method: http.MethodGet, code: http.StatusOK},
+		{path: "/debug/pprof/cmdline", method: http.MethodGet, code: http.StatusOK},
+		{path: "/debug/pprof/profile?seconds=1", method: http.MethodGet, code: http.StatusOK},
+		{path: "/debug/pprof/symbol", method: http.MethodGet, code: http.StatusOK},
+		{path: "/debug/pprof/trace", method: http.MethodGet, code: http.StatusOK},
+		{path: "/debug/vars", method: http.MethodGet, code: http.StatusOK},
+		{path: "/debug/pprof/bad_path", method: http.MethodGet, code: http.StatusNotFound},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.path, func(t *testing.T) {
+			t.Parallel()
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(tc.method, tc.path, nil)
+			mux.ServeHTTP(w, r)
+			assert.Equal(t, tc.code, w.Code)
 		})
 	}
 }
