@@ -38,7 +38,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Register mounts the provided handler to the provided path creating a route.
-func (a *App) Register(method string, path string, handler Handler) {
+func (a *App) Register(method, group, path string, handler Handler) {
 	handler = wrap(a.middlewares, handler)
 
 	h := func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -55,6 +55,10 @@ func (a *App) Register(method string, path string, handler Handler) {
 
 			return
 		}
+	}
+
+	if group != "" {
+		path = "/" + group + path
 	}
 
 	a.router.Handle(method, path, h)

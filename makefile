@@ -10,6 +10,9 @@ WHITE  := $(shell tput -Txterm setaf 7)
 CYAN   := $(shell tput -Txterm setaf 6)
 RESET  := $(shell tput -Txterm sgr0)
 
+# $(shell git rev-parse --short HEAD)
+VERSION := 0.1
+
 .PHONY: all test build vendor
 
 all: help
