@@ -21,26 +21,23 @@ var (
 	ErrTooManyRequests  = errors.New("too many request")
 )
 
-type transport struct {
-	userID string
-	apiKey string
-}
-
 type Client struct {
 	client  *http.Client
 	baseURL string
 }
 
 func New(baseURL, userID, apiKey string) *Client {
-	t := transport{
+	t := &transport{
 		userID: userID,
 		apiKey: apiKey,
 	}
 
-	return &Client{
-		client:  &http.Client{Transport: &t}, // TODO: add more settings
+	c := &Client{
+		client:  &http.Client{Transport: t},
 		baseURL: baseURL,
 	}
+
+	return c
 }
 
 func (s *Client) GetRecipes(ctx context.Context) ([]Recipe, error) {
@@ -91,6 +88,11 @@ func (s *Client) GetRecipe(ctx context.Context, id string) (*Recipe, error) {
 	}
 
 	return recipe, nil
+}
+
+type transport struct {
+	userID string
+	apiKey string
 }
 
 func (t *transport) RoundTrip(r *http.Request) (*http.Response, error) {

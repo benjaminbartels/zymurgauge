@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 )
 
 type ChambersHandler struct {
-	Repo storage.ChamberRepo
+	Repo chamber.Repo
 }
 
 func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
@@ -90,8 +90,8 @@ func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-func parseChamber(r *http.Request) (storage.Chamber, error) {
-	var chamber storage.Chamber
+func parseChamber(r *http.Request) (chamber.Chamber, error) {
+	var chamber chamber.Chamber
 	err := json.NewDecoder(r.Body).Decode(&chamber)
 
 	return chamber, errors.Wrap(err, "could not decode chamber from request body")

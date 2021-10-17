@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	storage "github.com/benjaminbartels/zymurgauge/internal/storage"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -27,15 +27,15 @@ func (_m *ChamberRepo) Delete(id string) error {
 }
 
 // Get provides a mock function with given fields: id
-func (_m *ChamberRepo) Get(id string) (*storage.Chamber, error) {
+func (_m *ChamberRepo) Get(id string) (*chamber.Chamber, error) {
 	ret := _m.Called(id)
 
-	var r0 *storage.Chamber
-	if rf, ok := ret.Get(0).(func(string) *storage.Chamber); ok {
+	var r0 *chamber.Chamber
+	if rf, ok := ret.Get(0).(func(string) *chamber.Chamber); ok {
 		r0 = rf(id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*storage.Chamber)
+			r0 = ret.Get(0).(*chamber.Chamber)
 		}
 	}
 
@@ -50,15 +50,15 @@ func (_m *ChamberRepo) Get(id string) (*storage.Chamber, error) {
 }
 
 // GetAll provides a mock function with given fields:
-func (_m *ChamberRepo) GetAll() ([]storage.Chamber, error) {
+func (_m *ChamberRepo) GetAll() ([]chamber.Chamber, error) {
 	ret := _m.Called()
 
-	var r0 []storage.Chamber
-	if rf, ok := ret.Get(0).(func() []storage.Chamber); ok {
+	var r0 []chamber.Chamber
+	if rf, ok := ret.Get(0).(func() []chamber.Chamber); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]storage.Chamber)
+			r0 = ret.Get(0).([]chamber.Chamber)
 		}
 	}
 
@@ -73,11 +73,11 @@ func (_m *ChamberRepo) GetAll() ([]storage.Chamber, error) {
 }
 
 // Save provides a mock function with given fields: c
-func (_m *ChamberRepo) Save(c *storage.Chamber) error {
+func (_m *ChamberRepo) Save(c *chamber.Chamber) error {
 	ret := _m.Called(c)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*storage.Chamber) error); ok {
+	if rf, ok := ret.Get(0).(func(*chamber.Chamber) error); ok {
 		r0 = rf(c)
 	} else {
 		r0 = ret.Error(0)

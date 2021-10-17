@@ -10,8 +10,8 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
-	"github.com/benjaminbartels/zymurgauge/internal/storage"
 	"github.com/benjaminbartels/zymurgauge/internal/storage/localdb"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -85,13 +85,13 @@ func run(logger *logrus.Logger) error {
 	}()
 
 	if err := startThermostatTest(chamberRepo, logger); err != nil {
-		return errors.Wrap(err, "could not start start thermostat test")
+		return errors.Wrap(err, "could not start start pid test")
 	}
 
 	return wait(ctx, httpServer, httpServerErrors, cfg.ShutdownTimeout, logger)
 }
 
-func startThermostatTest(chamberRepo storage.ChamberRepo, logger *logrus.Logger) error {
+func startThermostatTest(chamberRepo chamber.Repo, logger *logrus.Logger) error {
 	chambers, err := chamberRepo.GetAll()
 	if err != nil {
 		return errors.Wrap(err, "could not get all chambers")
@@ -104,13 +104,13 @@ func startThermostatTest(chamberRepo storage.ChamberRepo, logger *logrus.Logger)
 
 		createFunc := CreateThermostat
 
-		thermostat, err := createFunc(chamber.ThermometerID, chamber.ChillerPIN, chamber.HeaterPIN, chamber.ChillerKp,
+		pid, err := createFunc(chamber.ThermometerID, chamber.ChillerPIN, chamber.HeaterPIN, chamber.ChillerKp,
 			chamber.ChillerKi, chamber.ChillerKd, chamber.HeaterKp, chamber.HeaterKi, chamber.HeaterKd, logger)
 		if err != nil {
-			return errors.Wrap(err, "could not create thermostat")
+			return errors.Wrap(err, "could not create pid")
 		}
 
-		if err := thermostat.On(55); err != nil { //nolint:gomnd
+		if err := pid.On(55); err != nil { //nolint:gomnd
 			return errors.Wrap(err, "could not turn thermostart on")
 		}
 	} else {

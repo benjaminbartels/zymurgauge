@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/storage"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/pkg/errors"
 	"go.etcd.io/bbolt"
 )
@@ -40,12 +40,12 @@ func NewChamberRepo(db *bbolt.DB) (*ChamberRepo, error) {
 }
 
 // GetAll returns all Chambers.
-func (r *ChamberRepo) GetAll() ([]storage.Chamber, error) {
-	chambers := []storage.Chamber{}
+func (r *ChamberRepo) GetAll() ([]chamber.Chamber, error) {
+	chambers := []chamber.Chamber{}
 
 	if err := r.db.View(func(tx *bbolt.Tx) error {
 		err := tx.Bucket([]byte(chamberBucket)).ForEach(func(k, v []byte) error {
-			var c storage.Chamber
+			var c chamber.Chamber
 			if err := json.Unmarshal(v, &c); err != nil {
 				return errors.Wrap(err, "could not unmarshal Chamber")
 			}
@@ -63,8 +63,8 @@ func (r *ChamberRepo) GetAll() ([]storage.Chamber, error) {
 }
 
 // Get returns a Chamber by its ID.
-func (r *ChamberRepo) Get(id string) (*storage.Chamber, error) {
-	var c *storage.Chamber
+func (r *ChamberRepo) Get(id string) (*chamber.Chamber, error) {
+	var c *chamber.Chamber
 
 	if err := r.db.View(func(tx *bbolt.Tx) error {
 		if v := tx.Bucket([]byte(chamberBucket)).Get([]byte(id)); v != nil {
@@ -82,7 +82,7 @@ func (r *ChamberRepo) Get(id string) (*storage.Chamber, error) {
 }
 
 // Save creates or updates a Chamber.
-func (r *ChamberRepo) Save(c *storage.Chamber) error {
+func (r *ChamberRepo) Save(c *chamber.Chamber) error {
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
 		bu := tx.Bucket([]byte(chamberBucket))
 		c.ModTime = time.Now()

@@ -63,6 +63,7 @@ linters:
     - nlreturn
     - noctx
     - nolintlint
+    - paralleltest 
     - prealloc
     - predeclared
     - promlinter
@@ -83,7 +84,6 @@ linters:
   disable:
     - exhaustivestruct          # Not recommended globally
     - godox                     # Need to be able to commit code with TODO
-    - paralleltest              # Broken
 linters-settings:
   wrapcheck:
     ignoreSigs:
