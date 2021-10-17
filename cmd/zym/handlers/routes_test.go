@@ -46,12 +46,12 @@ func TestRoutes(t *testing.T) {
 	}
 
 	testCases := []test{
-		{name: "GetAllChambers", method: http.MethodGet, path: "/chambers", body: nil},
-		{name: "GetChamber", method: http.MethodGet, path: "/chambers/" + chamberID, body: nil},
-		{name: "SaveChamber", method: http.MethodPost, path: "/chambers", body: c},
-		{name: "DeleteChamber", method: http.MethodDelete, path: "/chambers/" + chamberID, body: nil},
-		{name: "GetAllRecipes", method: http.MethodGet, path: "/recipes", body: nil},
-		{name: "GetRecipe", method: http.MethodGet, path: "/recipes/" + recipeID, body: nil},
+		{name: "GetAllChambers", method: http.MethodGet, path: "/v1/chambers", body: nil},
+		{name: "GetChamber", method: http.MethodGet, path: "/v1/chambers/" + chamberID, body: nil},
+		{name: "SaveChamber", method: http.MethodPost, path: "/v1/chambers", body: c},
+		{name: "DeleteChamber", method: http.MethodDelete, path: "/v1/chambers/" + chamberID, body: nil},
+		{name: "GetAllRecipes", method: http.MethodGet, path: "/v1/recipes", body: nil},
+		{name: "GetRecipe", method: http.MethodGet, path: "/v1/recipes/" + recipeID, body: nil},
 	}
 
 	for _, tc := range testCases {
