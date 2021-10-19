@@ -21,6 +21,8 @@ var (
 	ErrTooManyRequests  = errors.New("too many request")
 )
 
+var _ RecipeRepo = (*Client)(nil)
+
 type Client struct {
 	client  *http.Client
 	baseURL string

@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/actuator"
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/felixge/pidctrl"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -22,17 +24,6 @@ const (
 )
 
 var ErrAlreadyOn = errors.New("pid is already on")
-
-// Thermometer represents a device that and read temperatures.
-type Thermometer interface {
-	GetTemperature() (float64, error)
-}
-
-// Actuator represents a device that can be switched on and off.
-type Actuator interface {
-	On() error
-	Off() error
-}
 
 type OptionsFunc func(*TemperatureController)
 
@@ -73,9 +64,9 @@ func SetHeatingMinimum(min time.Duration) OptionsFunc {
 }
 
 type TemperatureController struct {
-	thermometer         Thermometer
-	chiller             Actuator
-	heater              Actuator
+	thermometer         thermometer.Thermometer
+	chiller             actuator.Actuator
+	heater              actuator.Actuator
 	chillerKp           float64
 	chillerKi           float64
 	chillerKd           float64
@@ -93,7 +84,7 @@ type TemperatureController struct {
 	cancelFn            context.CancelFunc
 }
 
-func NewTemperatureController(thermometer Thermometer, chiller, heater Actuator,
+func NewTemperatureController(thermometer thermometer.Thermometer, chiller, heater actuator.Actuator,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...OptionsFunc) *TemperatureController {
 	t := &TemperatureController{
@@ -122,7 +113,7 @@ func NewTemperatureController(thermometer Thermometer, chiller, heater Actuator,
 }
 
 func (t *TemperatureController) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController,
-	actuator Actuator, period, minimum time.Duration) error {
+	actuator actuator.Actuator, period, minimum time.Duration) error {
 	lastUpdateTime := t.clock.Now()
 
 	for {
@@ -237,7 +228,7 @@ func newPID(kP, kI, kD, min, max float64) *pidctrl.PIDController {
 	return pid
 }
 
-func (t *TemperatureController) quit(actuator Actuator) error {
+func (t *TemperatureController) quit(actuator actuator.Actuator) error {
 	if err := actuator.Off(); err != nil {
 		return errors.Wrap(err, "could not turn actuator off while quiting")
 	}

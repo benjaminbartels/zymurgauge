@@ -11,6 +11,8 @@ import (
 
 const chamberBucket = "Chambers"
 
+var _ chamber.Repo = (*ChamberRepo)(nil)
+
 // ChamberRepo represents a bboltdb repository for managing Chambers.
 type ChamberRepo struct {
 	db *bbolt.DB
