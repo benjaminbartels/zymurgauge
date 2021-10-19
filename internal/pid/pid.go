@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/felixge/pidctrl"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -22,17 +23,6 @@ const (
 )
 
 var ErrAlreadyOn = errors.New("pid is already on")
-
-// Thermometer represents a device that and read temperatures.
-type Thermometer interface {
-	GetTemperature() (float64, error)
-}
-
-// Actuator represents a device that can be switched on and off.
-type Actuator interface {
-	On() error
-	Off() error
-}
 
 type OptionsFunc func(*TemperatureController)
 
@@ -73,7 +63,7 @@ func SetHeatingMinimum(min time.Duration) OptionsFunc {
 }
 
 type TemperatureController struct {
-	thermometer         Thermometer
+	thermometer         thermometer.Thermometer
 	chiller             Actuator
 	heater              Actuator
 	chillerKp           float64
@@ -93,7 +83,7 @@ type TemperatureController struct {
 	cancelFn            context.CancelFunc
 }
 
-func NewTemperatureController(thermometer Thermometer, chiller, heater Actuator,
+func NewTemperatureController(thermometer thermometer.Thermometer, chiller, heater Actuator,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...OptionsFunc) *TemperatureController {
 	t := &TemperatureController{

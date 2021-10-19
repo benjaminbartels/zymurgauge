@@ -3,10 +3,10 @@ package fakes
 import (
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/pid"
+	"github.com/benjaminbartels/zymurgauge/internal/actuator"
 )
 
-var _ pid.Actuator = (*Actuator)(nil)
+var _ actuator.Actuator = (*Actuator)(nil)
 
 type Actuator struct {
 	OnFn      func() error

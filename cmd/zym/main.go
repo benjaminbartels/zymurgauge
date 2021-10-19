@@ -114,7 +114,7 @@ func startThermostatTest(chamberRepo chamber.Repo, logger *logrus.Logger) error 
 
 		createFunc := CreateThermostat
 
-		pid, err := createFunc(chamber.ThermometerID, chamber.ChillerPIN, chamber.HeaterPIN, chamber.ChillerKp,
+		pid, err := createFunc(chamber.ThermometerAddress, chamber.ChillerPIN, chamber.HeaterPIN, chamber.ChillerKp,
 			chamber.ChillerKi, chamber.ChillerKd, chamber.HeaterKp, chamber.HeaterKi, chamber.HeaterKd, logger)
 		if err != nil {
 			return errors.Wrap(err, "could not create pid")

@@ -1,3 +1,6 @@
+//go:build !linux || !arm
+// +build !linux !arm
+
 package main
 
 import (
@@ -8,29 +11,29 @@ import (
 // The program is only meant to run on linux on arm. This file only exists to prevent compilation issues on non
 // linux/arm systems.
 
-const temp = 22
+const stubTemperature = 22
 
-func CreateThermostat(thermometerID, chillerPin, heaterPin string,
+func CreateThermostat(thermometerAddress uint64, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...pid.OptionsFunc) (*pid.TemperatureController, error) {
-	return CreateStubThermostat(thermometerID, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd, heaterKp,
-		heaterKi, heaterKd, logger, options...)
+	return CreateStubThermostat(thermometerAddress, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd,
+		heaterKp, heaterKi, heaterKd, logger, options...)
 }
 
-func CreateStubThermostat(thermometerID, chillerPin, heaterPin string,
+func CreateStubThermostat(thermometerAddress uint64, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...pid.OptionsFunc) (*pid.TemperatureController, error) {
-	return pid.NewTemperatureController(&stubThermometer{thermometerID}, &stubActuator{chillerPin},
+	return pid.NewTemperatureController(&stubThermometer{thermometerAddress}, &stubActuator{chillerPin},
 		&stubActuator{heaterPin}, chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd, logger,
 		options...), nil
 }
 
 type stubThermometer struct {
-	thermometerID string
+	thermometerAddress uint64
 }
 
 func (t *stubThermometer) GetTemperature() (float64, error) {
-	return temp, nil
+	return stubTemperature, nil
 }
 
 type stubActuator struct {

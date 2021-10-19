@@ -9,7 +9,7 @@ type Thermometer struct {
 	mock.Mock
 }
 
-// Read provides a mock function with given fields:
+// GetTemperature provides a mock function with given fields:
 func (_m *Thermometer) GetTemperature() (float64, error) {
 	ret := _m.Called()
 

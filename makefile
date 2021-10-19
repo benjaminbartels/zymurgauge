@@ -22,6 +22,11 @@ build: ## Build the default package and put the output binary in out/bin/
 	mkdir -p out/bin
 	go build -o out/bin/$(DEFAULT_BINARY_NAME) $(DEFAULT_PKG_DIR)
 
+build-linux-arm: ## Build the default package for linux and put the output binary in out/bin/
+	mkdir -p out/bin
+	GOOS=linux GOARCH=arm CGO_ENABLED=0 go build -a -ldflags="-w -extldflags '-static'" -o out/bin/$(DEFAULT_BINARY_NAME) $(DEFAULT_PKG_DIR)
+
+
 clean: ## Remove build related file
 	rm -fr ./bin
 	rm -fr ./out
