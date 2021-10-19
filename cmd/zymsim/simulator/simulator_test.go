@@ -9,6 +9,8 @@ import (
 const initialBeerTemp = 25.0
 
 func TestChill(t *testing.T) {
+	t.Parallel()
+
 	expected := 24.556124476072753
 	sim := simulator.New(initialBeerTemp)
 
@@ -20,7 +22,7 @@ func TestChill(t *testing.T) {
 		sim.Update()
 	}
 
-	temp, err := sim.Thermometer.Read()
+	temp, err := sim.Thermometer.GetTemperature()
 	if err != nil {
 		t.Errorf("Unexpected error. Got: %+v", err)
 	}
@@ -31,6 +33,8 @@ func TestChill(t *testing.T) {
 }
 
 func TestHeat(t *testing.T) {
+	t.Parallel()
+
 	expected := 25.771302060855625
 	sim := simulator.New(initialBeerTemp)
 
@@ -42,7 +46,7 @@ func TestHeat(t *testing.T) {
 		sim.Update()
 	}
 
-	temp, err := sim.Thermometer.Read()
+	temp, err := sim.Thermometer.GetTemperature()
 	if err != nil {
 		t.Errorf("Unexpected error. Got: %+v", err)
 	}
@@ -53,6 +57,8 @@ func TestHeat(t *testing.T) {
 }
 
 func TestOnOf(t *testing.T) {
+	t.Parallel()
+
 	expected := 23.964487886702734
 	sim := simulator.New(initialBeerTemp)
 
@@ -72,7 +78,7 @@ func TestOnOf(t *testing.T) {
 		sim.Update()
 	}
 
-	temp, err := sim.Thermometer.Read()
+	temp, err := sim.Thermometer.GetTemperature()
 	if err != nil {
 		t.Errorf("Unexpected error. Got: %+v", err)
 	}

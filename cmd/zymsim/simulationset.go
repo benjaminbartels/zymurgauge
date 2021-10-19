@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsim/simulator"
+	"github.com/benjaminbartels/zymurgauge/internal/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
-	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -137,17 +137,17 @@ func worker(jobs <-chan simulationJob, results chan<- simulationResults, logger 
 	for j := range jobs {
 		sim := simulator.New(j.StartingTemp)
 		clock := fakes.NewDilatedClock(j.Multiplier)
-		thermostat := thermostat.NewThermostat(sim.Thermometer, sim.Chiller, sim.Heater,
+		controller := pid.NewTemperatureController(sim.Thermometer, sim.Chiller, sim.Heater,
 			j.ChillerKP, j.ChillerKI, j.ChillerKD, j.HeaterKP, j.HeaterKI, j.HeaterKD,
-			logger, thermostat.SetClock(clock))
+			logger, pid.SetClock(clock))
 		ctx, stop := context.WithCancel(context.Background())
 		startTime := time.Now()
 
 		go runSimulator(ctx, sim, j.Multiplier)
 
 		go func() {
-			if err := thermostat.On(j.TargetTemp); err != nil {
-				fmt.Println("Failed to turn thermostat on:", err)
+			if err := controller.On(j.TargetTemp); err != nil {
+				fmt.Println("Failed to turn controller on:", err)
 				os.Exit(1)
 			}
 		}()
@@ -158,7 +158,7 @@ func worker(jobs <-chan simulationJob, results chan<- simulationResults, logger 
 
 		go func() {
 			<-time.After(j.Runtime)
-			thermostat.Off()
+			controller.Off()
 			stop()
 		}()
 

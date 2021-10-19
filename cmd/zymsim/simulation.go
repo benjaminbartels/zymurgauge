@@ -10,8 +10,9 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsim/simulator"
+	"github.com/benjaminbartels/zymurgauge/internal/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
-	"github.com/benjaminbartels/zymurgauge/internal/thermostat"
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wcharczuk/go-chart"
@@ -53,17 +54,17 @@ func (s simulation) Run(g *globals) error {
 
 	sim := simulator.New(s.StartingTemp)
 	clock := fakes.NewDilatedClock(g.Multiplier)
-	thermostat := thermostat.NewThermostat(sim.Thermometer, sim.Chiller, sim.Heater,
+	controller := pid.NewTemperatureController(sim.Thermometer, sim.Chiller, sim.Heater,
 		s.ChillerKP, s.ChillerKI, s.ChillerKD, s.HeaterKP, s.HeaterKI, s.HeaterKD,
-		logger, thermostat.SetClock(clock))
+		logger, pid.SetClock(clock))
 	ctx, stop := context.WithCancel(context.Background())
 	startTime := time.Now()
 
 	go runSimulator(ctx, sim, g.Multiplier)
 
 	go func() {
-		if err := thermostat.On(s.TargetTemp); err != nil {
-			fmt.Println("Failed to turn thermostat on:", err)
+		if err := controller.On(s.TargetTemp); err != nil {
+			fmt.Println("Failed to turn controller on:", err)
 			os.Exit(1)
 		}
 	}()
@@ -74,7 +75,7 @@ func (s simulation) Run(g *globals) error {
 
 	go func() {
 		<-time.After(g.Runtime)
-		thermostat.Off()
+		controller.Off()
 		stop()
 		close(readings)
 	}()
@@ -108,14 +109,14 @@ func runSimulator(ctx context.Context, simulator *simulator.Simulator, multiplie
 	}
 }
 
-func runTemperatureReader(ctx context.Context, thermometer thermostat.Thermometer, startTime time.Time,
+func runTemperatureReader(ctx context.Context, thermometer thermometer.Thermometer, startTime time.Time,
 	multiplier float64, readings chan reading) {
 	tick := time.Tick(readInterval)
 
 	for {
 		select {
 		case <-tick:
-			temp, err := thermometer.Read()
+			temp, err := thermometer.GetTemperature()
 			if err != nil {
 				os.Exit(1)
 			}

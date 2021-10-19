@@ -10,7 +10,6 @@ import (
 
 type cli struct {
 	globals
-
 	Once simulation    `kong:"cmd,help='Run a single simulation.'"`
 	Many simulationSet `kong:"cmd,help='Run a set of simulations.'"`
 }
@@ -25,7 +24,7 @@ func main() {
 	cli := cli{}
 	ctx := kong.Parse(&cli,
 		kong.Name("zymsim"),
-		kong.Description("Zymurgauge Thermostat Simulator"),
+		kong.Description("Zymurgauge Temperature Control Simulator"),
 		kong.UsageOnError(),
 	)
 

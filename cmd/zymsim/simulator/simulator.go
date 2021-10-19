@@ -56,7 +56,7 @@ type Thermometer struct {
 	currentTemp float64
 }
 
-func (t *Thermometer) Read() (float64, error) {
+func (t *Thermometer) GetTemperature() (float64, error) {
 	return t.currentTemp, nil
 }
 

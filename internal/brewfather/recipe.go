@@ -1,4 +1,4 @@
-//nolint:maligned
+//nolint:tagliatelle
 package brewfather
 
 type Recipe struct {
@@ -159,7 +159,7 @@ type Total struct {
 	ID                         string    `json:"_id"`
 	ResidualAlkalinityMeqLCalc float64   `json:"residualAlkalinityMeqLCalc"`
 	TimestampMs                int64     `json:"_timestamp_ms"`
-	SoClRatio                  int       `json:"soClRatio"`
+	SoClRatio                  float64   `json:"soClRatio"`
 	Sulfate                    float64   `json:"sulfate"`
 	Magnesium                  float64   `json:"magnesium"`
 }
@@ -175,7 +175,7 @@ type WaterMash struct {
 	ResidualAlkalinity         float64   `json:"residualAlkalinity"`
 	Sulfate                    float64   `json:"sulfate"`
 	Created                    Created   `json:"_created"`
-	SoClRatio                  int       `json:"soClRatio"`
+	SoClRatio                  float64   `json:"soClRatio"`
 	Rev                        string    `json:"_rev"`
 	BicarbonateMeqL            float64   `json:"bicarbonateMeqL"`
 	Cations                    float64   `json:"cations"`
@@ -421,7 +421,7 @@ type Sparge struct {
 	ResidualAlkalinity         float64   `json:"residualAlkalinity"`
 	Calcium                    float64   `json:"calcium"`
 	Created                    Created   `json:"_created"`
-	SoClRatio                  int       `json:"soClRatio"`
+	SoClRatio                  float64   `json:"soClRatio"`
 	Sulfate                    float64   `json:"sulfate"`
 	Type                       string    `json:"type"`
 	Cations                    float64   `json:"cations"`
@@ -522,7 +522,7 @@ type Hops struct {
 	Substitutes       string      `json:"substitutes"`
 	ManufacturingDate interface{} `json:"manufacturingDate"`
 	Type              string      `json:"type"`
-	Alpha             int         `json:"alpha"`
+	Alpha             float64     `json:"alpha"`
 	Name              string      `json:"name"`
 	Use               string      `json:"use"`
 	EditFlag          bool        `json:"_editFlag,omitempty"`
@@ -554,7 +554,7 @@ type Fermentables struct {
 	DiastaticPower      interface{} `json:"diastaticPower"`
 	GrainCategory       string      `json:"grainCategory"`
 	Percentage          float64     `json:"percentage"`
-	Color               int         `json:"color"`
+	Color               float64     `json:"color"`
 	UserNotes           string      `json:"userNotes"`
 	Potential           float64     `json:"potential"`
 }
@@ -596,7 +596,7 @@ type CarbonationStyle struct {
 type MashFermentables struct {
 	PotentialPercentage float64     `json:"potentialPercentage"`
 	Notes               string      `json:"notes"`
-	Color               int         `json:"color"`
+	Color               float64     `json:"color"`
 	Potential           float64     `json:"potential"`
 	BestBeforeDate      interface{} `json:"bestBeforeDate"`
 	GrainCategory       string      `json:"grainCategory"`
