@@ -81,7 +81,7 @@ func run(logger *logrus.Logger) error {
 	go runSimulator(ctx, sim, cli.Multiplier)
 
 	go func() {
-		if err := pid.On(cli.TargetTemp); err != nil {
+		if err := pid.On(ctx, cli.TargetTemp); err != nil {
 			logger.Error("Failed to turn pid on:", err)
 			os.Exit(1)
 		}
@@ -93,7 +93,6 @@ func run(logger *logrus.Logger) error {
 
 	go func() {
 		<-time.After(cli.Runtime)
-		pid.Off()
 		stop()
 		close(readings)
 	}()

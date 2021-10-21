@@ -120,9 +120,16 @@ func startThermostatTest(chamberRepo chamber.Repo, logger *logrus.Logger) error 
 			return errors.Wrap(err, "could not create pid")
 		}
 
-		if err := pid.On(55); err != nil { //nolint:gomnd
-			return errors.Wrap(err, "could not turn thermostart on")
-		}
+		ctx, cancel := context.WithCancel(context.Background())
+
+		go func() {
+			if err := pid.On(ctx, 55); err != nil { //nolint:gomnd
+				logger.Error(errors.Wrap(err, "error occurred with pid temperature contoller"))
+			}
+		}()
+
+		<-time.After(10 * time.Second) //nolint:gomnd
+		cancel()
 	} else {
 		logger.Info("No chambers found")
 	}
