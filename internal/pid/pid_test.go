@@ -1,6 +1,7 @@
 package pid_test
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -70,12 +71,14 @@ func TestOnActuatorsOn(t *testing.T) {
 			therm := pid.NewTemperatureController(thermometerMock, chillerFake, heaterFake, chillerKp, chillerKi, chillerKd,
 				heaterKp, heaterKi, heaterKd, l)
 
+			ctx, stop := context.WithCancel(context.Background())
+
 			if tc.chillerOn {
 				// wait for chillerFake.On to be called and we receive the elapsed time on channel
 				go func() {
 					<-chillerCh
 					chillerOn = true
-					therm.Off()
+					stop()
 				}()
 			}
 
@@ -84,18 +87,18 @@ func TestOnActuatorsOn(t *testing.T) {
 				go func() {
 					<-heaterCh
 					heaterOn = true
-					therm.Off()
+					stop()
 				}()
 			}
 
 			// timeout
 			go func() {
 				<-time.After(200 * time.Millisecond)
-				therm.Off()
+				stop()
 			}()
 
-			// this will block until therm.Off() is called
-			err := therm.On(tc.setPoint)
+			// this will block until stop() is called
+			err := therm.On(ctx, tc.setPoint)
 			assert.NoError(t, err)
 
 			assert.Equal(t, tc.chillerOn, chillerOn, "expected chiller to be on")
@@ -140,22 +143,24 @@ func TestOnDutyCycle(t *testing.T) {
 			var elapsedTime time.Duration
 			var mu sync.RWMutex
 
+			ctx, stop := context.WithCancel(context.Background())
+
 			// wait for chillerFake.Off to be called and we receive the elapsed time on channel
 			go func() {
 				mu.Lock()
 				elapsedTime = <-chillerCh
-				therm.Off()
+				stop()
 				mu.Unlock()
 			}()
 
 			// timeout
 			go func() {
 				<-time.After(200 * time.Millisecond)
-				therm.Off()
+				stop()
 			}()
 
-			// this will block until therm.Off() is called
-			err := therm.On(20)
+			// this will block until stop() is called
+			err := therm.On(ctx, 20)
 			assert.NoError(t, err)
 			mu.RLock()
 			if tc.name == "100% duty" {
@@ -187,14 +192,16 @@ func TestLogging(t *testing.T) {
 		heaterKp, heaterKi, heaterKd, l, pid.SetHeatingCyclePeriod(100*time.Millisecond),
 		pid.SetHeatingMinimum(50*time.Millisecond))
 
+	ctx, stop := context.WithCancel(context.Background())
+
 	go func() {
 		// wait for 2 cycles
 		<-heaterCh
 		<-heaterCh
-		therm.Off()
+		stop()
 	}()
 
-	err := therm.On(30)
+	err := therm.On(ctx, 30)
 	assert.NoError(t, err)
 
 	<-time.After(1 * time.Second)
@@ -229,17 +236,19 @@ func TestOnAlreadyOnError(t *testing.T) {
 	therm := pid.NewTemperatureController(thermometerMock, chillerFake, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
+	ctx := context.Background()
+
 	go func() {
-		// wait until first therm.On() is called
+		// wait until first therm.On is called
 		<-chillerCh
 
-		err := therm.On(66)
+		err := therm.On(ctx, 66)
 		assert.ErrorIs(t, err, pid.ErrAlreadyOn)
 	}()
 
 	go func() {
 		// first therm.On is called
-		err := therm.On(20)
+		err := therm.On(ctx, 20)
 		assert.NoError(t, err)
 	}()
 }
@@ -258,7 +267,8 @@ func TestThermometerError(t *testing.T) {
 	therm := pid.NewTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
-	err := therm.On(15)
+	ctx := context.Background()
+	err := therm.On(ctx, 15)
 	assert.Contains(t, err.Error(), thermometerReadErrorMsg)
 }
 
@@ -279,7 +289,8 @@ func TestActuatorOnError(t *testing.T) {
 	therm := pid.NewTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
-	err := therm.On(15)
+	ctx := context.Background()
+	err := therm.On(ctx, 15)
 	assert.Contains(t, err.Error(), chillerOnErrorMsg)
 }
 
@@ -302,7 +313,8 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 		heaterKp, heaterKi, heaterKd, l, pid.SetChillingCyclePeriod(100*time.Millisecond),
 		pid.SetChillingMinimum(10*time.Millisecond))
 
-	err := therm.On(15)
+	ctx := context.Background()
+	err := therm.On(ctx, 15)
 	assert.Contains(t, err.Error(), actuatorOffError)
 }
 
@@ -323,13 +335,15 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 	therm := pid.NewTemperatureController(thermometerMock, chillerFake, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
+	ctx, stop := context.WithCancel(context.Background())
+
 	go func() {
-		// wait until first therm.On() is called
+		// wait until first therm.On is called
 		<-chillerCh
-		therm.Off()
+		stop()
 	}()
 
-	err := therm.On(15)
+	err := therm.On(ctx, 15)
 	assert.Contains(t, err.Error(), actuatorQuitError)
 }
 

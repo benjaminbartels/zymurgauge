@@ -25,44 +25,6 @@ const (
 
 var ErrAlreadyOn = errors.New("pid is already on")
 
-type OptionsFunc func(*TemperatureController)
-
-func SetClock(clock Clock) OptionsFunc {
-	return func(t *TemperatureController) {
-		t.clock = clock
-	}
-}
-
-// ChillingCyclePeriod sets the duration of the chiller's PWM cycle.  Default is 30 minutes.
-func SetChillingCyclePeriod(period time.Duration) OptionsFunc {
-	return func(t *TemperatureController) {
-		t.chillingCyclePeriod = period
-	}
-}
-
-// HeatingCyclePeriod sets the duration of the chiller's PWM cycle.  Default is 1 minute.
-func SetHeatingCyclePeriod(period time.Duration) OptionsFunc {
-	return func(t *TemperatureController) {
-		t.heatingCyclePeriod = period
-	}
-}
-
-// SetChillingMinimum sets the minimum duration in which the Thermostat will leave the Chiller Actuator On.
-// This is to prevent excessive cycling.  Default is 10 minutes.
-func SetChillingMinimum(min time.Duration) OptionsFunc {
-	return func(t *TemperatureController) {
-		t.chillingMinimum = min
-	}
-}
-
-// SetHeaterMinimum sets the minimum duration in which the Thermostat will leave the Heater Actuator On.
-// This is to prevent excessive cycling. Default is 10 seconds.
-func SetHeatingMinimum(min time.Duration) OptionsFunc {
-	return func(t *TemperatureController) {
-		t.heatingMinimum = min
-	}
-}
-
 type TemperatureController struct {
 	thermometer         thermometer.Thermometer
 	chiller             actuator.Actuator
@@ -81,7 +43,6 @@ type TemperatureController struct {
 	logger              *logrus.Logger
 	isOn                bool
 	onMutex             sync.Mutex
-	cancelFn            context.CancelFunc
 }
 
 func NewTemperatureController(thermometer thermometer.Thermometer, chiller, heater actuator.Actuator,
@@ -110,6 +71,44 @@ func NewTemperatureController(thermometer thermometer.Thermometer, chiller, heat
 	}
 
 	return t
+}
+
+type OptionsFunc func(*TemperatureController)
+
+func SetClock(clock Clock) OptionsFunc {
+	return func(t *TemperatureController) {
+		t.clock = clock
+	}
+}
+
+// ChillingCyclePeriod sets the duration of the chiller's PWM cycle.  Default is 30 minutes.
+func SetChillingCyclePeriod(period time.Duration) OptionsFunc {
+	return func(t *TemperatureController) {
+		t.chillingCyclePeriod = period
+	}
+}
+
+// HeatingCyclePeriod sets the duration of the chiller's PWM cycle.  Default is 1 minute.
+func SetHeatingCyclePeriod(period time.Duration) OptionsFunc {
+	return func(t *TemperatureController) {
+		t.heatingCyclePeriod = period
+	}
+}
+
+// SetChillingMinimum sets the minimum duration in which the Temperature Controller will leave the Chiller Actuator On.
+// This is to prevent excessive cycling.  Default is 10 minutes.
+func SetChillingMinimum(min time.Duration) OptionsFunc {
+	return func(t *TemperatureController) {
+		t.chillingMinimum = min
+	}
+}
+
+// SetHeaterMinimum sets the minimum duration in which the Temperature Controller will leave the Heater Actuator On.
+// This is to prevent excessive cycling. Default is 10 seconds.
+func SetHeatingMinimum(min time.Duration) OptionsFunc {
+	return func(t *TemperatureController) {
+		t.heatingMinimum = min
+	}
 }
 
 func (t *TemperatureController) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController,
@@ -180,7 +179,7 @@ func (t *TemperatureController) wait(ctx context.Context, waitTime time.Duration
 	}
 }
 
-func (t *TemperatureController) On(setPoint float64) error {
+func (t *TemperatureController) On(ctx context.Context, setPoint float64) error {
 	t.onMutex.Lock()
 	if t.isOn {
 		return ErrAlreadyOn
@@ -188,18 +187,15 @@ func (t *TemperatureController) On(setPoint float64) error {
 
 	t.isOn = true
 
+	t.onMutex.Unlock()
+
 	chillerPID := newPID(t.chillerKp, t.chillerKi, t.chillerKd, pidMin, pidMax)
 	chillerPID.Set(setPoint)
 
 	heaterPID := newPID(t.heaterKp, t.heaterKi, t.heaterKd, pidMin, pidMax)
 	heaterPID.Set(setPoint)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	t.cancelFn = cancel
-
 	g, ctx := errgroup.WithContext(ctx)
-
-	t.onMutex.Unlock()
 
 	g.Go(func() error {
 		return t.startCycle(ctx, "chiller", chillerPID, t.chiller, t.chillingCyclePeriod, t.chillingMinimum)
@@ -213,12 +209,6 @@ func (t *TemperatureController) On(setPoint float64) error {
 	}
 
 	return nil
-}
-
-func (t *TemperatureController) Off() {
-	t.onMutex.Lock()
-	defer t.onMutex.Unlock()
-	t.cancelFn()
 }
 
 func newPID(kP, kI, kD, min, max float64) *pidctrl.PIDController {
