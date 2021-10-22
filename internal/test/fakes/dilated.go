@@ -3,17 +3,17 @@ package fakes
 import (
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/pid"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/clock"
 )
 
-var _ pid.Clock = (*DilatedClock)(nil)
+var _ clock.Clock = (*DilatedClock)(nil)
 
 type DilatedClock struct {
 	multiplier float64
 	startTime  time.Time
 }
 
-func NewDilatedClock(multiplier float64) pid.Clock {
+func NewDilatedClock(multiplier float64) clock.Clock {
 	return &DilatedClock{
 		multiplier: multiplier,
 		startTime:  time.Now(),

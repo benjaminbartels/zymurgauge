@@ -1,4 +1,4 @@
-package pid
+package clock
 
 import "time"
 

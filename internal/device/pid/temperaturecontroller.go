@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/actuator"
-	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
+	"github.com/benjaminbartels/zymurgauge/internal/device"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/clock"
 	"github.com/felixge/pidctrl"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -26,9 +26,9 @@ const (
 var ErrAlreadyOn = errors.New("pid is already on")
 
 type TemperatureController struct {
-	thermometer         thermometer.Thermometer
-	chiller             actuator.Actuator
-	heater              actuator.Actuator
+	thermometer         device.Thermometer
+	chiller             device.Actuator
+	heater              device.Actuator
 	chillerKp           float64
 	chillerKi           float64
 	chillerKd           float64
@@ -39,13 +39,13 @@ type TemperatureController struct {
 	heatingCyclePeriod  time.Duration
 	chillingMinimum     time.Duration
 	heatingMinimum      time.Duration
-	clock               Clock
+	clock               clock.Clock
 	logger              *logrus.Logger
 	isOn                bool
 	onMutex             sync.Mutex
 }
 
-func NewTemperatureController(thermometer thermometer.Thermometer, chiller, heater actuator.Actuator,
+func NewTemperatureController(thermometer device.Thermometer, chiller, heater device.Actuator,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...OptionsFunc) *TemperatureController {
 	t := &TemperatureController{
@@ -61,7 +61,7 @@ func NewTemperatureController(thermometer thermometer.Thermometer, chiller, heat
 		heatingCyclePeriod:  defaultHeatingCyclePeriod,
 		chillingMinimum:     defaultChillingMinimum,
 		heatingMinimum:      defaultHeatingMinimum,
-		clock:               NewRealClock(),
+		clock:               clock.NewRealClock(),
 		heater:              heater,
 		logger:              logger,
 	}
@@ -75,7 +75,7 @@ func NewTemperatureController(thermometer thermometer.Thermometer, chiller, heat
 
 type OptionsFunc func(*TemperatureController)
 
-func SetClock(clock Clock) OptionsFunc {
+func SetClock(clock clock.Clock) OptionsFunc {
 	return func(t *TemperatureController) {
 		t.clock = clock
 	}
@@ -112,7 +112,7 @@ func SetHeatingMinimum(min time.Duration) OptionsFunc {
 }
 
 func (t *TemperatureController) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController,
-	actuator actuator.Actuator, period, minimum time.Duration) error {
+	actuator device.Actuator, period, minimum time.Duration) error {
 	lastUpdateTime := t.clock.Now()
 
 	for {
@@ -179,7 +179,7 @@ func (t *TemperatureController) wait(ctx context.Context, waitTime time.Duration
 	}
 }
 
-func (t *TemperatureController) On(ctx context.Context, setPoint float64) error {
+func (t *TemperatureController) Run(ctx context.Context, setPoint float64) error {
 	t.onMutex.Lock()
 	if t.isOn {
 		return ErrAlreadyOn
@@ -218,7 +218,7 @@ func newPID(kP, kI, kD, min, max float64) *pidctrl.PIDController {
 	return pid
 }
 
-func (t *TemperatureController) quit(actuator actuator.Actuator) error {
+func (t *TemperatureController) quit(actuator device.Actuator) error {
 	if err := actuator.Off(); err != nil {
 		return errors.Wrap(err, "could not turn actuator off while quiting")
 	}

@@ -1,8 +1,8 @@
-package brewfather
+package recipe
 
 import "context"
 
-type RecipeRepo interface {
+type Repo interface {
 	GetRecipes(ctx context.Context) ([]Recipe, error)
 	GetRecipe(ctx context.Context, id string) (*Recipe, error)
 }

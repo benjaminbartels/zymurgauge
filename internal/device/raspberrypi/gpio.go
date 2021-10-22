@@ -1,12 +1,13 @@
-package actuator
+package raspberrypi
 
 import (
+	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/gpio"
 	"periph.io/x/periph/conn/gpio/gpioreg"
 )
 
-var _ Actuator = (*GPIOActuator)(nil)
+var _ device.Actuator = (*GPIOActuator)(nil)
 
 type GPIOActuator struct {
 	pin gpio.PinIO

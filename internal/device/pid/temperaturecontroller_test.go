@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/pid"
+	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/sirupsen/logrus"
@@ -98,7 +98,7 @@ func TestOnActuatorsOn(t *testing.T) {
 			}()
 
 			// this will block until stop() is called
-			err := therm.On(ctx, tc.setPoint)
+			err := therm.Run(ctx, tc.setPoint)
 			assert.NoError(t, err)
 
 			assert.Equal(t, tc.chillerOn, chillerOn, "expected chiller to be on")
@@ -160,7 +160,7 @@ func TestOnDutyCycle(t *testing.T) {
 			}()
 
 			// this will block until stop() is called
-			err := therm.On(ctx, 20)
+			err := therm.Run(ctx, 20)
 			assert.NoError(t, err)
 			mu.RLock()
 			if tc.name == "100% duty" {
@@ -201,7 +201,7 @@ func TestLogging(t *testing.T) {
 		stop()
 	}()
 
-	err := therm.On(ctx, 30)
+	err := therm.Run(ctx, 30)
 	assert.NoError(t, err)
 
 	<-time.After(1 * time.Second)
@@ -239,16 +239,16 @@ func TestOnAlreadyOnError(t *testing.T) {
 	ctx := context.Background()
 
 	go func() {
-		// wait until first therm.On is called
+		// wait until first therm.Run is called
 		<-chillerCh
 
-		err := therm.On(ctx, 66)
+		err := therm.Run(ctx, 66)
 		assert.ErrorIs(t, err, pid.ErrAlreadyOn)
 	}()
 
 	go func() {
-		// first therm.On is called
-		err := therm.On(ctx, 20)
+		// first therm.Run is called
+		err := therm.Run(ctx, 20)
 		assert.NoError(t, err)
 	}()
 }
@@ -268,7 +268,7 @@ func TestThermometerError(t *testing.T) {
 		heaterKp, heaterKi, heaterKd, l)
 
 	ctx := context.Background()
-	err := therm.On(ctx, 15)
+	err := therm.Run(ctx, 15)
 	assert.Contains(t, err.Error(), thermometerReadErrorMsg)
 }
 
@@ -290,7 +290,7 @@ func TestActuatorOnError(t *testing.T) {
 		heaterKp, heaterKi, heaterKd, l)
 
 	ctx := context.Background()
-	err := therm.On(ctx, 15)
+	err := therm.Run(ctx, 15)
 	assert.Contains(t, err.Error(), chillerOnErrorMsg)
 }
 
@@ -314,7 +314,7 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 		pid.SetChillingMinimum(10*time.Millisecond))
 
 	ctx := context.Background()
-	err := therm.On(ctx, 15)
+	err := therm.Run(ctx, 15)
 	assert.Contains(t, err.Error(), actuatorOffError)
 }
 
@@ -338,12 +338,12 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 	ctx, stop := context.WithCancel(context.Background())
 
 	go func() {
-		// wait until first therm.On is called
+		// wait until first therm.Run is called
 		<-chillerCh
 		stop()
 	}()
 
-	err := therm.On(ctx, 15)
+	err := therm.Run(ctx, 15)
 	assert.Contains(t, err.Error(), actuatorQuitError)
 }
 

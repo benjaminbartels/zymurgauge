@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	brewfather "github.com/benjaminbartels/zymurgauge/internal/brewfather"
+	recipe "github.com/benjaminbartels/zymurgauge/internal/recipe"
 
 	mock "github.com/stretchr/testify/mock"
 )
@@ -16,15 +16,15 @@ type RecipeRepo struct {
 }
 
 // GetRecipe provides a mock function with given fields: ctx, id
-func (_m *RecipeRepo) GetRecipe(ctx context.Context, id string) (*brewfather.Recipe, error) {
+func (_m *RecipeRepo) GetRecipe(ctx context.Context, id string) (*recipe.Recipe, error) {
 	ret := _m.Called(ctx, id)
 
-	var r0 *brewfather.Recipe
-	if rf, ok := ret.Get(0).(func(context.Context, string) *brewfather.Recipe); ok {
+	var r0 *recipe.Recipe
+	if rf, ok := ret.Get(0).(func(context.Context, string) *recipe.Recipe); ok {
 		r0 = rf(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*brewfather.Recipe)
+			r0 = ret.Get(0).(*recipe.Recipe)
 		}
 	}
 
@@ -39,15 +39,15 @@ func (_m *RecipeRepo) GetRecipe(ctx context.Context, id string) (*brewfather.Rec
 }
 
 // GetRecipes provides a mock function with given fields: ctx
-func (_m *RecipeRepo) GetRecipes(ctx context.Context) ([]brewfather.Recipe, error) {
+func (_m *RecipeRepo) GetRecipes(ctx context.Context) ([]recipe.Recipe, error) {
 	ret := _m.Called(ctx)
 
-	var r0 []brewfather.Recipe
-	if rf, ok := ret.Get(0).(func(context.Context) []brewfather.Recipe); ok {
+	var r0 []recipe.Recipe
+	if rf, ok := ret.Get(0).(func(context.Context) []recipe.Recipe); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]brewfather.Recipe)
+			r0 = ret.Get(0).([]recipe.Recipe)
 		}
 	}
 

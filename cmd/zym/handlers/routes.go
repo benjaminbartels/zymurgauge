@@ -7,10 +7,10 @@ import (
 	"net/http/pprof"
 	"os"
 
-	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	"github.com/benjaminbartels/zymurgauge/internal/recipe"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,7 +21,7 @@ const (
 )
 
 // NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberRepo chamber.Repo, recipeRepo brewfather.RecipeRepo, shutdown chan os.Signal,
+func NewAPI(chamberRepo chamber.Repo, recipeRepo recipe.Repo, shutdown chan os.Signal,
 	logger *logrus.Logger) http.Handler {
 	chambersHandler := &ChambersHandler{
 		Repo: chamberRepo,

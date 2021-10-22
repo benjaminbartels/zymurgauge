@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
+	"github.com/benjaminbartels/zymurgauge/internal/recipe"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func TestRoutes(t *testing.T) {
 	t.Parallel()
 
 	c := chamber.Chamber{ID: chamberID}
-	recipe := brewfather.Recipe{ID: recipeID}
+	r := recipe.Recipe{ID: recipeID}
 
 	chamberRepoMock := &mocks.ChamberRepo{}
 	chamberRepoMock.On("GetAll").Return([]chamber.Chamber{}, nil)
@@ -30,8 +30,8 @@ func TestRoutes(t *testing.T) {
 	chamberRepoMock.On("Delete", mock.Anything).Return(nil)
 
 	recipeMock := &mocks.RecipeRepo{}
-	recipeMock.On("GetRecipes", mock.Anything).Return([]brewfather.Recipe{}, nil)
-	recipeMock.On("GetRecipe", mock.Anything, recipeID).Return(&recipe, nil)
+	recipeMock.On("GetRecipes", mock.Anything).Return([]recipe.Recipe{}, nil)
+	recipeMock.On("GetRecipe", mock.Anything, recipeID).Return(&r, nil)
 
 	shutdown := make(chan os.Signal, 1)
 	logger, _ := logtest.NewNullLogger()
@@ -48,7 +48,7 @@ func TestRoutes(t *testing.T) {
 	testCases := []test{
 		{path: "/v1/chambers", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodGet, body: nil, code: http.StatusOK},
-		{path: "/v1/chambers", method: http.MethodPost, body: c, code: http.StatusOK},
+		{path: "/v1/chambers", method: http.MethodPost, body: &c, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodDelete, body: nil, code: http.StatusOK},
 		{path: "/v1/recipes", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/recipes/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusOK},

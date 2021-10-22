@@ -1,6 +1,10 @@
 package chamber
 
-import "time"
+import (
+	"time"
+
+	"github.com/benjaminbartels/zymurgauge/internal/device"
+)
 
 type Repo interface {
 	GetAll() ([]Chamber, error)
@@ -24,4 +28,5 @@ type Chamber struct {
 	HeaterKi           float64   `json:"heaterKi"`
 	HeaterKd           float64   `json:"heaterKd"`
 	ModTime            time.Time `json:"modTime"`
+	PIDController      device.TemperatureController
 }

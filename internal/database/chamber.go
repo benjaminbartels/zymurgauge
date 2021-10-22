@@ -1,4 +1,4 @@
-package localdb
+package database
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ const chamberBucket = "Chambers"
 
 var _ chamber.Repo = (*ChamberRepo)(nil)
 
-// ChamberRepo represents a bboltdb repository for managing Chambers.
+// ChamberRepo represents a bbolt repository for managing Chambers.
 type ChamberRepo struct {
 	db *bbolt.DB
 }

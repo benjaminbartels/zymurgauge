@@ -4,7 +4,7 @@
 package main
 
 import (
-	"github.com/benjaminbartels/zymurgauge/internal/pid"
+	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
 	"github.com/sirupsen/logrus"
 )
 

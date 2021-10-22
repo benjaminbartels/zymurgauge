@@ -1,4 +1,4 @@
-package localdb
+package database
 
 import (
 	"errors"

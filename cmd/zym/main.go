@@ -11,8 +11,8 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
+	"github.com/benjaminbartels/zymurgauge/internal/database"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
-	"github.com/benjaminbartels/zymurgauge/internal/storage/localdb"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -66,7 +66,7 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not open database")
 	}
 
-	chamberRepo, err := localdb.NewChamberRepo(db)
+	chamberRepo, err := database.NewChamberRepo(db)
 	if err != nil {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
@@ -123,7 +123,7 @@ func startThermostatTest(chamberRepo chamber.Repo, logger *logrus.Logger) error 
 		ctx, cancel := context.WithCancel(context.Background())
 
 		go func() {
-			if err := pid.On(ctx, 55); err != nil { //nolint:gomnd
+			if err := pid.Run(ctx, 55); err != nil { //nolint:gomnd
 				logger.Error(errors.Wrap(err, "error occurred with pid temperature contoller"))
 			}
 		}()
