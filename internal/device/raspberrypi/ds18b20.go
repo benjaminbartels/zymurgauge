@@ -1,12 +1,13 @@
-package thermometer
+package raspberrypi
 
 import (
+	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/pkg/errors"
 	"periph.io/x/periph/conn/onewire"
 	"periph.io/x/periph/devices/ds18b20"
 )
 
-var _ Thermometer = (*Ds18b20)(nil)
+var _ device.Thermometer = (*Ds18b20)(nil)
 
 type Ds18b20 struct {
 	dev *ds18b20.Dev

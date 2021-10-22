@@ -1,5 +1,5 @@
 //nolint:tagliatelle
-package brewfather
+package recipe
 
 type Recipe struct {
 	AvgWeightedHopstandTemp  int              `json:"avgWeightedHopstandTemp"`

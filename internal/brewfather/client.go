@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/benjaminbartels/zymurgauge/internal/recipe"
 	"github.com/pkg/errors"
 )
 
@@ -21,7 +22,7 @@ var (
 	ErrTooManyRequests  = errors.New("too many request")
 )
 
-var _ RecipeRepo = (*Client)(nil)
+var _ recipe.Repo = (*Client)(nil)
 
 type Client struct {
 	client  *http.Client
@@ -42,7 +43,7 @@ func New(baseURL, userID, apiKey string) *Client {
 	return c
 }
 
-func (s *Client) GetRecipes(ctx context.Context) ([]Recipe, error) {
+func (s *Client) GetRecipes(ctx context.Context) ([]recipe.Recipe, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", s.baseURL, recipesPath), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Recipes")
@@ -59,7 +60,7 @@ func (s *Client) GetRecipes(ctx context.Context) ([]Recipe, error) {
 		return nil, err
 	}
 
-	var recipes []Recipe
+	var recipes []recipe.Recipe
 	if err = json.NewDecoder(resp.Body).Decode(&recipes); err != nil {
 		return nil, errors.Wrap(err, "could not decode Recipes")
 	}
@@ -67,7 +68,7 @@ func (s *Client) GetRecipes(ctx context.Context) ([]Recipe, error) {
 	return recipes, nil
 }
 
-func (s *Client) GetRecipe(ctx context.Context, id string) (*Recipe, error) {
+func (s *Client) GetRecipe(ctx context.Context, id string) (*recipe.Recipe, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", s.baseURL, recipesPath, id), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Recipes")
@@ -84,7 +85,7 @@ func (s *Client) GetRecipe(ctx context.Context, id string) (*Recipe, error) {
 		return nil, err
 	}
 
-	var recipe *Recipe
+	var recipe *recipe.Recipe
 	if err = json.NewDecoder(resp.Body).Decode(&recipe); err != nil {
 		return nil, errors.Wrap(err, "could not decode Recipe")
 	}

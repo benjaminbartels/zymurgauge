@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/platform/clock"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +14,7 @@ func TestOptions(t *testing.T) {
 
 	l, _ := logtest.NewNullLogger()
 	expected := time.Nanosecond
-	clock := NewRealClock()
+	clock := clock.NewRealClock()
 
 	pid := NewTemperatureController(nil, nil, nil, 1, 1, 1, 1, 1, 1, l,
 		SetClock(clock),

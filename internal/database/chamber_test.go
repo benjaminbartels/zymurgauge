@@ -1,4 +1,4 @@
-package localdb_test
+package database_test
 
 import (
 	"testing"
