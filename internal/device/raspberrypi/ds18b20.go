@@ -1,34 +1,102 @@
 package raspberrypi
 
 import (
-	"github.com/benjaminbartels/zymurgauge/internal/device"
+	"bufio"
+	"os"
+	"path"
+	"strconv"
+	"strings"
+
 	"github.com/pkg/errors"
-	"periph.io/x/periph/conn/onewire"
-	"periph.io/x/periph/devices/ds18b20"
 )
 
-var _ device.Thermometer = (*Ds18b20)(nil)
+const (
+	slave = "w1_slave"
+	// defaultDevicePath is the location of the thermometer data on the file system.
+	defaultDevicePath = "/sys/bus/w1/devices/"
+	devicePrefix      = "28-"
+)
 
-type Ds18b20 struct {
-	dev *ds18b20.Dev
+// NewDs18b20 Create a new ds18b20 Thermometer.
+func NewDs18b20(id string) (*Ds18b20, error) {
+	return NewDs18b20WithDevicePath(id, defaultDevicePath)
 }
 
-func NewDs18b20(bus onewire.Bus, address onewire.Address, resolutionBits int) (*Ds18b20, error) {
-	dev, err := ds18b20.New(bus, address, resolutionBits)
+// NewDs18b20WithDevicePath creates a new Thermometer using the given devicePath
+// Usually used for testing.
+func NewDs18b20WithDevicePath(id, devicePath string) (*Ds18b20, error) {
+	_, err := os.Stat(path.Join(devicePath, id))
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create ds18b20 thermometer")
+		return nil, errors.Wrap(err, "could not file information")
 	}
 
 	return &Ds18b20{
-		dev: dev,
+		ID:   id,
+		path: devicePath,
 	}, nil
 }
 
+// Ds18b20 is a GPIO 1-wire temperature probe.
+type Ds18b20 struct {
+	ID   string
+	path string
+}
+
+// ReadTemperature read the current temperature of the Thermometer.
 func (d *Ds18b20) GetTemperature() (float64, error) {
-	temp, err := d.dev.LastTemp()
+	file, err := os.Open(path.Join(d.path, d.ID, slave))
 	if err != nil {
-		return 0, errors.Wrap(err, "could not read ds18b20 thermometer")
+		return 0, errors.Wrap(err, "could not open file")
 	}
 
-	return temp.Celsius(), nil
+	defer file.Close()
+
+	r := bufio.NewReader(file)
+
+	crcLine, err := r.ReadString('\n')
+	if err != nil {
+		return 0, errors.Wrap(err, "could not read crc")
+	}
+
+	crcLine = strings.TrimRight(crcLine, "\n")
+	if !strings.HasSuffix(crcLine, "YES") {
+		return 0, errors.Wrap(err, "crc is invalid")
+	}
+
+	dataLine, err := r.ReadString('\n')
+	if err != nil {
+		return 0, errors.Wrap(err, "could not read data")
+	}
+
+	temp, err := strconv.ParseFloat(strings.Split(strings.TrimSpace(dataLine), "=")[1], 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not parse temperature value")
+	}
+
+	temp /= 1000
+
+	return temp, nil
+}
+
+func GetThermometerIDs() ([]string, error) {
+	ids := []string{}
+
+	dir, err := os.Open(defaultDevicePath)
+	if err != nil {
+		return ids, errors.Wrapf(err, "could not open %s", defaultDevicePath)
+	}
+	defer dir.Close()
+
+	names, err := dir.Readdirnames(-1)
+	if err != nil {
+		return ids, errors.Wrapf(err, "could not open read directory names")
+	}
+
+	for _, name := range names {
+		if strings.HasPrefix(name, devicePrefix) {
+			ids = append(ids, name)
+		}
+	}
+
+	return ids, nil
 }

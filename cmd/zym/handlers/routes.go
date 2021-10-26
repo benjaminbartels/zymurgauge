@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	chambersPath = "/chambers"
-	recipesPath  = "/recipes"
-	version      = "v1"
+	chambersPath     = "/chambers"
+	thermometersPath = "/thermometers"
+	recipesPath      = "/recipes"
+	version          = "v1"
 )
 
 // NewAPI return a web.App with configured routes and handlers.
@@ -26,6 +27,8 @@ func NewAPI(chamberRepo chamber.Repo, recipeRepo recipe.Repo, shutdown chan os.S
 	chambersHandler := &ChambersHandler{
 		Repo: chamberRepo,
 	}
+
+	thermometersHandler := &ThermometersHandler{}
 
 	recipesHandler := &RecipesHandler{
 		Repo: recipeRepo,
@@ -37,6 +40,8 @@ func NewAPI(chamberRepo chamber.Repo, recipeRepo recipe.Repo, shutdown chan os.S
 	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Get)
 	app.Register(http.MethodPost, version, chambersPath, chambersHandler.Save)
 	app.Register(http.MethodDelete, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Delete)
+
+	app.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
 
 	app.Register(http.MethodGet, version, recipesPath, recipesHandler.GetAll)
 	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", recipesPath), recipesHandler.Get)
