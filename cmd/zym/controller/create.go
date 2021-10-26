@@ -1,7 +1,7 @@
 //go:build !linux || !arm
 // +build !linux !arm
 
-package main
+package controller
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
@@ -16,11 +16,11 @@ const stubTemperature = 22
 func CreateThermostat(thermometerAddress uint64, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...pid.OptionsFunc) (*pid.TemperatureController, error) {
-	return CreateStubThermostat(thermometerAddress, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd,
+	return createStubThermostat(thermometerAddress, chillerPin, heaterPin, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, logger, options...)
 }
 
-func CreateStubThermostat(thermometerAddress uint64, chillerPin, heaterPin string,
+func createStubThermostat(thermometerAddress uint64, chillerPin, heaterPin string,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...pid.OptionsFunc) (*pid.TemperatureController, error) {
 	return pid.NewTemperatureController(&stubThermometer{thermometerAddress}, &stubActuator{chillerPin},

@@ -10,7 +10,6 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
-	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/kelseyhightower/envconfig"
@@ -94,47 +93,7 @@ func run(logger *logrus.Logger) error {
 		httpServerErrors <- httpServer.ListenAndServe()
 	}()
 
-	if err := startThermostatTest(chamberRepo, logger); err != nil {
-		return errors.Wrap(err, "could not start start pid test")
-	}
-
 	return wait(ctx, httpServer, httpServerErrors, cfg.ShutdownTimeout, logger)
-}
-
-func startThermostatTest(chamberRepo chamber.Repo, logger *logrus.Logger) error {
-	chambers, err := chamberRepo.GetAll()
-	if err != nil {
-		return errors.Wrap(err, "could not get all chambers")
-	}
-
-	if len(chambers) > 0 {
-		chamber := chambers[0]
-
-		logger.Infof("Using Chamber %s", chamber.ID)
-
-		createFunc := CreateThermostat
-
-		pid, err := createFunc(chamber.ThermometerAddress, chamber.ChillerPIN, chamber.HeaterPIN, chamber.ChillerKp,
-			chamber.ChillerKi, chamber.ChillerKd, chamber.HeaterKp, chamber.HeaterKi, chamber.HeaterKd, logger)
-		if err != nil {
-			return errors.Wrap(err, "could not create pid")
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-
-		go func() {
-			if err := pid.Run(ctx, 55); err != nil { //nolint:gomnd
-				logger.Error(errors.Wrap(err, "error occurred with pid temperature contoller"))
-			}
-		}()
-
-		<-time.After(10 * time.Second) //nolint:gomnd
-		cancel()
-	} else {
-		logger.Info("No chambers found")
-	}
-
-	return nil
 }
 
 func wait(ctx context.Context, server *http.Server, serverErrors chan error, timeout time.Duration,

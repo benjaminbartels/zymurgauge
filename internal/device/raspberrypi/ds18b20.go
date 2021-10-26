@@ -1,94 +1,102 @@
 package raspberrypi
 
 import (
-	"encoding/binary"
-	"encoding/hex"
-	"fmt"
+	"bufio"
+	"os"
+	"path"
+	"strconv"
 	"strings"
 
-	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/pkg/errors"
-	"periph.io/x/periph/conn/onewire"
-	"periph.io/x/periph/devices/ds18b20"
-	"periph.io/x/periph/experimental/host/netlink"
 )
 
-var _ device.Thermometer = (*Ds18b20)(nil)
+const (
+	slave = "w1_slave"
+	// defaultDevicePath is the location of the thermometer data on the file system.
+	defaultDevicePath = "/sys/bus/w1/devices/"
+	devicePrefix      = "28-"
+)
 
-type Ds18b20 struct {
-	dev *ds18b20.Dev
+// NewDs18b20 Create a new ds18b20 Thermometer.
+func NewDs18b20(id string) (*Ds18b20, error) {
+	return NewDs18b20WithDevicePath(id, defaultDevicePath)
 }
 
-func NewDs18b20(bus onewire.Bus, id string, resolutionBits int) (*Ds18b20, error) {
-	address, err := getAddress(id)
+// NewDs18b20WithDevicePath creates a new Thermometer using the given devicePath
+// Usually used for testing.
+func NewDs18b20WithDevicePath(id, devicePath string) (*Ds18b20, error) {
+	_, err := os.Stat(path.Join(devicePath, id))
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get ds18b20 address")
-	}
-
-	dev, err := ds18b20.New(bus, address, resolutionBits)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create ds18b20 thermometer")
+		return nil, errors.Wrap(err, "could not file information")
 	}
 
 	return &Ds18b20{
-		dev: dev,
+		ID:   id,
+		path: devicePath,
 	}, nil
 }
 
-func (d *Ds18b20) GetTemperature() (float64, error) {
-	temp, err := d.dev.LastTemp()
-	if err != nil {
-		return 0, errors.Wrap(err, "could not read ds18b20 thermometer")
-	}
-
-	return temp.Celsius(), nil
+// Ds18b20 is a GPIO 1-wire temperature probe.
+type Ds18b20 struct {
+	ID   string
+	path string
 }
 
-func GetThermometerIDs(oneBus *netlink.OneWire) ([]string, error) {
-	ids := []string{}
-
-	addresses, err := oneBus.Search(false)
+// ReadTemperature read the current temperature of the Thermometer.
+func (d *Ds18b20) GetTemperature() (float64, error) {
+	file, err := os.Open(path.Join(d.path, d.ID, slave))
 	if err != nil {
-		return ids, errors.Wrap(err, "could not search bus")
+		return 0, errors.Wrap(err, "could not open file")
 	}
 
-	for _, address := range addresses {
-		ids = append(ids, getID(address))
+	defer file.Close()
+
+	r := bufio.NewReader(file)
+
+	crcLine, err := r.ReadString('\n')
+	if err != nil {
+		return 0, errors.Wrap(err, "could not read crc")
+	}
+
+	crcLine = strings.TrimRight(crcLine, "\n")
+	if !strings.HasSuffix(crcLine, "YES") {
+		return 0, errors.Wrap(err, "crc is invalid")
+	}
+
+	dataLine, err := r.ReadString('\n')
+	if err != nil {
+		return 0, errors.Wrap(err, "could not read data")
+	}
+
+	temp, err := strconv.ParseFloat(strings.Split(strings.TrimSpace(dataLine), "=")[1], 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not parse temperature value")
+	}
+
+	temp /= 1000
+
+	return temp, nil
+}
+
+func GetThermometerIDs() ([]string, error) {
+	ids := []string{}
+
+	dir, err := os.Open(defaultDevicePath)
+	if err != nil {
+		return ids, errors.Wrapf(err, "could not open %s", defaultDevicePath)
+	}
+	defer dir.Close()
+
+	names, err := dir.Readdirnames(-1)
+	if err != nil {
+		return ids, errors.Wrapf(err, "could not open read directory names")
+	}
+
+	for _, name := range names {
+		if strings.HasPrefix(name, devicePrefix) {
+			ids = append(ids, name)
+		}
 	}
 
 	return ids, nil
-}
-
-func getID(address onewire.Address) string {
-	bytes := make([]byte, 8) // nolint: gomnd // remove when https://github.com/tommy-muehle/go-mnd/pull/29 is merged
-	binary.LittleEndian.PutUint64(bytes, uint64(address))
-
-	return fmt.Sprintf("%s-%s", hex.EncodeToString(bytes[0:1]), hex.EncodeToString(reverse(bytes[1:7])))
-}
-
-func getAddress(id string) (onewire.Address, error) {
-	s := strings.Split(id, "-")
-
-	family, err := hex.DecodeString(s[0])
-	if err != nil {
-		return 0, errors.Wrap(err, "could not decode ds18b20 family code")
-	}
-
-	uid, err := hex.DecodeString(s[1])
-	if err != nil {
-		return 0, errors.Wrap(err, "could not decode unique device id")
-	}
-
-	bytes := make([]byte, 8) // nolint: gomnd // remove when https://github.com/tommy-muehle/go-mnd/pull/29 is merged
-	copy(bytes, append(family, reverse(uid)...))
-
-	return onewire.Address(binary.LittleEndian.Uint64(bytes)), nil
-}
-
-func reverse(bytes []byte) []byte {
-	for i, j := 0, len(bytes)-1; i < j; i, j = i+1, j-1 {
-		bytes[i], bytes[j] = bytes[j], bytes[i]
-	}
-
-	return bytes
 }
