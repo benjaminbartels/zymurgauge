@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/pkg/errors"
 )
 
@@ -78,7 +79,17 @@ func (d *Ds18b20) GetTemperature() (float64, error) {
 	return temp, nil
 }
 
-func GetThermometerIDs() ([]string, error) {
+var _ thermometer.Repo = (*Ds18b20Repo)(nil)
+
+type Ds18b20Repo struct {
+	devicePath string
+}
+
+func NewDs18b20Repo() *Ds18b20Repo {
+	return &Ds18b20Repo{devicePath: defaultDevicePath}
+}
+
+func (r *Ds18b20Repo) GetThermometerIDs() ([]string, error) {
 	ids := []string{}
 
 	dir, err := os.Open(defaultDevicePath)

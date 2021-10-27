@@ -11,6 +11,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/device/raspberrypi"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -70,6 +71,8 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
+	ds18b20Repo := raspberrypi.NewDs18b20Repo()
+
 	brewfather := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
 
 	shutdown := make(chan os.Signal, 1)
@@ -80,7 +83,7 @@ func run(logger *logrus.Logger) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberRepo, brewfather, shutdown, logger),
+		Handler:      handlers.NewAPI(chamberRepo, ds18b20Repo, brewfather, shutdown, logger),
 	}
 
 	httpServerErrors := make(chan error, 1)
