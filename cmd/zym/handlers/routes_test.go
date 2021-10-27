@@ -29,6 +29,9 @@ func TestRoutes(t *testing.T) {
 	chamberRepoMock.On("Save", mock.Anything).Return(nil)
 	chamberRepoMock.On("Delete", mock.Anything).Return(nil)
 
+	thermometerMock := &mocks.ThermometerRepo{}
+	thermometerMock.On("GetThermometerIDs", mock.Anything).Return([]string{}, nil)
+
 	recipeMock := &mocks.RecipeRepo{}
 	recipeMock.On("GetRecipes", mock.Anything).Return([]recipe.Recipe{}, nil)
 	recipeMock.On("GetRecipe", mock.Anything, recipeID).Return(&r, nil)
@@ -36,7 +39,7 @@ func TestRoutes(t *testing.T) {
 	shutdown := make(chan os.Signal, 1)
 	logger, _ := logtest.NewNullLogger()
 
-	app := handlers.NewAPI(chamberRepoMock, recipeMock, shutdown, logger)
+	app := handlers.NewAPI(chamberRepoMock, thermometerMock, recipeMock, shutdown, logger)
 
 	type test struct {
 		path   string
@@ -50,6 +53,7 @@ func TestRoutes(t *testing.T) {
 		{path: "/v1/chambers/" + chamberID, method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/chambers", method: http.MethodPost, body: &c, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodDelete, body: nil, code: http.StatusOK},
+		{path: "/v1/thermometers", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/recipes", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/recipes/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/bad_path/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusNotFound},

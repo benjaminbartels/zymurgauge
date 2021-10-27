@@ -4,19 +4,21 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/benjaminbartels/zymurgauge/internal/device/raspberrypi"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 )
 
-type ThermometersHandler struct{}
+type ThermometersHandler struct {
+	Repo thermometer.Repo
+}
 
 func (h *ThermometersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	p httprouter.Params) error {
-	ids, err := raspberrypi.GetThermometerIDs()
+	ids, err := h.Repo.GetThermometerIDs()
 	if err != nil {
-		return errors.Wrap(err, "could not get all chambers from repository")
+		return errors.Wrap(err, "could not get all thermometers from repository")
 	}
 
 	if err = web.Respond(ctx, w, ids, http.StatusOK); err != nil {
