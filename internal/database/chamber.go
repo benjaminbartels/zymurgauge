@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/pkg/errors"
 	"go.etcd.io/bbolt"
@@ -11,7 +12,7 @@ import (
 
 const chamberBucket = "Chambers"
 
-var _ chamber.Repo = (*ChamberRepo)(nil)
+var _ internal.ChamberRepo = (*ChamberRepo)(nil)
 
 // ChamberRepo represents a bbolt repository for managing Chambers.
 type ChamberRepo struct {

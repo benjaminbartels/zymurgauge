@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	"github.com/benjaminbartels/zymurgauge/internal/recipe"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 )
 
 type RecipesHandler struct {
-	Repo recipe.Repo
+	Repo internal.RecipeRepo
 }
 
 func (h *RecipesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,

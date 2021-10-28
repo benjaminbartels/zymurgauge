@@ -6,13 +6,6 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 )
 
-type Repo interface {
-	GetAll() ([]Chamber, error)
-	Get(id string) (*Chamber, error)
-	Save(c *Chamber) error
-	Delete(id string) error
-}
-
 // Chamber represents an insulated box (fridge) with internal heating/cooling elements that reacts to changes in
 // monitored temperatures, by correcting small deviations from your desired fermentation temperature.
 type Chamber struct {

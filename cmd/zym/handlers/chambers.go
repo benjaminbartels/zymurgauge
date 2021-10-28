@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/julienschmidt/httprouter"
@@ -13,7 +14,7 @@ import (
 )
 
 type ChambersHandler struct {
-	Repo chamber.Repo
+	Repo internal.ChamberRepo
 }
 
 func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,

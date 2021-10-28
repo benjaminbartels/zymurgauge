@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/recipe"
 	"github.com/pkg/errors"
 )
@@ -22,7 +23,7 @@ var (
 	ErrTooManyRequests  = errors.New("too many request")
 )
 
-var _ recipe.Repo = (*Client)(nil)
+var _ internal.RecipeRepo = (*Client)(nil)
 
 type Client struct {
 	client  *http.Client

@@ -4,14 +4,14 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	"github.com/benjaminbartels/zymurgauge/internal/thermometer"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 )
 
 type ThermometersHandler struct {
-	Repo thermometer.Repo
+	Repo internal.ThermometerRepo
 }
 
 func (h *ThermometersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
