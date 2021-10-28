@@ -13,7 +13,7 @@ import (
 
 const (
 	chamberID        = "96f58a65-03c0-49f3-83ca-ab751bbf3768"
-	recipeID         = "0789f223-b5fb-49c1-a8a8-111adff88b82"
+	recipeID         = "KBTM3F9soO5TtbAx0A5mBZTAUsNZyg"
 	repoErrMsg       = "could not %s repository"
 	respondErrMsg    = "problem responding to client"
 	notFoundErrorMsg = "%s '%s' not found"
