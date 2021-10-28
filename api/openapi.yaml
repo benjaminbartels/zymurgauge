@@ -1,0 +1,385 @@
+openapi: 3.0.0
+info:
+  title: Zymurgauge API
+  version: 0.1.0
+servers:
+  - url: http://{host}:{port}/{basePath}
+    description: The production API server
+    variables:
+      host:
+        enum:
+        - 'localhost'
+        - 'zymurgauge.local'
+        default: localhost
+      port:
+        enum:
+          - '8080'
+        default: '8080'
+      basePath:
+        enum:
+        - 'v1'
+        default: v1
+paths:
+  '/chambers':
+    get:
+      description: Returns all chambers
+      operationId: getChambers
+      responses:
+        '200':
+          description: OK response with list of chambers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chamber'
+              examples:
+                chambers:
+                  $ref: '#/components/examples/chambers'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+    post:
+      description: Saves a chamber
+      operationId: saveChamber
+      requestBody:
+        description: Chamber to save
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Chamber'
+            examples:
+              newChamber:
+                $ref: '#/components/examples/newChamber'
+              updateChamber:
+                $ref: '#/components/examples/updateChamber'
+      responses:
+        '200':
+          description: OK response with saved chamber
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chamber'
+              examples:
+                chamber:
+                  $ref: '#/components/examples/chamber'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+  '/chambers/{id}':
+    get:
+      description: Returns a single chamber by id
+      operationId: getChamberByID
+      parameters:
+        - name: id
+          in: path
+          description: ID of chamber to get
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK response with a chamber
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chamber'
+              examples:
+                chamber:
+                  $ref: '#/components/examples/chamber'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/chamberNotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+    delete:
+      description: Deletes a single chamber by id
+      operationId: deleteChamberByID
+      parameters:
+        - name: id
+          in: path
+          description: ID of chamber to delete
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK response
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/chamberNotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+  '/thermometers':
+    get:
+      description: Returns all thermometer ids
+      operationId: getThermometers
+      responses:
+        '200':
+          description: OK response with list of thermometer ids
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+  '/recipes':
+    get:
+      description: Returns all recipes
+      operationId: getRecipes
+      responses:
+        '200':
+          description: OK response with list of recipes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recipe'
+              examples:
+                error:
+                  $ref: '#/components/examples/recipes'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+  '/recipes/{id}':
+    get:
+      description: Returns a single recipe by id
+      operationId: getRecipeByID
+      parameters:
+        - name: id
+          in: path
+          description: ID of recipe to get
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+      responses:
+        '200':
+          description: OK response with a recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+              examples:
+                error:
+                  $ref: '#/components/examples/recipe'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/recipeNotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+components:
+  schemas:
+    Chamber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        thermometerId:
+          type: string
+        chillerPin:
+          type: string
+        heaterPin:
+          type: string
+        chillerKp:
+          type: number
+          format: double
+        chillerKi:
+          type: number
+          format: double
+        chillerKd:
+          type: number
+          format: double
+        heaterKp:
+          type: number
+          format: double
+        heaterKi:
+          type: number
+          format: double
+        heaterKd:
+          type: number
+          format: double
+        modTime:
+          type: string
+          format: date-time
+    Recipe:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        modTime:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        errMessage:
+          type: string
+  examples:
+    chamber:
+      value:
+        id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
+        name: My Fermentation Chamber
+        thermometerId: 28-0000071cbc72
+        chillerPin: "1"
+        heaterPin: "2"
+        chillerKp: 1.0
+        chillerKi: 2.0
+        chillerKd: 3.0
+        heaterKp: 1.2
+        heaterKi: 2.3
+        heaterKd: 3.4
+        modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+    chambers:
+      value:
+        - id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
+          name: My Fermentation Chamber
+          thermometerId: 28-0000071cbc72
+        chillerPin: "1"
+        heaterPin: "2"
+          chillerKp: 1.0
+          chillerKi: 2.0
+          chillerKd: 3.0
+          heaterKp: 1.2
+          heaterKi: 2.3
+          heaterKd: 3.4
+          modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+        - id: dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1
+          name: My Fermentation Chamber
+          thermometerId: 28-0000041ab222
+          chillerPin: 1
+          heaterPin: 2
+          chillerKp: 1.0
+          chillerKi: 2.0
+          chillerKd: 3.0
+          heaterKp: 1.2
+          heaterKi: 2.3
+          heaterKd: 3.4
+          modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+    newChamber:
+      value:
+        name: My Fermentation Chamber
+        thermometerId: 28-0000071cbc72
+        chillerPin: "1"
+        heaterPin: "2"
+        chillerKp: 1.0
+        chillerKi: 2.0
+        chillerKd: 3.0
+        heaterKp: 1.2
+        heaterKi: 2.3
+        heaterKd: 3.4
+    updateChamber:
+      value:
+        id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
+        name: My Fermentation Chamber
+        thermometerId: 28-0000071cbc72
+        chillerPin: "1"
+        heaterPin: "2"
+        chillerKp: 1.0
+        chillerKi: 2.0
+        chillerKd: 3.0
+        heaterKp: 1.2
+        heaterKi: 2.3
+        heaterKd: 3.4
+    recipe:
+      value:
+        id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+        name: My Pale Ale
+        modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+    thermometerIDs:
+      - 28-0000071cbc72
+      - 28-0000041ab222
+    recipes:
+      value:
+        - id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+          name: My Pale Ale
+          modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+        - id: qbFkFfeaJdL1ZibNLTu2lfRjIii1qW
+          name: My Stout
+          modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+    chamberNotFoundError:
+      value:
+        error: chamber '96f58a65-03c0-49f3-83ca-ab751bbf3768' not found
+    recipeNotFoundError:
+      value:
+        error: recipe 'KBTM3F9soO5TtbAx0A5mBZTAUsNZyg' not found
+    internalServerError:
+      value:
+        error: Internal Server Error

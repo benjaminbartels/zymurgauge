@@ -100,6 +100,7 @@ linters-settings:
     settings:
       mnd:
         ignored-functions: strconv.ParseFloat,make
+  gosec:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

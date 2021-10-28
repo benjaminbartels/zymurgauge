@@ -6,6 +6,7 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.etcd.io/bbolt"
 )
@@ -86,6 +87,10 @@ func (r *ChamberRepo) Get(id string) (*chamber.Chamber, error) {
 
 // Save creates or updates a Chamber.
 func (r *ChamberRepo) Save(c *chamber.Chamber) error {
+	if c.ID == "" {
+		c.ID = uuid.NewString()
+	}
+
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
 		bu := tx.Bucket([]byte(chamberBucket))
 		c.ModTime = time.Now()
