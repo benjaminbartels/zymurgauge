@@ -87,7 +87,6 @@ func (r *ChamberRepo) Get(id string) (*chamber.Chamber, error) {
 
 // Save creates or updates a Chamber.
 func (r *ChamberRepo) Save(c *chamber.Chamber) error {
-
 	if c.ID == "" {
 		c.ID = uuid.NewString()
 	}
