@@ -13,8 +13,9 @@ import (
 
 const (
 	chamberID        = "96f58a65-03c0-49f3-83ca-ab751bbf3768"
-	recipeID         = "KBTM3F9soO5TtbAx0A5mBZTAUsNZyg"
+	batchID          = "KBTM3F9soO5TtbAx0A5mBZTAUsNZyg"
 	repoErrMsg       = "could not %s repository"
+	controllerErrMsg = "could not %s controller"
 	respondErrMsg    = "problem responding to client"
 	notFoundErrorMsg = "%s '%s' not found"
 	parseErrorMsg    = "could not parse chamber"

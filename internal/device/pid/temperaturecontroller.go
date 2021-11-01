@@ -45,7 +45,7 @@ type TemperatureController struct {
 	onMutex             sync.Mutex
 }
 
-func NewTemperatureController(thermometer device.Thermometer, chiller, heater device.Actuator,
+func NewPIDTemperatureController(thermometer device.Thermometer, chiller, heater device.Actuator,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
 	logger *logrus.Logger, options ...OptionsFunc) *TemperatureController {
 	t := &TemperatureController{
@@ -145,7 +145,7 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 			t.logger.Debugf("Actuator %s acting for %v", name, dutyTime)
 
 			if didComplete := t.wait(ctx, dutyTime); !didComplete {
-				return t.quit(actuator)
+				return t.quit(name, actuator)
 			}
 
 			t.logger.Debugf("Actuator %s acted for %v", name, dutyTime)
@@ -159,7 +159,7 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 			t.logger.Debugf("Actuator %s waiting for %v", name, waitTime)
 
 			if didComplete := t.wait(ctx, waitTime); !didComplete {
-				return t.quit(actuator)
+				return t.quit(name, actuator)
 			}
 
 			t.logger.Debugf("Actuator %s waited for %v", name, waitTime)
@@ -175,6 +175,10 @@ func (t *TemperatureController) wait(ctx context.Context, waitTime time.Duration
 	case <-timer.C:
 		return true
 	case <-ctx.Done():
+		t.onMutex.Lock()
+		defer t.onMutex.Unlock()
+		t.isOn = false
+
 		return false
 	}
 }
@@ -218,7 +222,9 @@ func newPID(kP, kI, kD, min, max float64) *pidctrl.PIDController {
 	return pid
 }
 
-func (t *TemperatureController) quit(actuator device.Actuator) error {
+func (t *TemperatureController) quit(name string, actuator device.Actuator) error {
+	t.logger.Debugf("Actuator %s quiting", name)
+
 	if err := actuator.Off(); err != nil {
 		return errors.Wrap(err, "could not turn actuator off while quiting")
 	}

@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
-	"github.com/benjaminbartels/zymurgauge/internal/recipe"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -20,26 +21,30 @@ import (
 func TestRoutes(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{ID: chamberID}
-	r := recipe.Recipe{ID: recipeID}
+	ctx := context.Background()
+	l, _ := logtest.NewNullLogger()
 
-	chamberRepoMock := &mocks.ChamberRepo{}
-	chamberRepoMock.On("GetAll").Return([]chamber.Chamber{}, nil)
-	chamberRepoMock.On("Get", mock.Anything).Return(&c, nil)
-	chamberRepoMock.On("Save", mock.Anything).Return(nil)
-	chamberRepoMock.On("Delete", mock.Anything).Return(nil)
+	c := chamber.Chamber{ID: chamberID}
+	_ = c.Configure(ctx, l)
+	r := batch.Batch{ID: batchID}
+
+	chamberControllerMock := &mocks.ChamberController{}
+	chamberControllerMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
+	chamberControllerMock.On("GetChamber", mock.Anything).Return(&c, nil)
+	chamberControllerMock.On("SaveChamber", mock.Anything).Return(nil)
+	chamberControllerMock.On("DeleteChamber", mock.Anything).Return(nil)
 
 	thermometerMock := &mocks.ThermometerRepo{}
 	thermometerMock.On("GetThermometerIDs", mock.Anything).Return([]string{}, nil)
 
-	recipeMock := &mocks.RecipeRepo{}
-	recipeMock.On("GetRecipes", mock.Anything).Return([]recipe.Recipe{}, nil)
-	recipeMock.On("GetRecipe", mock.Anything, recipeID).Return(&r, nil)
+	recipeMock := &mocks.BatchRepo{}
+	recipeMock.On("GetAllBatches", mock.Anything).Return([]batch.Batch{}, nil)
+	recipeMock.On("GetBatch", mock.Anything, batchID).Return(&r, nil)
 
 	shutdown := make(chan os.Signal, 1)
 	logger, _ := logtest.NewNullLogger()
 
-	app := handlers.NewAPI(chamberRepoMock, thermometerMock, recipeMock, shutdown, logger)
+	app := handlers.NewAPI(chamberControllerMock, thermometerMock, recipeMock, shutdown, logger)
 
 	type test struct {
 		path   string
@@ -54,9 +59,9 @@ func TestRoutes(t *testing.T) {
 		{path: "/v1/chambers", method: http.MethodPost, body: &c, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodDelete, body: nil, code: http.StatusOK},
 		{path: "/v1/thermometers", method: http.MethodGet, body: nil, code: http.StatusOK},
-		{path: "/v1/recipes", method: http.MethodGet, body: nil, code: http.StatusOK},
-		{path: "/v1/recipes/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusOK},
-		{path: "/v1/bad_path/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusNotFound},
+		{path: "/v1/batches", method: http.MethodGet, body: nil, code: http.StatusOK},
+		{path: "/v1/batches/" + batchID, method: http.MethodGet, body: nil, code: http.StatusOK},
+		{path: "/v1/bad_path/" + batchID, method: http.MethodGet, body: nil, code: http.StatusNotFound},
 	}
 
 	for _, tc := range testCases {

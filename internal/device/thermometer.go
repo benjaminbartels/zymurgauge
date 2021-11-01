@@ -4,3 +4,7 @@ package device
 type Thermometer interface {
 	GetTemperature() (float64, error)
 }
+
+type ThermometerRepo interface {
+	GetThermometerIDs() ([]string, error)
+}

@@ -68,7 +68,7 @@ func TestOnActuatorsOn(t *testing.T) {
 			heaterCh := make(chan struct{}, 1)
 			heaterFake := &fakes.Actuator{OnCh: heaterCh}
 
-			therm := pid.NewTemperatureController(thermometerMock, chillerFake, heaterFake, chillerKp, chillerKi, chillerKd,
+			therm := pid.NewPIDTemperatureController(thermometerMock, chillerFake, heaterFake, chillerKp, chillerKi, chillerKd,
 				heaterKp, heaterKi, heaterKd, l)
 
 			ctx, stop := context.WithCancel(context.Background())
@@ -136,8 +136,10 @@ func TestOnDutyCycle(t *testing.T) {
 			heaterMock := &mocks.Actuator{}
 			heaterMock.Mock.On("Off").Return(nil)
 
-			therm := pid.NewTemperatureController(thermometerMock, chillerFake, heaterMock, chillerKp, chillerKi, chillerKd,
-				heaterKp, heaterKi, heaterKd, l, pid.SetChillingCyclePeriod(100*time.Millisecond),
+			therm := pid.NewPIDTemperatureController(thermometerMock, chillerFake, heaterMock,
+				chillerKp, chillerKi, chillerKd,
+				heaterKp, heaterKi, heaterKd,
+				l, pid.SetChillingCyclePeriod(100*time.Millisecond),
 				pid.SetChillingMinimum(10*time.Millisecond))
 
 			var elapsedTime time.Duration
@@ -188,7 +190,7 @@ func TestLogging(t *testing.T) {
 	heaterCh := make(chan time.Duration, 1)
 	heaterFake := &fakes.Actuator{OffCh: heaterCh}
 
-	therm := pid.NewTemperatureController(thermometerMock, chillerMock, heaterFake, chillerKp, chillerKi, chillerKd,
+	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterFake, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l, pid.SetHeatingCyclePeriod(100*time.Millisecond),
 		pid.SetHeatingMinimum(50*time.Millisecond))
 
@@ -233,7 +235,7 @@ func TestOnAlreadyOnError(t *testing.T) {
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("Off").Return(nil)
 
-	therm := pid.NewTemperatureController(thermometerMock, chillerFake, heaterMock, chillerKp, chillerKi, chillerKd,
+	therm := pid.NewPIDTemperatureController(thermometerMock, chillerFake, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
 	ctx := context.Background()
@@ -264,7 +266,7 @@ func TestThermometerError(t *testing.T) {
 	chillerMock := &mocks.Actuator{}
 	heaterMock := &mocks.Actuator{}
 
-	therm := pid.NewTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
+	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
 	ctx := context.Background()
@@ -286,7 +288,7 @@ func TestActuatorOnError(t *testing.T) {
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("Off").Return(nil)
 
-	therm := pid.NewTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
+	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
 	ctx := context.Background()
@@ -309,7 +311,7 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("Off").Return(nil)
 
-	therm := pid.NewTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
+	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l, pid.SetChillingCyclePeriod(100*time.Millisecond),
 		pid.SetChillingMinimum(10*time.Millisecond))
 
@@ -332,7 +334,7 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("Off").Return(nil)
 
-	therm := pid.NewTemperatureController(thermometerMock, chillerFake, heaterMock, chillerKp, chillerKi, chillerKd,
+	therm := pid.NewPIDTemperatureController(thermometerMock, chillerFake, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
 	ctx, stop := context.WithCancel(context.Background())

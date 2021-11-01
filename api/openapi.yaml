@@ -91,6 +91,7 @@ paths:
           schema:
             type: string
             format: uuid
+          example: 96f58a65-03c0-49f3-83ca-ab751bbf3768
       responses:
         '200':
           description: OK response with a chamber
@@ -130,9 +131,100 @@ paths:
           schema:
             type: string
             format: uuid
+          example: 96f58a65-03c0-49f3-83ca-ab751bbf3768
       responses:
         '200':
           description: OK response
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/chamberNotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+  '/chambers/{id}/start':
+    post:
+      description: Starts a fermentation at the given step
+      operationId: startFermentation
+      parameters:
+        - name: id
+          in: path
+          description: ID of the chamber to start fermentation in
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 96f58a65-03c0-49f3-83ca-ab751bbf3768
+        - name: step
+          in: query
+          description: step of fermentation
+          required: true
+          schema:
+            type: number
+            format: integer
+          example: 1
+      responses:
+        '200':
+          description: OK response with a chamber
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+              examples:
+                chamber:
+                  $ref: '#/components/examples/success'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/chamberNotFoundError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                error:
+                  $ref: '#/components/examples/internalServerError'
+  '/chambers/{id}/stop':
+    post:
+      description: Stops a fermentation
+      operationId: stopFermentation
+      parameters:
+        - name: id
+          in: path
+          description: ID of the chamber to stop fermentation in
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: 96f58a65-03c0-49f3-83ca-ab751bbf3768
+      responses:
+        '200':
+          description: OK response with a chamber
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+              examples:
+                chamber:
+                  $ref: '#/components/examples/success'
         '404':
           description: Not found
           content:
@@ -164,6 +256,7 @@ paths:
                 type: array
                 items:
                   type: string
+              example: ["28-0000071cbc72","28-0000041ab222"]
         '500':
           description: Internal Server Error
           content:
@@ -173,22 +266,22 @@ paths:
               examples:
                 error:
                   $ref: '#/components/examples/internalServerError'
-  '/recipes':
+  '/batches':
     get:
-      description: Returns all recipes
-      operationId: getRecipes
+      description: Returns all batches
+      operationId: getBatches
       responses:
         '200':
-          description: OK response with list of recipes
+          description: OK response with list of batches
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Recipe'
+                  $ref: '#/components/schemas/Batch'
               examples:
                 error:
-                  $ref: '#/components/examples/recipes'
+                  $ref: '#/components/examples/batches'
         '500':
           description: Internal Server Error
           content:
@@ -198,14 +291,14 @@ paths:
               examples:
                 error:
                   $ref: '#/components/examples/internalServerError'
-  '/recipes/{id}':
+  '/batches/{id}':
     get:
-      description: Returns a single recipe by id
-      operationId: getRecipeByID
+      description: Returns a single batch by id
+      operationId: getBatchByID
       parameters:
         - name: id
           in: path
-          description: ID of recipe to get
+          description: ID of batch to get
           required: true
           schema:
             type: string
@@ -213,14 +306,14 @@ paths:
           example: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
       responses:
         '200':
-          description: OK response with a recipe
+          description: OK response with a batch
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Recipe'
+                $ref: '#/components/schemas/Status'
               examples:
                 error:
-                  $ref: '#/components/examples/recipe'
+                  $ref: '#/components/examples/success'
         '404':
           description: Not found
           content:
@@ -229,7 +322,7 @@ paths:
                 $ref: '#/components/schemas/Error'
               examples:
                 error:
-                  $ref: '#/components/examples/recipeNotFoundError'
+                  $ref: '#/components/examples/batchNotFoundError'
         '500':
           description: Internal server error
           content:
@@ -276,7 +369,7 @@ components:
         modTime:
           type: string
           format: date-time
-    Recipe:
+    Batch:
       type: object
       properties:
         id:
@@ -287,6 +380,11 @@ components:
         modTime:
           type: string
           format: date-time
+    Status:
+      type: object
+      properties:
+        message:
+          type: string
     Error:
       type: object
       properties:
@@ -306,20 +404,58 @@ components:
         heaterKp: 1.2
         heaterKi: 2.3
         heaterKd: 3.4
+        currentBatch: 
+          id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+          name: My Pale Ale
+          fermentation: 
+              Name: Imported
+              Steps:
+                - type: "Primary"
+                  actualTime: 1635573600000
+                  stepTemp: 19.4
+                  stepTime: 4
+                - type: Secondary
+                  actualTime: 1635919200000
+                  stepTime: 10
+                  stepTemp: 19.
+                - type": "Conditioning"
+                  actualTime: 1636786800000
+                  stepTime: 30
+                  stepTemp: 18.3
+        currentFermentationStep: 2
         modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
     chambers:
       value:
         - id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
           name: My Fermentation Chamber
           thermometerId: 28-0000071cbc72
-        chillerPin: "1"
-        heaterPin: "2"
+          chillerPin: "1"
+          heaterPin: "2"
           chillerKp: 1.0
           chillerKi: 2.0
           chillerKd: 3.0
           heaterKp: 1.2
           heaterKi: 2.3
           heaterKd: 3.4
+          currentBatch: 
+            id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+            name: My Pale Ale
+            fermentation: 
+                Name: Imported
+                Steps:
+                  - type: "Primary"
+                    actualTime: 1635573600000
+                    stepTemp: 19.4
+                    stepTime: 4
+                  - type: Secondary
+                    actualTime: 1635919200000
+                    stepTime: 10
+                    stepTemp: 19.
+                  - type": "Conditioning"
+                    actualTime: 1636786800000
+                    stepTime: 30
+                    stepTemp: 18.3
+          currentFermentationStep: 2
           modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
         - id: dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1
           name: My Fermentation Chamber
@@ -358,28 +494,66 @@ components:
         heaterKp: 1.2
         heaterKi: 2.3
         heaterKd: 3.4
-    recipe:
+    batch:
       value:
         id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
         name: My Pale Ale
-        modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
-    thermometerIDs:
-      - 28-0000071cbc72
-      - 28-0000041ab222
-    recipes:
+        fermentation: 
+            Name: Imported
+            Steps:
+              - type: "Primary"
+                actualTime: 1635573600000
+                stepTemp: 19.4
+                stepTime: 4
+              - type: Secondary
+                actualTime: 1635919200000
+                stepTime: 10
+                stepTemp: 19.
+              - type": "Conditioning"
+                actualTime: 1636786800000
+                stepTime: 30
+                stepTemp: 18.3
+    batches:
       value:
         - id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
           name: My Pale Ale
-          modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+          fermentation: 
+              Name: Imported
+              Steps:
+                - type: "Primary"
+                  actualTime: 1635573600000
+                  stepTemp: 19.4
+                  stepTime: 4
+                - type: Secondary
+                  actualTime: 1635919200000
+                  stepTime: 10
+                  stepTemp: 19.
+                - type: "Conditioning"
+                  actualTime: 1636786800000
+                  stepTime: 30
+                  stepTemp: 18.3
         - id: qbFkFfeaJdL1ZibNLTu2lfRjIii1qW
-          name: My Stout
-          modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+          name: Stout
+          fermentation: 
+              Name: Imported
+              Steps:
+                - type: "Primary"
+                  actualTime: 1635573600000
+                  stepTemp: 19.4
+                  stepTime: 4
+                - type": "Conditioning"
+                  actualTime: 1636786800000
+                  stepTime: 30
+                  stepTemp: 18.3
+    success:
+      value:
+        message: Success
     chamberNotFoundError:
       value:
         error: chamber '96f58a65-03c0-49f3-83ca-ab751bbf3768' not found
-    recipeNotFoundError:
+    batchNotFoundError:
       value:
-        error: recipe 'KBTM3F9soO5TtbAx0A5mBZTAUsNZyg' not found
+        error: batch 'KBTM3F9soO5TtbAx0A5mBZTAUsNZyg' not found
     internalServerError:
       value:
         error: Internal Server Error

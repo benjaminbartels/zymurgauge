@@ -16,7 +16,7 @@ func TestOptions(t *testing.T) {
 	expected := time.Nanosecond
 	clock := clock.NewRealClock()
 
-	pid := NewTemperatureController(nil, nil, nil, 1, 1, 1, 1, 1, 1, l,
+	pid := NewPIDTemperatureController(nil, nil, nil, 1, 1, 1, 1, 1, 1, l,
 		SetClock(clock),
 		SetChillingCyclePeriod(expected),
 		SetHeatingCyclePeriod(expected),
