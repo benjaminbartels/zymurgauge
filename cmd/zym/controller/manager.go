@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"sync"
 
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/hashicorp/go-multierror"
@@ -13,17 +14,18 @@ import (
 
 type ChamberManager struct {
 	repo     chamber.Repo
-	chambers map[string]*chamber.Chamber
-	mainCtx  context.Context
-	logger   *logrus.Logger
+	chambers sync.Map
+	// chambers map[string]*chamber.Chamber
+	mainCtx context.Context
+	logger  *logrus.Logger
 }
 
 func NewChamberManager(ctx context.Context, repo chamber.Repo, logger *logrus.Logger) (*ChamberManager, error) {
 	c := &ChamberManager{
-		repo:     repo,
-		chambers: make(map[string]*chamber.Chamber),
-		mainCtx:  ctx,
-		logger:   logger,
+		repo: repo,
+		// chambers: make(map[string]*chamber.Chamber),
+		mainCtx: ctx,
+		logger:  logger,
 	}
 
 	chambers, err := c.repo.GetAllChambers()
@@ -39,7 +41,7 @@ func NewChamberManager(ctx context.Context, repo chamber.Repo, logger *logrus.Lo
 				errors.Wrapf(err, "could not configure temperature controller for chamber %s", chambers[i].Name))
 		}
 
-		c.chambers[chambers[i].ID] = &chambers[i]
+		c.chambers.Store(chambers[i].ID, &chambers[i])
 	}
 
 	if err != nil {
@@ -49,18 +51,25 @@ func NewChamberManager(ctx context.Context, repo chamber.Repo, logger *logrus.Lo
 	return c, nil
 }
 
-func (c *ChamberManager) GetAllChambers() []chamber.Chamber {
-	chambers := make([]chamber.Chamber, 0, len(c.chambers))
+func (c *ChamberManager) GetAllChambers() []*chamber.Chamber {
+	chambers := []*chamber.Chamber{}
 
-	for _, chamber := range c.chambers {
-		chambers = append(chambers, *chamber)
-	}
+	c.chambers.Range(func(key, value interface{}) bool {
+		chambers = append(chambers, value.(*chamber.Chamber))
+
+		return true
+	})
 
 	return chambers
 }
 
 func (c *ChamberManager) GetChamber(id string) *chamber.Chamber {
-	return c.chambers[id]
+	value, ok := c.chambers.Load(id)
+	if ok {
+		return value.(*chamber.Chamber)
+	}
+
+	return nil
 }
 
 func (c *ChamberManager) SaveChamber(chamber *chamber.Chamber) error {
@@ -68,10 +77,10 @@ func (c *ChamberManager) SaveChamber(chamber *chamber.Chamber) error {
 		return errors.Wrap(err, "could not save chamber to repository")
 	}
 
-	c.chambers[chamber.ID] = chamber
+	c.chambers.Store(chamber.ID, chamber)
 
-	if err := c.chambers[chamber.ID].Configure(c.mainCtx, c.logger); err != nil {
-		return errors.Wrap(err, "could not save chamber to repository")
+	if err := chamber.Configure(c.mainCtx, c.logger); err != nil {
+		return errors.Wrap(err, "could not configure chamber")
 	}
 
 	return nil
@@ -82,7 +91,7 @@ func (c *ChamberManager) DeleteChamber(id string) error {
 		return errors.Wrapf(err, "could not delete chamber %s from repository", id)
 	}
 
-	delete(c.chambers, id)
+	c.chambers.Delete(id)
 
 	return nil
 }

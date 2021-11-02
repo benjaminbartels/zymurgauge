@@ -25,12 +25,19 @@ func TestRoutes(t *testing.T) {
 	ctx := context.Background()
 	l, _ := logtest.NewNullLogger()
 
-	c := chamber.Chamber{ID: chamberID}
-	// _ = c.Configure(ctx, l)
+	c := chamber.Chamber{
+		ID: chamberID,
+		CurrentBatch: &batch.Batch{
+			Fermentation: batch.Fermentation{
+				Steps: []batch.FermentationStep{{StepTemp: 22}},
+			},
+		},
+	}
+
 	r := batch.Batch{ID: batchID}
 
 	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
+	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
 	repoMock.On("GetChamber", mock.Anything).Return(&c, nil)
 	repoMock.On("SaveChamber", mock.Anything).Return(nil)
 	repoMock.On("DeleteChamber", mock.Anything).Return(nil)
