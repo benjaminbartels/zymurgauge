@@ -72,7 +72,7 @@ func run(logger *logrus.Logger) error {
 
 	sim := simulator.New(cli.StartingTemp)
 	clock := fakes.NewDilatedClock(cli.Multiplier)
-	pid := pid.NewTemperatureController(sim.Thermometer, sim.Chiller, sim.Heater,
+	pid := pid.NewPIDTemperatureController(sim.Thermometer, sim.Chiller, sim.Heater,
 		cli.ChillerKp, cli.ChillerKi, cli.ChillerKd, cli.HeaterKp, cli.HeaterKi, cli.HeaterKd,
 		logger, pid.SetClock(clock))
 	ctx, stop := context.WithCancel(context.Background())

@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
@@ -55,6 +56,9 @@ func run(logger *logrus.Logger) error {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
+	ctx, interruptCancel := c.WithInterrupt(context.Background())
+	defer interruptCancel()
+
 	go func() {
 		if err := http.ListenAndServe(cfg.DebugHost, handlers.DebugMux()); err != nil {
 			logger.WithError(err).Errorf("Debug endpoint %s closed.", cfg.DebugHost)
@@ -71,6 +75,11 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
+	chamberManager, err := controller.NewChamberManager(ctx, chamberRepo, logger)
+	if err != nil {
+		return errors.Wrap(err, "could not create chamber controller")
+	}
+
 	ds18b20Repo := raspberrypi.NewDs18b20Repo()
 
 	brewfather := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
@@ -83,13 +92,10 @@ func run(logger *logrus.Logger) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberRepo, ds18b20Repo, brewfather, shutdown, logger),
+		Handler:      handlers.NewAPI(chamberManager, ds18b20Repo, brewfather, shutdown, logger),
 	}
 
 	httpServerErrors := make(chan error, 1)
-
-	ctx, interruptCancel := c.WithInterrupt(context.Background())
-	defer interruptCancel()
 
 	go func() {
 		logger.Infof("fermmon started version %s, listening at %s", build, cfg.Host)
@@ -119,7 +125,7 @@ func wait(ctx context.Context, server *http.Server, serverErrors chan error, tim
 		}
 	}
 
-	logger.Info("fermmon stopped")
+	logger.Info("fermmon stopped 👋!")
 
 	return nil
 }

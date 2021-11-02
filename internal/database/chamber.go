@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -13,7 +12,7 @@ import (
 
 const chamberBucket = "Chambers"
 
-var _ internal.ChamberRepo = (*ChamberRepo)(nil)
+var _ chamber.Repo = (*ChamberRepo)(nil)
 
 // ChamberRepo represents a bbolt repository for managing Chambers.
 type ChamberRepo struct {
@@ -44,7 +43,7 @@ func NewChamberRepo(db *bbolt.DB) (*ChamberRepo, error) {
 }
 
 // GetAll returns all Chambers.
-func (r *ChamberRepo) GetAll() ([]chamber.Chamber, error) {
+func (r *ChamberRepo) GetAllChambers() ([]chamber.Chamber, error) {
 	chambers := []chamber.Chamber{}
 
 	if err := r.db.View(func(tx *bbolt.Tx) error {
@@ -67,7 +66,7 @@ func (r *ChamberRepo) GetAll() ([]chamber.Chamber, error) {
 }
 
 // Get returns a Chamber by its ID.
-func (r *ChamberRepo) Get(id string) (*chamber.Chamber, error) {
+func (r *ChamberRepo) GetChamber(id string) (*chamber.Chamber, error) {
 	var c *chamber.Chamber
 
 	if err := r.db.View(func(tx *bbolt.Tx) error {
@@ -86,10 +85,12 @@ func (r *ChamberRepo) Get(id string) (*chamber.Chamber, error) {
 }
 
 // Save creates or updates a Chamber.
-func (r *ChamberRepo) Save(c *chamber.Chamber) error {
+func (r *ChamberRepo) SaveChamber(c *chamber.Chamber) error {
 	if c.ID == "" {
 		c.ID = uuid.NewString()
 	}
+
+	// TODO: Update modtime
 
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
 		bu := tx.Bucket([]byte(chamberBucket))
@@ -109,7 +110,7 @@ func (r *ChamberRepo) Save(c *chamber.Chamber) error {
 }
 
 // Delete permanently removes a Chamber.
-func (r *ChamberRepo) Delete(id string) error {
+func (r *ChamberRepo) DeleteChamber(id string) error {
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
 		bu := tx.Bucket([]byte(chamberBucket))
 		if err := bu.Delete([]byte(id)); err != nil {

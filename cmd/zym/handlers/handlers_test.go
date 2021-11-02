@@ -13,18 +13,25 @@ import (
 
 const (
 	chamberID        = "96f58a65-03c0-49f3-83ca-ab751bbf3768"
-	recipeID         = "KBTM3F9soO5TtbAx0A5mBZTAUsNZyg"
+	batchID          = "KBTM3F9soO5TtbAx0A5mBZTAUsNZyg"
 	repoErrMsg       = "could not %s repository"
+	controllerErrMsg = "could not %s controller"
 	respondErrMsg    = "problem responding to client"
 	notFoundErrorMsg = "%s '%s' not found"
 	parseErrorMsg    = "could not parse chamber"
 )
 
-var errDeadDatabase = errors.New("database is dead")
+var errSomeError = errors.New("some error")
 
-func setupHandlerTest(body io.Reader) (w *httptest.ResponseRecorder, r *http.Request, ctx context.Context) {
+func setupHandlerTest(query string, body io.Reader) (w *httptest.ResponseRecorder, r *http.Request,
+	ctx context.Context) {
 	w = httptest.NewRecorder()
-	r = httptest.NewRequest("", "/", body)
+
+	if query != "" {
+		query = "?" + query
+	}
+
+	r = httptest.NewRequest("", "/"+query, body)
 	v := web.CtxValues{
 		Path: r.URL.Path,
 		Now:  time.Now(),

@@ -2,15 +2,17 @@ package handlers_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
-	"github.com/benjaminbartels/zymurgauge/internal/recipe"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -19,27 +21,6 @@ import (
 
 func TestRoutes(t *testing.T) {
 	t.Parallel()
-
-	c := chamber.Chamber{ID: chamberID}
-	r := recipe.Recipe{ID: recipeID}
-
-	chamberRepoMock := &mocks.ChamberRepo{}
-	chamberRepoMock.On("GetAll").Return([]chamber.Chamber{}, nil)
-	chamberRepoMock.On("Get", mock.Anything).Return(&c, nil)
-	chamberRepoMock.On("Save", mock.Anything).Return(nil)
-	chamberRepoMock.On("Delete", mock.Anything).Return(nil)
-
-	thermometerMock := &mocks.ThermometerRepo{}
-	thermometerMock.On("GetThermometerIDs", mock.Anything).Return([]string{}, nil)
-
-	recipeMock := &mocks.RecipeRepo{}
-	recipeMock.On("GetRecipes", mock.Anything).Return([]recipe.Recipe{}, nil)
-	recipeMock.On("GetRecipe", mock.Anything, recipeID).Return(&r, nil)
-
-	shutdown := make(chan os.Signal, 1)
-	logger, _ := logtest.NewNullLogger()
-
-	app := handlers.NewAPI(chamberRepoMock, thermometerMock, recipeMock, shutdown, logger)
 
 	type test struct {
 		path   string
@@ -51,18 +32,60 @@ func TestRoutes(t *testing.T) {
 	testCases := []test{
 		{path: "/v1/chambers", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodGet, body: nil, code: http.StatusOK},
-		{path: "/v1/chambers", method: http.MethodPost, body: &c, code: http.StatusOK},
+		{path: "/v1/chambers", method: http.MethodPost, body: &chamber.Chamber{ID: chamberID}, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodDelete, body: nil, code: http.StatusOK},
+		{path: "/v1/chambers/" + chamberID + "/start?step=1", method: http.MethodPost, body: nil, code: http.StatusOK},
+		{path: "/v1/chambers/" + chamberID + "/stop", method: http.MethodPost, body: nil, code: http.StatusOK},
 		{path: "/v1/thermometers", method: http.MethodGet, body: nil, code: http.StatusOK},
-		{path: "/v1/recipes", method: http.MethodGet, body: nil, code: http.StatusOK},
-		{path: "/v1/recipes/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusOK},
-		{path: "/v1/bad_path/" + recipeID, method: http.MethodGet, body: nil, code: http.StatusNotFound},
+		{path: "/v1/batches", method: http.MethodGet, body: nil, code: http.StatusOK},
+		{path: "/v1/batches/" + batchID, method: http.MethodGet, body: nil, code: http.StatusOK},
+		{path: "/v1/bad_path/" + batchID, method: http.MethodGet, body: nil, code: http.StatusNotFound},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
+
+		ctx := context.Background()
+		l, _ := logtest.NewNullLogger()
+
+		c := chamber.Chamber{
+			ID: chamberID,
+			CurrentBatch: &batch.Batch{
+				Fermentation: batch.Fermentation{
+					Steps: []batch.FermentationStep{{StepTemp: 22}},
+				},
+			},
+		}
+
+		r := batch.Batch{ID: batchID}
+
+		repoMock := &mocks.ChamberRepo{}
+		repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+		repoMock.On("GetChamber", mock.Anything).Return(&c, nil)
+		repoMock.On("SaveChamber", mock.Anything).Return(nil)
+		repoMock.On("DeleteChamber", mock.Anything).Return(nil)
+
+		thermometerMock := &mocks.ThermometerRepo{}
+		thermometerMock.On("GetThermometerIDs", mock.Anything).Return([]string{}, nil)
+
+		recipeMock := &mocks.BatchRepo{}
+		recipeMock.On("GetAllBatches", mock.Anything).Return([]batch.Batch{}, nil)
+		recipeMock.On("GetBatch", mock.Anything, batchID).Return(&r, nil)
+
+		shutdown := make(chan os.Signal, 1)
+		logger, _ := logtest.NewNullLogger()
+
+		manager, _ := controller.NewChamberManager(ctx, repoMock, l)
+
+		app := handlers.NewAPI(manager, thermometerMock, recipeMock, shutdown, logger)
+
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
+
+			if tc.path == "/v1/chambers/"+chamberID+"/stop" {
+				_ = manager.GetChamber(chamberID).StartFermentation(1)
+			}
+
 			w := httptest.NewRecorder()
 			jsonBytes, _ := json.Marshal(tc.body)
 			r := httptest.NewRequest(tc.method, tc.path, bytes.NewBuffer(jsonBytes))

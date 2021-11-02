@@ -7,14 +7,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
-	"github.com/benjaminbartels/zymurgauge/internal/recipe"
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/pkg/errors"
 )
 
 const (
-	APIURL      = "https://api.brewfather.app/v1"
-	recipesPath = "recipes"
+	APIURL      = "https://api.brewfather.app/v1/"
+	batchesPath = "batches"
 )
 
 var (
@@ -23,7 +22,7 @@ var (
 	ErrTooManyRequests  = errors.New("too many request")
 )
 
-var _ internal.RecipeRepo = (*Client)(nil)
+var _ batch.Repo = (*Client)(nil)
 
 type Client struct {
 	client  *http.Client
@@ -44,15 +43,15 @@ func New(baseURL, userID, apiKey string) *Client {
 	return c
 }
 
-func (s *Client) GetRecipes(ctx context.Context) ([]recipe.Recipe, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", s.baseURL, recipesPath), nil)
+func (s *Client) GetAllBatches(ctx context.Context) ([]batch.Batch, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", s.baseURL, batchesPath), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create GET request for Recipes")
+		return nil, errors.Wrap(err, "could not create GET request for Batches")
 	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not GET Recipes")
+		return nil, errors.Wrap(err, "could not GET Batches")
 	}
 
 	defer resp.Body.Close()
@@ -61,23 +60,23 @@ func (s *Client) GetRecipes(ctx context.Context) ([]recipe.Recipe, error) {
 		return nil, err
 	}
 
-	var recipes []recipe.Recipe
-	if err = json.NewDecoder(resp.Body).Decode(&recipes); err != nil {
-		return nil, errors.Wrap(err, "could not decode Recipes")
+	var batches []Batch
+	if err = json.NewDecoder(resp.Body).Decode(&batches); err != nil {
+		return nil, errors.Wrap(err, "could not decode Batches")
 	}
 
-	return recipes, nil
+	return convertBatchs(batches), nil
 }
 
-func (s *Client) GetRecipe(ctx context.Context, id string) (*recipe.Recipe, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", s.baseURL, recipesPath, id), nil)
+func (s *Client) GetBatch(ctx context.Context, id string) (*batch.Batch, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", s.baseURL, batchesPath, id), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create GET request for Recipes")
+		return nil, errors.Wrap(err, "could not create GET request for Batch")
 	}
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not GET Recipe")
+		return nil, errors.Wrap(err, "could not GET Batch")
 	}
 
 	defer resp.Body.Close()
@@ -86,12 +85,23 @@ func (s *Client) GetRecipe(ctx context.Context, id string) (*recipe.Recipe, erro
 		return nil, err
 	}
 
-	var recipe *recipe.Recipe
-	if err = json.NewDecoder(resp.Body).Decode(&recipe); err != nil {
-		return nil, errors.Wrap(err, "could not decode Recipe")
+	var batch Batch
+	if err = json.NewDecoder(resp.Body).Decode(&batch); err != nil {
+		return nil, errors.Wrap(err, "could not decode Batch")
 	}
 
-	return recipe, nil
+	b := convertBatch(batch)
+
+	return &b, nil
+}
+
+func convertBatchs(batches []Batch) []batch.Batch {
+	s := []batch.Batch{}
+	for i := 0; i < len(batches); i++ {
+		s = append(s, convertBatch(batches[i]))
+	}
+
+	return s
 }
 
 type transport struct {
@@ -130,5 +140,38 @@ func parseStatusCode(code int) error {
 		return ErrTooManyRequests
 	default:
 		return nil
+	}
+}
+
+func convertBatch(b Batch) batch.Batch {
+	return batch.Batch{
+		ID:           b.ID,
+		Name:         b.Name,
+		Fermentation: convertFermentation(b.Recipe.Fermentation),
+	}
+}
+
+func convertFermentation(fermentation Fermentation) batch.Fermentation {
+	return batch.Fermentation{
+		Name:  fermentation.Name,
+		Steps: convertFermentationSteps(fermentation.Steps),
+	}
+}
+
+func convertFermentationSteps(steps []FermentationStep) []batch.FermentationStep {
+	s := []batch.FermentationStep{}
+	for i := 0; i < len(steps); i++ {
+		s = append(s, convertFermentationStep(steps[i]))
+	}
+
+	return s
+}
+
+func convertFermentationStep(step FermentationStep) batch.FermentationStep {
+	return batch.FermentationStep{
+		Type:       step.Type,
+		ActualTime: step.ActualTime,
+		StepTemp:   step.StepTemp,
+		StepTime:   step.StepTime,
 	}
 }

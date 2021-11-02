@@ -7,7 +7,9 @@ import (
 	"net/http/pprof"
 	"os"
 
-	"github.com/benjaminbartels/zymurgauge/internal"
+	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/sirupsen/logrus"
@@ -16,23 +18,24 @@ import (
 const (
 	chambersPath     = "/chambers"
 	thermometersPath = "/thermometers"
-	recipesPath      = "/recipes"
+	batchesPath      = "/batches"
 	version          = "v1"
 )
 
 // NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberRepo internal.ChamberRepo, thermometerRepo internal.ThermometerRepo, recipeRepo internal.RecipeRepo,
-	shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
+func NewAPI(chamberController *controller.ChamberManager, thermometerRepo device.ThermometerRepo,
+	batchRepo batch.Repo, shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
 	chambersHandler := &ChambersHandler{
-		Repo: chamberRepo,
+		ChamberController: chamberController,
+		Logger:            logger,
 	}
 
 	thermometersHandler := &ThermometersHandler{
 		Repo: thermometerRepo,
 	}
 
-	recipesHandler := &RecipesHandler{
-		Repo: recipeRepo,
+	batchesHandler := &BatchesHandler{
+		Repo: batchRepo,
 	}
 
 	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger))
@@ -41,11 +44,13 @@ func NewAPI(chamberRepo internal.ChamberRepo, thermometerRepo internal.Thermomet
 	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Get)
 	app.Register(http.MethodPost, version, chambersPath, chambersHandler.Save)
 	app.Register(http.MethodDelete, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Delete)
+	app.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/start", chambersPath), chambersHandler.Start)
+	app.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/stop", chambersPath), chambersHandler.Stop)
 
 	app.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
 
-	app.Register(http.MethodGet, version, recipesPath, recipesHandler.GetAll)
-	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", recipesPath), recipesHandler.Get)
+	app.Register(http.MethodGet, version, batchesPath, batchesHandler.GetAll)
+	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", batchesPath), batchesHandler.Get)
 
 	return app
 }
