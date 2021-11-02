@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
@@ -27,7 +29,7 @@ func TestGetAllBatches(t *testing.T) {
 func getAllBatches(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	expected := []batch.Batch{
 		{ID: batchID},
@@ -53,7 +55,7 @@ func getAllBatches(t *testing.T) {
 func getAllBatchesEmpty(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	expected := []batch.Batch{}
 	repoMock := &mocks.BatchRepo{}
@@ -76,10 +78,10 @@ func getAllBatchesEmpty(t *testing.T) {
 func getAllBatchesRepoError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetAllBatches", ctx).Return([]batch.Batch{}, errDeadDatabase)
+	repoMock.On("GetAllBatches", ctx).Return([]batch.Batch{}, errSomeError)
 
 	handler := &handlers.BatchesHandler{Repo: repoMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
@@ -90,7 +92,7 @@ func getAllBatchesRepoError(t *testing.T) {
 func getAllBatchesRespondError(t *testing.T) {
 	t.Parallel()
 
-	w, r, _ := setupHandlerTest(nil)
+	w, r, _ := setupHandlerTest("", nil)
 	ctx := context.Background()
 
 	repoMock := &mocks.BatchRepo{}
@@ -106,8 +108,8 @@ func getAllBatchesRespondError(t *testing.T) {
 func TestGetBatch(t *testing.T) {
 	t.Parallel()
 	t.Run("getBatchFound", getBatchFound)
-	t.Run("getBatchNotFound", getBatchNotFound)
 	t.Run("getBatchNotFoundError", getBatchNotFoundError)
+	t.Run("getBatchIsNil", getBatchIsNil)
 	t.Run("getBatchRepoError", getBatchRepoError)
 	t.Run("getBatchRespondError", getBatchRespondError)
 }
@@ -115,7 +117,7 @@ func TestGetBatch(t *testing.T) {
 func getBatchFound(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	expected := batch.Batch{ID: batchID}
 	repoMock := &mocks.BatchRepo{}
@@ -135,25 +137,10 @@ func getBatchFound(t *testing.T) {
 	assert.Equal(t, expected, batch)
 }
 
-func getBatchNotFound(t *testing.T) {
-	t.Parallel()
-
-	w, r, ctx := setupHandlerTest(nil)
-
-	var expected *batch.Batch
-
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetBatch", ctx, batchID).Return(expected, nil)
-
-	handler := &handlers.BatchesHandler{Repo: repoMock}
-	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
-	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "batch", batchID))
-}
-
 func getBatchNotFoundError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	var expected *batch.Batch
 
@@ -163,17 +150,40 @@ func getBatchNotFoundError(t *testing.T) {
 	handler := &handlers.BatchesHandler{Repo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "batch", batchID))
+
+	var reqErr *web.RequestError
+
+	assert.ErrorAs(t, err, &reqErr)
+	assert.Equal(t, reqErr.Status, http.StatusNotFound)
+}
+
+func getBatchIsNil(t *testing.T) {
+	t.Parallel()
+
+	w, r, ctx := setupHandlerTest("", nil)
+
+	repoMock := &mocks.BatchRepo{}
+	repoMock.On("GetBatch", ctx, batchID).Return(nil, nil)
+
+	handler := &handlers.BatchesHandler{Repo: repoMock}
+	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
+	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "batch", batchID))
+
+	var reqErr *web.RequestError
+
+	assert.ErrorAs(t, err, &reqErr)
+	assert.Equal(t, reqErr.Status, http.StatusNotFound)
 }
 
 func getBatchRepoError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	var expected *batch.Batch
 
 	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetBatch", ctx, batchID).Return(expected, errDeadDatabase)
+	repoMock.On("GetBatch", ctx, batchID).Return(expected, errSomeError)
 
 	handler := &handlers.BatchesHandler{Repo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
@@ -183,7 +193,7 @@ func getBatchRepoError(t *testing.T) {
 func getBatchRespondError(t *testing.T) {
 	t.Parallel()
 
-	w, r, _ := setupHandlerTest(nil)
+	w, r, _ := setupHandlerTest("", nil)
 	ctx := context.Background()
 
 	expected := batch.Batch{ID: batchID}

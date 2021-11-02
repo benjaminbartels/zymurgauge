@@ -9,10 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	ErrNotFound       = errors.New("chamber not found")
-	ErrNoCurrentBatch = errors.New("chamber does not have a current batch")
-)
+var ErrNotFound = errors.New("chamber not found")
 
 type ChamberController interface {
 	chamber.Repo
@@ -102,10 +99,6 @@ func (c *ChamberManager) StartFermentation(chamberID string, step int) error {
 		return ErrNotFound
 	}
 
-	if chamber.CurrentBatch == nil {
-		return ErrNoCurrentBatch
-	}
-
 	if err := chamber.StartFermentation(step); err != nil {
 		return errors.Wrap(err, "could not start fermentation")
 	}
@@ -120,7 +113,12 @@ func (c *ChamberManager) StartFermentation(chamberID string, step int) error {
 }
 
 func (c *ChamberManager) StopFermentation(chamberID string) error {
-	if err := c.chambers[chamberID].StopFermentation(); err != nil {
+	chamber, ok := c.chambers[chamberID]
+	if !ok {
+		return ErrNotFound
+	}
+
+	if err := chamber.StopFermentation(); err != nil {
 		return errors.Wrap(err, "could not stop fermentation")
 	}
 

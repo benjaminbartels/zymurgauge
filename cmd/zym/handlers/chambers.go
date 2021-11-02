@@ -87,7 +87,7 @@ func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *
 		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}
 
-	if err := c.StopFermentation(); err != nil {
+	if err := h.ChamberController.StopFermentation(id); err != nil {
 		if errors.Is(err, chamber.ErrNotFermenting) {
 			h.Logger.WithError(err).Warn("Error occurred while stopping fermentation")
 		} else {
@@ -118,11 +118,11 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 
 	if err := h.ChamberController.StartFermentation(id, step); err != nil {
 		switch {
-		case errors.As(err, chamber.ErrInvalidStep):
-			return web.NewRequestError(fmt.Sprintf("step %d is invalid for chamber '%s'", step, id), http.StatusBadRequest)
-		case errors.As(err, controller.ErrNotFound):
+		case errors.Is(err, controller.ErrNotFound):
 			return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
-		case errors.As(err, controller.ErrNoCurrentBatch):
+		case errors.Is(err, chamber.ErrInvalidStep):
+			return web.NewRequestError(fmt.Sprintf("step %d is invalid for chamber '%s'", step, id), http.StatusBadRequest)
+		case errors.Is(err, chamber.ErrNoCurrentBatch):
 			return web.NewRequestError(fmt.Sprintf("chamber '%s' does not have a current batch", id), http.StatusBadRequest)
 		}
 
@@ -139,18 +139,12 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 func (h *ChambersHandler) Stop(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
-	c, err := h.ChamberController.GetChamber(id)
-	if err != nil {
-		return errors.Wrapf(err, "could not get chamber %s  from controller", id)
-	}
-
-	if c == nil {
-		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
-	}
-
-	if err := c.StopFermentation(); err != nil {
-		if errors.Is(err, chamber.ErrNotFermenting) {
-			return web.NewRequestError(err.Error(), http.StatusBadRequest)
+	if err := h.ChamberController.StopFermentation(id); err != nil {
+		switch {
+		case errors.Is(err, controller.ErrNotFound):
+			return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
+		case errors.Is(err, chamber.ErrNotFermenting):
+			return web.NewRequestError(fmt.Sprintf("chamber '%s' is not fermenting", id), http.StatusBadRequest)
 		}
 
 		return errors.Wrapf(err, "could not stop fermentation for chamber %s", id)

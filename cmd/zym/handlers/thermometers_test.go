@@ -25,7 +25,7 @@ func TestGetAllThermometers(t *testing.T) {
 func getAllThermometers(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	expected := []string{"28-0000071cbc72", "28-0000041ab222"}
 
@@ -49,7 +49,7 @@ func getAllThermometers(t *testing.T) {
 func getAllThermometersEmpty(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	expected := []string{}
 	repoMock := &mocks.ThermometerRepo{}
@@ -72,10 +72,10 @@ func getAllThermometersEmpty(t *testing.T) {
 func getAllThermometersRepoError(t *testing.T) {
 	t.Parallel()
 
-	w, r, ctx := setupHandlerTest(nil)
+	w, r, ctx := setupHandlerTest("", nil)
 
 	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return([]string{}, errDeadDatabase)
+	repoMock.On("GetThermometerIDs").Return([]string{}, errSomeError)
 
 	handler := &handlers.ThermometersHandler{Repo: repoMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
@@ -86,7 +86,7 @@ func getAllThermometersRepoError(t *testing.T) {
 func getAllThermometersRespondError(t *testing.T) {
 	t.Parallel()
 
-	w, r, _ := setupHandlerTest(nil)
+	w, r, _ := setupHandlerTest("", nil)
 	ctx := context.Background()
 
 	repoMock := &mocks.ThermometerRepo{}

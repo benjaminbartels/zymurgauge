@@ -33,6 +33,8 @@ func TestRoutes(t *testing.T) {
 	chamberControllerMock.On("GetChamber", mock.Anything).Return(&c, nil)
 	chamberControllerMock.On("SaveChamber", mock.Anything).Return(nil)
 	chamberControllerMock.On("DeleteChamber", mock.Anything).Return(nil)
+	chamberControllerMock.On("StartFermentation", chamberID, 1).Return(nil)
+	chamberControllerMock.On("StopFermentation", chamberID).Return(nil)
 
 	thermometerMock := &mocks.ThermometerRepo{}
 	thermometerMock.On("GetThermometerIDs", mock.Anything).Return([]string{}, nil)
@@ -58,6 +60,8 @@ func TestRoutes(t *testing.T) {
 		{path: "/v1/chambers/" + chamberID, method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/chambers", method: http.MethodPost, body: &c, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodDelete, body: nil, code: http.StatusOK},
+		{path: "/v1/chambers/" + chamberID + "/start?step=1", method: http.MethodPost, body: nil, code: http.StatusOK},
+		{path: "/v1/chambers/" + chamberID + "/stop", method: http.MethodPost, body: nil, code: http.StatusOK},
 		{path: "/v1/thermometers", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/batches", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/batches/" + batchID, method: http.MethodGet, body: nil, code: http.StatusOK},

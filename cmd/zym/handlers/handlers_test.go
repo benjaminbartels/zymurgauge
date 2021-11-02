@@ -21,11 +21,17 @@ const (
 	parseErrorMsg    = "could not parse chamber"
 )
 
-var errDeadDatabase = errors.New("database is dead")
+var errSomeError = errors.New("some error")
 
-func setupHandlerTest(body io.Reader) (w *httptest.ResponseRecorder, r *http.Request, ctx context.Context) {
+func setupHandlerTest(query string, body io.Reader) (w *httptest.ResponseRecorder, r *http.Request,
+	ctx context.Context) {
 	w = httptest.NewRecorder()
-	r = httptest.NewRequest("", "/", body)
+
+	if query != "" {
+		query = "?" + query
+	}
+
+	r = httptest.NewRequest("", "/"+query, body)
 	v := web.CtxValues{
 		Path: r.URL.Path,
 		Now:  time.Now(),

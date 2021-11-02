@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	ErrInvalidStep   = errors.New("invalid step")
-	ErrNotFermenting = errors.New("fermentation has not started")
+	ErrInvalidStep    = errors.New("invalid step")
+	ErrNoCurrentBatch = errors.New("chamber does not have a current batch")
+	ErrNotFermenting  = errors.New("fermentation has not started")
 )
 
 // Chamber represents an insulated box (fridge) with internal heating/cooling elements that reacts to changes in
@@ -79,6 +80,10 @@ func (c *Chamber) StartFermentation(step int) error {
 
 	if step < 0 || step >= len(c.CurrentBatch.Fermentation.Steps) {
 		return ErrInvalidStep
+	}
+
+	if c.CurrentBatch == nil {
+		return ErrNoCurrentBatch
 	}
 
 	if c.cancelFunc != nil {
