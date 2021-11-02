@@ -13,6 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	thermometerID = "28-0000071cbc72"
+)
+
 //nolint: paralleltest // False positives with r.Run not in a loop
 func TestGetAllThermometers(t *testing.T) {
 	t.Parallel()
@@ -27,7 +31,7 @@ func getAllThermometers(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	expected := []string{"28-0000071cbc72", "28-0000041ab222"}
+	expected := []string{thermometerID, "28-0000041ab222"}
 
 	repoMock := &mocks.ThermometerRepo{}
 	repoMock.On("GetThermometerIDs").Return(expected, nil)

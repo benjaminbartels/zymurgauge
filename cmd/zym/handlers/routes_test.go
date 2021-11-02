@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -25,16 +26,14 @@ func TestRoutes(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	c := chamber.Chamber{ID: chamberID}
-	_ = c.Configure(ctx, l)
+	// _ = c.Configure(ctx, l)
 	r := batch.Batch{ID: batchID}
 
-	chamberControllerMock := &mocks.ChamberController{}
-	chamberControllerMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
-	chamberControllerMock.On("GetChamber", mock.Anything).Return(&c, nil)
-	chamberControllerMock.On("SaveChamber", mock.Anything).Return(nil)
-	chamberControllerMock.On("DeleteChamber", mock.Anything).Return(nil)
-	chamberControllerMock.On("StartFermentation", chamberID, 1).Return(nil)
-	chamberControllerMock.On("StopFermentation", chamberID).Return(nil)
+	repoMock := &mocks.ChamberRepo{}
+	repoMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
+	repoMock.On("GetChamber", mock.Anything).Return(&c, nil)
+	repoMock.On("SaveChamber", mock.Anything).Return(nil)
+	repoMock.On("DeleteChamber", mock.Anything).Return(nil)
 
 	thermometerMock := &mocks.ThermometerRepo{}
 	thermometerMock.On("GetThermometerIDs", mock.Anything).Return([]string{}, nil)
@@ -46,7 +45,9 @@ func TestRoutes(t *testing.T) {
 	shutdown := make(chan os.Signal, 1)
 	logger, _ := logtest.NewNullLogger()
 
-	app := handlers.NewAPI(chamberControllerMock, thermometerMock, recipeMock, shutdown, logger)
+	manager, _ := controller.NewChamberManager(ctx, repoMock, l)
+
+	app := handlers.NewAPI(manager, thermometerMock, recipeMock, shutdown, logger)
 
 	type test struct {
 		path   string

@@ -125,7 +125,7 @@ func wait(ctx context.Context, server *http.Server, serverErrors chan error, tim
 		}
 	}
 
-	logger.Info("fermmon stopped")
+	logger.Info("fermmon stopped 👋!")
 
 	return nil
 }

@@ -23,7 +23,7 @@ const (
 )
 
 // NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberController controller.ChamberController, thermometerRepo device.ThermometerRepo,
+func NewAPI(chamberController *controller.ChamberManager, thermometerRepo device.ThermometerRepo,
 	batchRepo batch.Repo, shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberController,

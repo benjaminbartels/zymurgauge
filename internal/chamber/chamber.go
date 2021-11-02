@@ -78,19 +78,19 @@ func (c *Chamber) StartFermentation(step int) error {
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
-	if step < 0 || step >= len(c.CurrentBatch.Fermentation.Steps) {
-		return ErrInvalidStep
-	}
-
 	if c.CurrentBatch == nil {
 		return ErrNoCurrentBatch
+	}
+
+	if step <= 0 || step > len(c.CurrentBatch.Fermentation.Steps) {
+		return ErrInvalidStep
 	}
 
 	if c.cancelFunc != nil {
 		c.cancelFunc()
 	}
 
-	temp := c.CurrentBatch.Fermentation.Steps[step].StepTemp
+	temp := c.CurrentBatch.Fermentation.Steps[step-1].StepTemp
 	ctx, cancelFunc := context.WithCancel(c.mainCtx)
 	c.cancelFunc = cancelFunc
 

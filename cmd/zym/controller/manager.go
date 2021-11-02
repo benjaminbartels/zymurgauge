@@ -9,13 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var ErrNotFound = errors.New("chamber not found")
-
-type ChamberController interface {
-	chamber.Repo
-	StartFermentation(chamberID string, step int) error
-	StopFermentation(chamberID string) error
-}
+// var ErrNotFound = errors.New("chamber not found")
 
 type ChamberManager struct {
 	repo     chamber.Repo
@@ -55,18 +49,18 @@ func NewChamberManager(ctx context.Context, repo chamber.Repo, logger *logrus.Lo
 	return c, nil
 }
 
-func (c *ChamberManager) GetAllChambers() ([]chamber.Chamber, error) {
+func (c *ChamberManager) GetAllChambers() []chamber.Chamber {
 	chambers := make([]chamber.Chamber, 0, len(c.chambers))
 
 	for _, chamber := range c.chambers {
 		chambers = append(chambers, *chamber)
 	}
 
-	return chambers, nil
+	return chambers
 }
 
-func (c *ChamberManager) GetChamber(id string) (*chamber.Chamber, error) {
-	return c.chambers[id], nil
+func (c *ChamberManager) GetChamber(id string) *chamber.Chamber {
+	return c.chambers[id]
 }
 
 func (c *ChamberManager) SaveChamber(chamber *chamber.Chamber) error {
@@ -89,38 +83,6 @@ func (c *ChamberManager) DeleteChamber(id string) error {
 	}
 
 	delete(c.chambers, id)
-
-	return nil
-}
-
-func (c *ChamberManager) StartFermentation(chamberID string, step int) error {
-	chamber, ok := c.chambers[chamberID]
-	if !ok {
-		return ErrNotFound
-	}
-
-	if err := chamber.StartFermentation(step); err != nil {
-		return errors.Wrap(err, "could not start fermentation")
-	}
-
-	chamber.CurrentFermentationStep = step
-
-	if err := c.repo.SaveChamber(chamber); err != nil {
-		return errors.Wrap(err, "could not save chamber to repository")
-	}
-
-	return nil
-}
-
-func (c *ChamberManager) StopFermentation(chamberID string) error {
-	chamber, ok := c.chambers[chamberID]
-	if !ok {
-		return ErrNotFound
-	}
-
-	if err := chamber.StopFermentation(); err != nil {
-		return errors.Wrap(err, "could not stop fermentation")
-	}
 
 	return nil
 }
