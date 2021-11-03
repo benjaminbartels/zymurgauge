@@ -1,3 +1,5 @@
+---
+
 run:
   timeout: 1m
   issues-exit-code: 1
@@ -63,7 +65,7 @@ linters:
     - nlreturn
     - noctx
     - nolintlint
-    - paralleltest 
+    - paralleltest
     - prealloc
     - predeclared
     - promlinter
@@ -100,19 +102,16 @@ linters-settings:
     settings:
       mnd:
         ignored-functions: strconv.ParseFloat,make
-  gosec:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-use-default: true
   exclude-rules:
-    - path: _test\.go           # Exclude some linters from running on tests files.
+    - path: _test\.go     # Exclude some linters from running on tests files.
       linters:
-        - funlen                # Tests are long sometimes
-        - goerr113              # Tests can return dynamic errors
-        - ifshort               # 'expected' variables don't need use short syntax
-    - linters:              
-        - lll                   # Exclude lll issues for long lines with go:generate
+        - funlen          # Tests are long sometimes
+        - goerr113        # Tests can return dynamic errors
+        - ifshort         # 'expected' variables don't need use short syntax
+    - linters:
+        - lll             # Exclude lll issues for long lines with go:generate
       source: "^//go:generate "
-  # include:
-  #   - EXC0002                   # disable excluding of issues about comments from golint

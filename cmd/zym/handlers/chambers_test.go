@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 	"testing"
 
@@ -57,6 +58,7 @@ func getAllChambers(t *testing.T) {
 	result := []chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
+
 	assetChamberListsAreEqual(t, chambers, result)
 }
 
@@ -660,6 +662,15 @@ func stopFermentationRespondError(t *testing.T) {
 func assetChamberListsAreEqual(t *testing.T, c1, c2 []chamber.Chamber) {
 	t.Helper()
 	assert.Equal(t, len(c1), len(c2))
+
+	// source is a dictionary so order is not guaranteed
+	sort.Slice(c1, func(i, j int) bool {
+		return c1[i].ID < c1[j].ID
+	})
+
+	sort.Slice(c2, func(i, j int) bool {
+		return c2[i].ID < c2[j].ID
+	})
 
 	for i := 0; i < len(c1); i++ {
 		assertChambersAreEqual(t, c1[i], c2[i])

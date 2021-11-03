@@ -1,3 +1,5 @@
+---
+
 openapi: 3.0.0
 info:
   title: Zymurgauge API
@@ -8,8 +10,8 @@ servers:
     variables:
       host:
         enum:
-        - 'localhost'
-        - 'zymurgauge.local'
+          - 'localhost'
+          - 'zymurgauge.local'
         default: localhost
       port:
         enum:
@@ -17,7 +19,7 @@ servers:
         default: '8080'
       basePath:
         enum:
-        - 'v1'
+          - 'v1'
         default: v1
 paths:
   '/chambers':
@@ -256,7 +258,7 @@ paths:
                 type: array
                 items:
                   type: string
-              example: ["28-0000071cbc72","28-0000041ab222"]
+              example: [28-0000071cbc72, 28-0000041ab222]
         '500':
           description: Internal Server Error
           content:
@@ -404,24 +406,24 @@ components:
         heaterKp: 1.2
         heaterKi: 2.3
         heaterKd: 3.4
-        currentBatch: 
+        currentBatch:
           id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
           name: My Pale Ale
-          fermentation: 
-              Name: Imported
-              Steps:
-                - type: "Primary"
-                  actualTime: 1635573600000
-                  stepTemp: 19.4
-                  stepTime: 4
-                - type: Secondary
-                  actualTime: 1635919200000
-                  stepTime: 10
-                  stepTemp: 19.
-                - type": "Conditioning"
-                  actualTime: 1636786800000
-                  stepTime: 30
-                  stepTemp: 18.3
+          fermentation:
+            Name: Imported
+            Steps:
+              - type: Primary
+                actualTime: 1635573600000
+                stepTemp: 19.4
+                stepTime: 4
+              - type: Secondary
+                actualTime: 1635919200000
+                stepTime: 10
+                stepTemp: 19.
+              - type: Conditioning
+                actualTime: 1636786800000
+                stepTime: 30
+                stepTemp: 18.3
         currentFermentationStep: 2
         modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
     chambers:
@@ -437,24 +439,24 @@ components:
           heaterKp: 1.2
           heaterKi: 2.3
           heaterKd: 3.4
-          currentBatch: 
+          currentBatch:
             id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
             name: My Pale Ale
-            fermentation: 
-                Name: Imported
-                Steps:
-                  - type: "Primary"
-                    actualTime: 1635573600000
-                    stepTemp: 19.4
-                    stepTime: 4
-                  - type: Secondary
-                    actualTime: 1635919200000
-                    stepTime: 10
-                    stepTemp: 19.
-                  - type": "Conditioning"
-                    actualTime: 1636786800000
-                    stepTime: 30
-                    stepTemp: 18.3
+            fermentation:
+              Name: Imported
+              Steps:
+                - type: Primary
+                  actualTime: 1635573600000
+                  stepTemp: 19.4
+                  stepTime: 4
+                - type: Secondary
+                  actualTime: 1635919200000
+                  stepTime: 10
+                  stepTemp: 19.
+                - type: Conditioning
+                  actualTime: 1636786800000
+                  stepTime: 30
+                  stepTemp: 18.3
           currentFermentationStep: 2
           modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
         - id: dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1
@@ -498,10 +500,29 @@ components:
       value:
         id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
         name: My Pale Ale
-        fermentation: 
+        fermentation:
+          Name: Imported
+          Steps:
+            - type: Primary
+              actualTime: 1635573600000
+              stepTemp: 19.4
+              stepTime: 4
+            - type: Secondary
+              actualTime: 1635919200000
+              stepTime: 10
+              stepTemp: 19.
+            - type: Conditioning
+              actualTime: 1636786800000
+              stepTime: 30
+              stepTemp: 18.3
+    batches:
+      value:
+        - id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+          name: My Pale Ale
+          fermentation:
             Name: Imported
             Steps:
-              - type: "Primary"
+              - type: Primary
                 actualTime: 1635573600000
                 stepTemp: 19.4
                 stepTime: 4
@@ -509,42 +530,23 @@ components:
                 actualTime: 1635919200000
                 stepTime: 10
                 stepTemp: 19.
-              - type": "Conditioning"
+              - type: Conditioning
                 actualTime: 1636786800000
                 stepTime: 30
                 stepTemp: 18.3
-    batches:
-      value:
-        - id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
-          name: My Pale Ale
-          fermentation: 
-              Name: Imported
-              Steps:
-                - type: "Primary"
-                  actualTime: 1635573600000
-                  stepTemp: 19.4
-                  stepTime: 4
-                - type: Secondary
-                  actualTime: 1635919200000
-                  stepTime: 10
-                  stepTemp: 19.
-                - type: "Conditioning"
-                  actualTime: 1636786800000
-                  stepTime: 30
-                  stepTemp: 18.3
         - id: qbFkFfeaJdL1ZibNLTu2lfRjIii1qW
           name: Stout
-          fermentation: 
-              Name: Imported
-              Steps:
-                - type: "Primary"
-                  actualTime: 1635573600000
-                  stepTemp: 19.4
-                  stepTime: 4
-                - type": "Conditioning"
-                  actualTime: 1636786800000
-                  stepTime: 30
-                  stepTemp: 18.3
+          fermentation:
+            Name: Imported
+            Steps:
+              - type: Primary
+                actualTime: 1635573600000
+                stepTemp: 19.4
+                stepTime: 4
+              - type: Conditioning
+                actualTime: 1636786800000
+                stepTime: 30
+                stepTemp: 18.3
     success:
       value:
         message: Success
