@@ -36,4 +36,7 @@ out/bin
 # Other
 .vscode
 cmd/zymsim/*.png
-coverage.html
+profile.cov
+coverage.xml
+checkstyle-report.xml
+yamllint-checkstyle.xml
