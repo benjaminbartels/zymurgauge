@@ -1,0 +1,298 @@
+package main
+
+import (
+	"math"
+	"time"
+
+	"github.com/sirupsen/logrus"
+)
+
+type State string
+
+const (
+	testTemperature                = 28.0
+	defaultOutStep                 = 100.0
+	defaultMinOut                  = 0.0 // TODO: What is this? Can this be 0.0?
+	defaultMaxOut                  = 100.0
+	defaultNoiseBand               = 0.5
+	defaultLookbackSeconds         = 30
+	defaultSampleTimeSeconds       = 5
+	Off                      State = "Off"
+	StepUp                   State = "StepUp"
+	StepDown                 State = "StepDown"
+	Succeeded                State = "Succeeded"
+	Failed                   State = "Failed"
+	peakAmplitudeTolerance         = 0.05
+)
+
+type TuningRules struct {
+	Name      string
+	KpDivisor float64
+	KiDivisor float64
+	KdDivisor float64
+}
+
+type AutoTuner struct {
+	setPoint               float64
+	outStep                float64
+	minOut                 float64
+	maxOut                 float64
+	noiseBand              float64
+	lookbackDuration       time.Duration
+	sampleIntervalDuration time.Duration
+	rules                  map[string]TuningRules
+	inputs                 []float64
+	maxInputLength         int
+	state                  State
+	peakTimes              []time.Time
+	peaks                  []float64 // TODO: Is this correct type?
+	output                 float64   // TODO: Is this correct type?
+	lastRunTime            time.Time // TODO: Is this correct type?
+	peakType               float64   // TODO: Is this correct type?
+	peakCount              float64   // TODO: Is this correct type?
+	initialOutput          float64   // TODO: Is this correct type?
+	inducedAmplitude       float64   // TODO: Is this correct type?
+	Ku                     float64   // TODO: Is this correct type?
+	Pu                     float64   // TODO: Is this correct type?
+	logger                 *logrus.Logger
+}
+
+func New(setPoint, outStep, minOut, maxOut, noiseBand float64,
+	lookbackDuration, sampleIntervalDuration time.Duration, logger *logrus.Logger) *AutoTuner {
+	a := &AutoTuner{
+		setPoint:               setPoint,
+		outStep:                outStep,
+		minOut:                 minOut,
+		maxOut:                 maxOut,
+		noiseBand:              noiseBand,
+		lookbackDuration:       lookbackDuration,
+		sampleIntervalDuration: sampleIntervalDuration,
+		rules: map[string]TuningRules{
+			"ziegler-nichols": {"ziegler-nichols", 34, 40, 160},
+			"tyreus-luyben":   {"tyreus-luyben", 44, 9, 126},
+			"ciancone-marlin": {"ciancone-marlin", 66, 88, 162},
+			"pessen-integral": {"pessen-integral", 28, 50, 133},
+			"some-overshoot":  {"some-overshoot", 60, 40, 60},
+			"no-overshoot":    {"no-overshoot", 100, 40, 60},
+			"brewing":         {"brewing", 2.5, 3, 3600},
+		},
+		inputs:           []float64{},
+		maxInputLength:   defaultLookbackSeconds / defaultSampleTimeSeconds, // TODO: make this better
+		state:            Off,
+		peakTimes:        []time.Time{},
+		peaks:            []float64{},
+		output:           0,
+		peakType:         0,
+		peakCount:        0,
+		initialOutput:    0,
+		inducedAmplitude: 0,
+		Ku:               0,
+		Pu:               0,
+		logger:           logger,
+	}
+
+	return a
+}
+
+func (a *AutoTuner) Run(inputValue float64) bool {
+	now := time.Now()
+	if a.lastRunTime.IsZero() {
+		a.lastRunTime = now
+	}
+
+	if a.state == Off || a.state == Succeeded || a.state == Failed {
+		a.initTuner(now)
+	} else if now.Sub(a.lastRunTime) < a.sampleIntervalDuration { // TODO: validate this is correct
+		return false
+	}
+
+	// check input and change relay state if necessary
+	a.lastRunTime = now
+
+	if a.state == StepUp && inputValue > a.setPoint+a.noiseBand {
+		a.state = StepDown
+		a.logger.Infof("state switched to %s", a.state)
+		a.logger.Infof("input is %f", inputValue)
+	} else if a.state == StepDown && inputValue < a.setPoint-a.noiseBand {
+		a.state = StepUp
+		a.logger.Infof("state switched to %s", a.state)
+		a.logger.Infof("input is %f", inputValue)
+	}
+
+	// set output
+	if a.state == StepUp {
+		a.output = a.initialOutput + a.outStep
+	} else if a.state == StepDown {
+		a.output = a.initialOutput - a.outStep
+	}
+
+	// respect output limits
+	a.output = math.Min(a.output, a.maxOut)
+	a.output = math.Min(a.output, a.minOut)
+
+	// identify peaks
+	isMax := true
+	isMin := true
+
+	for _, v := range a.inputs {
+		isMax = isMax && (inputValue > v)
+		isMin = isMin && (inputValue < v)
+	}
+
+	a.inputs = append(a.inputs, inputValue)
+
+	// we don't want to trust the maxes or mins until the input array is full
+	if len(a.inputs) < a.maxInputLength {
+		return false
+	}
+
+	// increment peak count and record peak time for maxima and minima
+	var inflection bool
+
+	// peak types:
+	// -1: minimum
+	// +1: maximum
+	if isMax {
+		if a.peakType == -1 {
+			inflection = true
+		}
+
+		a.peakType = 1
+	} else if isMin {
+		if a.peakType == 1 {
+			inflection = true
+		}
+
+		a.peakType = -1
+	}
+
+	// update peak times and values
+	if inflection {
+		a.peakCount++
+		a.peaks = append(a.peaks, inputValue)
+		a.peakTimes = append(a.peakTimes, now)
+		a.logger.Infof("peak found: %f", inputValue)
+		a.logger.Infof("peak count: %f", a.peakCount)
+	}
+
+	// check for convergence of induced oscillation
+	// convergence of amplitude assessed on last 4 peaks (1.5 cycles)
+	a.inducedAmplitude = 0
+
+	if inflection && (a.peakCount > 4) {
+		absMax := a.peaks[len(a.peaks)-2]
+		absMin := a.peaks[len(a.peaks)-2]
+
+		for i := 0; i < len(a.peaks)-2; i++ {
+			a.inducedAmplitude += math.Abs(a.peaks[i] - a.peaks[i+1])
+			absMax = math.Max(a.peaks[i], absMax)
+			absMin = math.Min(a.peaks[i], absMin)
+		}
+
+		a.inducedAmplitude /= 6.0
+
+		// check convergence criterion for amplitude of induced oscillation
+		amplitudeDev := ((0.5*(absMax-absMin) - a.inducedAmplitude) / a.inducedAmplitude)
+
+		a.logger.Infof("amplitude: %f", a.inducedAmplitude)
+		a.logger.Infof("amplitude deviation: %f", amplitudeDev)
+
+		if amplitudeDev < peakAmplitudeTolerance {
+			a.state = Succeeded
+		}
+	}
+
+	// if the autotune has not already converged
+	// terminate after 10 cycles
+	if a.peakCount >= 20 {
+		a.output = 0
+		a.state = Failed
+
+		return true
+	}
+
+	if a.state == Succeeded {
+		a.output = 0
+
+		// calculate ultimate gain
+		a.Ku = 4.0 * a.outStep / (a.inducedAmplitude * math.Pi)
+
+		// calculate ultimate period in seconds
+		period1 := a.peakTimes[3].Sub(a.peakTimes[1])
+		period2 := a.peakTimes[4].Sub(a.peakTimes[2])
+		a.Pu = 0.5 * (period1.Seconds() + period2.Seconds()) / 1000.0 // TODO: validate this is correct
+
+		return true
+	}
+
+	return false
+}
+
+func (a *AutoTuner) GetState() State {
+	return a.state
+}
+
+func (a *AutoTuner) GetOutput() float64 {
+	return a.output
+}
+
+func (a *AutoTuner) GetTuningRules() []string {
+	keys := make([]string, 0, len(a.rules))
+	for k := range a.rules {
+		keys = append(keys, k)
+	}
+
+	return keys
+}
+
+func (a *AutoTuner) GetPIDParameters(name string) (float64, float64, float64) {
+	rule := a.rules[name]
+	kp := a.Ku / rule.KpDivisor
+	ki := kp / (a.Pu / rule.KiDivisor)
+	kd := kp * (a.Pu / rule.KdDivisor)
+
+	return kp, ki, kd
+}
+
+func (a *AutoTuner) initTuner(t time.Time) {
+	a.peakType = 0
+	a.peakCount = 0
+	a.output = 0
+	a.initialOutput = 0
+	a.Ku = 0
+	a.Pu = 0
+	a.inputs = []float64{}
+	a.peaks = []float64{}
+	a.peakTimes = []time.Time{t}
+	a.state = StepUp
+}
+
+func main() {
+	logger := logrus.New()
+
+	autoTuner := New(testTemperature, defaultOutStep, defaultMinOut, defaultMaxOut, defaultNoiseBand,
+		defaultLookbackSeconds*time.Second, defaultSampleTimeSeconds*time.Second, logger)
+
+	for autoTuner.Run(getTemp()) {
+		heatPercent := autoTuner.output
+		heatingTime := defaultSampleTimeSeconds * heatPercent / 100
+		waitTime := defaultSampleTimeSeconds - heatingTime
+
+		if heatingTime == defaultSampleTimeSeconds {
+			self.heater_on()
+			self.sleep(heating_time)
+		} else if wait_time == sampleTime {
+			self.heater_off()
+			self.sleep(wait_time)
+		} else {
+			self.heater_on()
+			self.sleep(heating_time)
+			self.heater_off()
+			self.sleep(wait_time)
+		}
+	}
+}
+
+func getTemp() float64 {
+	return 0.0
+}
