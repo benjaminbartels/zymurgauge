@@ -38,6 +38,8 @@ func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *
 func (h *ChambersHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
+	fmt.Println("asdfasdf")
+
 	c := h.ChamberController.GetChamber(id)
 	if c == nil {
 		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)

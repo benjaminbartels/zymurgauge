@@ -26,15 +26,15 @@ const (
 )
 
 type config struct {
-	Host            string        `default:":8080"`
-	DebugHost       string        `default:":4000"`
-	ReadTimeout     time.Duration `default:"5s"`
-	WriteTimeout    time.Duration `default:"10s"`
-	IdleTimeout     time.Duration `default:"120s"`
-	ShutdownTimeout time.Duration `default:"20s"`
-	APIUserID       string        `required:"true"`
-	APIKey          string        `required:"true"`
-	Debug           bool          `default:"false"`
+	Host                string        `default:":8080"`
+	DebugHost           string        `default:":4000"`
+	ReadTimeout         time.Duration `default:"5s"`
+	WriteTimeout        time.Duration `default:"10s"`
+	IdleTimeout         time.Duration `default:"120s"`
+	ShutdownTimeout     time.Duration `default:"20s"`
+	BrewfatherAPIUserID string        `required:"true"`
+	BrewfatherAPIKey    string        `required:"true"`
+	Debug               bool          `default:"false"`
 }
 
 func main() {
@@ -65,7 +65,7 @@ func run(logger *logrus.Logger) error {
 		}
 	}()
 
-	db, err := bbolt.Open("zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: 1 * time.Second})
+	db, err := bbolt.Open("data/zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return errors.Wrap(err, "could not open database")
 	}
@@ -82,7 +82,7 @@ func run(logger *logrus.Logger) error {
 
 	ds18b20Repo := raspberrypi.NewDs18b20Repo()
 
-	brewfather := brewfather.New(brewfather.APIURL, cfg.APIUserID, cfg.APIKey)
+	brewfather := brewfather.New(brewfather.APIURL, cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
@@ -98,7 +98,7 @@ func run(logger *logrus.Logger) error {
 	httpServerErrors := make(chan error, 1)
 
 	go func() {
-		logger.Infof("fermmon started version %s, listening at %s", build, cfg.Host)
+		logger.Infof("zymurgauge version %s started, listening at %s", build, cfg.Host)
 		httpServerErrors <- httpServer.ListenAndServe()
 	}()
 
@@ -111,7 +111,7 @@ func wait(ctx context.Context, server *http.Server, serverErrors chan error, tim
 	case err := <-serverErrors:
 		return errors.Wrap(err, "fatal http server error occurred")
 	case <-ctx.Done():
-		logger.Info("stopping fermmon")
+		logger.Info("stopping zymurgauge")
 
 		ctx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
 		defer timeoutCancel()
@@ -125,7 +125,7 @@ func wait(ctx context.Context, server *http.Server, serverErrors chan error, tim
 		}
 	}
 
-	logger.Info("fermmon stopped 👋!")
+	logger.Info("zymurgauge stopped 👋!")
 
 	return nil
 }
