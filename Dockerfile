@@ -18,7 +18,7 @@ COPY . .
 
 RUN make build
 
-FROM scratch
+FROM scratch as production
 
 WORKDIR /
 

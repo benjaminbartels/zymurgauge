@@ -27,9 +27,8 @@ build: ## Build the default package and put the output binary in out/bin/
 	GOOS=linux GOARCH=arm CGO_ENABLED=0 $(GOCMD) build -a -ldflags="-w -s -extldflags '-static'" -o out/bin/$(BINARY_NAME) ./$(MAIN_DIR)
 
 clean: ## Remove build and coverage related file
-	rm -fr out
+	rm -fr out $(MAIN_DIR)/tmp
 	rm -f junit-report.xml checkstyle-report.xml profile.cov coverage.xml yamllint-checkstyle.xml
-	rm -fr tmp
 	rm -f zymurgaugedb $(MAIN_DIR)/zymurgaugedb
 
 tidy: ## Add missing and remove unused modules
@@ -93,7 +92,7 @@ endif
 
 ## Docker:
 docker-build: ## Use the dockerfile to build the container
-	docker build --rm --tag $(BINARY_NAME) .
+	docker build -t $(BINARY_NAME) --target production .
 
 docker-release: ## Release the container with tag latest and version
 	docker tag $(BINARY_NAME) $(DOCKER_REGISTRY)$(BINARY_NAME):latest
