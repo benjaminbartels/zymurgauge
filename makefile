@@ -48,7 +48,7 @@ watch: ## Run the code with Air to have automatic reload on changes
 	cosmtrek/air
 
 debug: ## Run the code with Delve to debug
-	docker build -t $(BINARY_NAME)-debug --target debugger  .
+	DOCKER_BUILDKIT=1 docker build -t $(BINARY_NAME)-debug --target debugger  .
 	docker run -it --rm \
 	-p $(SERVICE_PORT):$(SERVICE_PORT) -p $(DELVE_PORT):$(DELVE_PORT) \
 	--env-file=configs/dev.env \
@@ -92,7 +92,7 @@ endif
 
 ## Docker:
 docker-build: ## Use the dockerfile to build the container
-	docker build -t $(BINARY_NAME) --target production .
+	DOCKER_BUILDKIT=1 docker build -t $(BINARY_NAME) --target production .
 
 docker-release: ## Release the container with tag latest and version
 	docker tag $(BINARY_NAME) $(DOCKER_REGISTRY)$(BINARY_NAME):latest
