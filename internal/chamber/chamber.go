@@ -46,21 +46,17 @@ func (c *Chamber) Configure(ctx context.Context, logger *logrus.Logger) error {
 	c.mainCtx = ctx
 	c.logger = logger
 
-	createThermometerFunc := CreateThermometer
-
-	thermometer, err := createThermometerFunc(c.ThermometerID)
+	thermometer, err := CreateThermometer(c.ThermometerID)
 	if err != nil {
 		return errors.Wrapf(err, "could not create new thermometer %s", c.ThermometerID)
 	}
 
-	createActuatorFunc := CreateActuator
-
-	chiller, err := createActuatorFunc(c.ChillerPin)
+	chiller, err := CreateActuator(c.ChillerPin)
 	if err != nil {
 		return errors.Wrapf(err, "could not create new chiller gpio actuator for pin %s", c.ChillerPin)
 	}
 
-	heater, err := createActuatorFunc(c.HeaterPin)
+	heater, err := CreateActuator(c.HeaterPin)
 	if err != nil {
 		return errors.Wrapf(err, "could not create new heater gpio actuator for pin %s", c.HeaterPin)
 	}

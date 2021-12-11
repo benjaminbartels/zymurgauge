@@ -12,7 +12,6 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
-	"github.com/benjaminbartels/zymurgauge/internal/device/raspberrypi"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -80,7 +79,7 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber controller")
 	}
 
-	ds18b20Repo := raspberrypi.NewDs18b20Repo()
+	thermometerRepo := createThermometerRepo()
 
 	brewfather := brewfather.New(brewfather.APIURL, cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
 
@@ -92,7 +91,7 @@ func run(logger *logrus.Logger) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberManager, ds18b20Repo, brewfather, shutdown, logger),
+		Handler:      handlers.NewAPI(chamberManager, thermometerRepo, brewfather, shutdown, logger),
 	}
 
 	httpServerErrors := make(chan error, 1)
