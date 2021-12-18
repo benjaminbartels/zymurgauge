@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  zymurgauge:
+    image: zym
+    ports:
+      - "8080:8080"
+    env_file:
+      - dev.env
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data

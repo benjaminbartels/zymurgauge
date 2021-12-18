@@ -13,18 +13,10 @@ import (
 const stubTemperature = 25
 
 func CreateThermometer(thermometerID string) (device.Thermometer, error) {
-	return createStubThermometer(thermometerID)
-}
-
-func createStubThermometer(thermometerID string) (device.Thermometer, error) {
 	return &stubThermometer{thermometerID: thermometerID}, nil
 }
 
 func CreateActuator(pin string) (device.Actuator, error) {
-	return createStubActuator(pin)
-}
-
-func createStubActuator(pin string) (device.Actuator, error) {
 	return &stubActuator{pin: pin}, nil
 }
 

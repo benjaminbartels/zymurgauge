@@ -51,7 +51,7 @@ func (a *App) Register(method, group, path string, handler Handler) {
 
 		if err := handler(ctx, w, r, p); err != nil {
 			// TODO: log here?
-			a.SignalShutdown()
+			a.SignalShutdown() // TODO: is this necessary?
 
 			return
 		}
