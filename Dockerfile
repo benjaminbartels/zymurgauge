@@ -23,6 +23,9 @@ FROM scratch as production
 WORKDIR /
 
 COPY --from=builder /src/out/bin/zym . 
+
+USER 1001:1001
+
 EXPOSE 8080
 
 ENTRYPOINT ["./zym"]

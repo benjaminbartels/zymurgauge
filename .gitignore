@@ -41,3 +41,4 @@ profile.cov
 coverage.xml
 checkstyle-report.xml
 yamllint-checkstyle.xml
+/data
