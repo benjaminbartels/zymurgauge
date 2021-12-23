@@ -95,5 +95,11 @@ func GetThermometerIDs(devicePath string) ([]string, error) {
 		return nil, errors.Wrapf(err, "could matching files matching %s", p)
 	}
 
-	return filenames, nil
+	result := []string{}
+
+	for i := range filenames {
+		result = append(result, filepath.Base(filenames[i]))
+	}
+
+	return result, nil
 }
