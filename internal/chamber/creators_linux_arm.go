@@ -2,12 +2,13 @@ package chamber
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"
-	"github.com/benjaminbartels/zymurgauge/internal/device/raspberrypi"
+	"github.com/benjaminbartels/zymurgauge/internal/device/gpio"
+	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
 	"github.com/pkg/errors"
 )
 
 func CreateThermometer(thermometerID string) (device.Thermometer, error) {
-	ds18b20, err := raspberrypi.NewDs18b20(thermometerID)
+	ds18b20, err := onewire.NewDs18b20(thermometerID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not create new Ds18b20 thermometer %s", thermometerID)
 	}
@@ -16,7 +17,7 @@ func CreateThermometer(thermometerID string) (device.Thermometer, error) {
 }
 
 func CreateActuator(pin string) (device.Actuator, error) {
-	actuator, err := raspberrypi.NewGPIOActuator(pin)
+	actuator, err := gpio.NewGPIOActuator(pin)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not create new raspberry pi gpio actuator for pin %s", pin)
 	}

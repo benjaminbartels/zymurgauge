@@ -22,7 +22,7 @@ func TestGetAllBatches(t *testing.T) {
 	t.Parallel()
 	t.Run("getAllBatches", getAllBatches)
 	t.Run("getAllBatchesEmpty", getAllBatchesEmpty)
-	t.Run("getAllBatchesRepoError", getAllBatchesRepoError)
+	t.Run("getAllBatchRepoError", getAllBatchRepoError)
 	t.Run("getAllBatchesRespondError", getAllBatchesRespondError)
 }
 
@@ -38,7 +38,7 @@ func getAllBatches(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetAllBatches", ctx).Return(expected, nil)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -61,7 +61,7 @@ func getAllBatchesEmpty(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetAllBatches", ctx).Return(expected, nil)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -75,7 +75,7 @@ func getAllBatchesEmpty(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func getAllBatchesRepoError(t *testing.T) {
+func getAllBatchRepoError(t *testing.T) {
 	t.Parallel()
 
 	w, r, ctx := setupHandlerTest("", nil)
@@ -83,7 +83,7 @@ func getAllBatchesRepoError(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetAllBatches", ctx).Return([]batch.Batch{}, errSomeError)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	// TODO: Waiting on PR for ErrorContains(): https://github.com/stretchr/testify/pull/1022
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all batches from"))
@@ -98,7 +98,7 @@ func getAllBatchesRespondError(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetAllBatches", ctx).Return([]batch.Batch{}, nil)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	// use new ctx to force error
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), respondErrMsg)
@@ -123,7 +123,7 @@ func getBatchFound(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetBatch", ctx, batchID).Return(&expected, nil)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.NoError(t, err)
 
@@ -147,7 +147,7 @@ func getBatchNotFoundError(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetBatch", ctx, batchID).Return(expected, brewfather.ErrNotFound)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "batch", batchID))
 
@@ -165,7 +165,7 @@ func getBatchIsNil(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetBatch", ctx, batchID).Return(nil, nil)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "batch", batchID))
 
@@ -185,7 +185,7 @@ func getBatchRepoError(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetBatch", ctx, batchID).Return(expected, errSomeError)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get batch from"))
 }
@@ -200,7 +200,7 @@ func getBatchRespondError(t *testing.T) {
 	repoMock := &mocks.BatchRepo{}
 	repoMock.On("GetBatch", ctx, batchID).Return(&expected, nil)
 
-	handler := &handlers.BatchesHandler{Repo: repoMock}
+	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	// use new ctx to force error
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), respondErrMsg)

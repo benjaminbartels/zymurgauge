@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,10 +32,7 @@ func getAllThermometers(t *testing.T) {
 
 	expected := []string{thermometerID, "28-0000041ab222"}
 
-	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return(expected, nil)
-
-	handler := &handlers.ThermometersHandler{Repo: repoMock}
+	handler := &handlers.ThermometersHandler{DevicePath: devicePath}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -56,10 +52,8 @@ func getAllThermometersEmpty(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 
 	expected := []string{}
-	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return(expected, nil)
 
-	handler := &handlers.ThermometersHandler{Repo: repoMock}
+	handler := &handlers.ThermometersHandler{DevicePath: devicePath}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -78,10 +72,7 @@ func getAllThermometersRepoError(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return([]string{}, errSomeError)
-
-	handler := &handlers.ThermometersHandler{Repo: repoMock}
+	handler := &handlers.ThermometersHandler{DevicePath: devicePath}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	// TODO: Waiting on PR for ErrorContains(): https://github.com/stretchr/testify/pull/1022
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all thermometers from"))
@@ -93,10 +84,7 @@ func getAllThermometersRespondError(t *testing.T) {
 	w, r, _ := setupHandlerTest("", nil)
 	ctx := context.Background()
 
-	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return([]string{}, nil)
-
-	handler := &handlers.ThermometersHandler{Repo: repoMock}
+	handler := &handlers.ThermometersHandler{DevicePath: devicePath}
 	// use new ctx to force error
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), respondErrMsg)

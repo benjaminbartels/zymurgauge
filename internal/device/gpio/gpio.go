@@ -1,4 +1,4 @@
-package raspberrypi
+package gpio
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"

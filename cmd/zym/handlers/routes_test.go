@@ -19,6 +19,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const devicePath = "/"
+
 func TestRoutes(t *testing.T) {
 	t.Parallel()
 
@@ -65,9 +67,6 @@ func TestRoutes(t *testing.T) {
 		repoMock.On("SaveChamber", mock.Anything).Return(nil)
 		repoMock.On("DeleteChamber", mock.Anything).Return(nil)
 
-		thermometerMock := &mocks.ThermometerRepo{}
-		thermometerMock.On("GetThermometerIDs", mock.Anything).Return([]string{}, nil)
-
 		recipeMock := &mocks.BatchRepo{}
 		recipeMock.On("GetAllBatches", mock.Anything).Return([]batch.Batch{}, nil)
 		recipeMock.On("GetBatch", mock.Anything, batchID).Return(&r, nil)
@@ -77,7 +76,7 @@ func TestRoutes(t *testing.T) {
 
 		manager, _ := controller.NewChamberManager(ctx, repoMock, l)
 
-		app := handlers.NewAPI(manager, thermometerMock, recipeMock, shutdown, logger)
+		app := handlers.NewAPI(manager, devicePath, recipeMock, shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()

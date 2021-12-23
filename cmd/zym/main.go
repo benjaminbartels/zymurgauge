@@ -12,6 +12,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -79,8 +80,6 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber controller")
 	}
 
-	thermometerRepo := createThermometerRepo()
-
 	brewfather := brewfather.New(brewfather.APIURL, cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
 
 	shutdown := make(chan os.Signal, 1)
@@ -91,7 +90,7 @@ func run(logger *logrus.Logger) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberManager, thermometerRepo, brewfather, shutdown, logger),
+		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfather, shutdown, logger),
 	}
 
 	httpServerErrors := make(chan error, 1)
