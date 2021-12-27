@@ -16,7 +16,7 @@ type ThermometersHandler struct {
 
 func (h *ThermometersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	p httprouter.Params) error {
-	ids, err := onewire.GetThermometerIDs(h.DevicePath)
+	ids, err := onewire.GetIDs(h.DevicePath, onewire.Ds18b20Prefix)
 	if err != nil {
 		return errors.Wrap(err, "could not get all thermometers ids from onewire bus")
 	}

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -13,9 +12,6 @@ import (
 
 const (
 	slave = "w1_slave"
-	// defaultDevicePath is the location of the thermometer data on the file system.
-	DefaultDevicePath = "/sys/bus/w1/devices/"
-	devicePrefix      = "28-*"
 )
 
 type OptionsFunc func(*Ds18b20)
@@ -85,21 +81,4 @@ func (d *Ds18b20) GetTemperature() (float64, error) {
 	temp /= 1000
 
 	return temp, nil
-}
-
-func GetThermometerIDs(devicePath string) ([]string, error) {
-	p := path.Join(devicePath, devicePrefix)
-
-	filenames, err := filepath.Glob(p)
-	if err != nil {
-		return nil, errors.Wrapf(err, "could matching files matching %s", p)
-	}
-
-	result := []string{}
-
-	for i := range filenames {
-		result = append(result, filepath.Base(filenames[i]))
-	}
-
-	return result, nil
 }
