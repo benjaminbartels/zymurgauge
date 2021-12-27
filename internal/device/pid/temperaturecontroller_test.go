@@ -349,7 +349,6 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 	assert.Contains(t, err.Error(), actuatorQuitError)
 }
 
-//nolint: unparam
 func logContains(logs []*logrus.Entry, level logrus.Level, substr string) bool {
 	found := false
 

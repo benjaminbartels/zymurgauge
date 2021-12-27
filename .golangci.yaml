@@ -101,7 +101,8 @@ linters-settings:
   gomnd:
     settings:
       mnd:
-        ignored-functions: strconv.ParseFloat,make
+        ignored-functions: strconv.ParseFloat,math.Round,make
+        ignored-numbers: 32,100,1000
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
