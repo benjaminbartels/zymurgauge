@@ -99,7 +99,10 @@ func (m *Monitor) GetTilt(color Color) (*Tilt, error) { // TODO: check for race?
 
 func (m *Monitor) Run(ctx context.Context) error {
 	m.runMutex.Lock()
+
 	if m.isRunning {
+		defer m.runMutex.Unlock()
+
 		return ErrAlreadyRunning
 	}
 

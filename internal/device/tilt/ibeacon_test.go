@@ -29,6 +29,5 @@ func TestNewIBeaconError(t *testing.T) {
 
 	_, err := tilt.NewIBeacon(bytes)
 
-	// TODO: Waiting on PR for ErrorContains(): https://github.com/stretchr/testify/pull/1022
-	assert.Contains(t, err.Error(), "manufacurerData length is less that 25")
+	assert.ErrorIs(t, err, tilt.ErrInvalidManufacturerDataLength)
 }

@@ -186,6 +186,8 @@ func (t *TemperatureController) wait(ctx context.Context, waitTime time.Duration
 func (t *TemperatureController) Run(ctx context.Context, setPoint float64) error {
 	t.runMutex.Lock()
 	if t.isRunning {
+		defer t.runMutex.Unlock()
+
 		return ErrAlreadyRunning
 	}
 

@@ -66,12 +66,18 @@ func TestRunActuatorsOn(t *testing.T) {
 
 			chillerCh := make(chan struct{}, 1)
 			chillerMock := &mocks.Actuator{}
-			chillerMock.Mock.On("On").Return(nil).Run(func(args mock.Arguments) { chillerCh <- struct{}{} })
+			chillerMock.Mock.On("On").Return(nil).Run(
+				func(args mock.Arguments) {
+					chillerCh <- struct{}{}
+				})
 			chillerMock.Mock.On("Off").Return(nil)
 
 			heaterCh := make(chan struct{}, 1)
 			heaterMock := &mocks.Actuator{}
-			heaterMock.Mock.On("On").Return(nil).Run(func(args mock.Arguments) { heaterCh <- struct{}{} })
+			heaterMock.Mock.On("On").Return(nil).Run(
+				func(args mock.Arguments) {
+					heaterCh <- struct{}{}
+				})
 			heaterMock.Mock.On("Off").Return(nil)
 
 			ctlr := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
@@ -215,7 +221,10 @@ func TestLogging(t *testing.T) {
 	doneCh := make(chan struct{}, 1)
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("On").Return(nil)
-	heaterMock.Mock.On("Off").Return(nil).Run(func(args mock.Arguments) { doneCh <- struct{}{} })
+	heaterMock.Mock.On("Off").Return(nil).Run(
+		func(args mock.Arguments) {
+			doneCh <- struct{}{}
+		})
 
 	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l, pid.SetHeatingCyclePeriod(100*time.Millisecond),
@@ -252,13 +261,16 @@ func TestRunAlreadyRunningError(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	ctx, stop := context.WithCancel(context.Background())
 
 	thermometerMock := &mocks.Thermometer{}
-	thermometerMock.On("GetTemperature").Return(1.0, nil)
+	thermometerMock.On("GetTemperature").Return(20.0, nil)
 
 	doneCh := make(chan struct{}, 1)
 	chillerMock := &mocks.Actuator{}
-	chillerMock.Mock.On("Off").Return(nil).Run(func(args mock.Arguments) { doneCh <- struct{}{} })
+	chillerMock.Mock.On("Off").Return(nil).Run(func(args mock.Arguments) {
+		doneCh <- struct{}{}
+	})
 
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("Off").Return(nil)
@@ -266,29 +278,18 @@ func TestRunAlreadyRunningError(t *testing.T) {
 	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
-	ctx := context.Background()
-
-	var wg sync.WaitGroup
-
-	wg.Add(2)
-
 	go func() {
 		// wait until first therm.Run is called
 		<-doneCh
 
-		err := therm.Run(ctx, 2)
+		err := therm.Run(ctx, 66)
 		assert.ErrorIs(t, err, pid.ErrAlreadyRunning)
-		wg.Done()
+		stop()
 	}()
 
-	go func() {
-		// first therm.Run is called
-		wg.Done()
-
-		_ = therm.Run(ctx, 1)
-	}()
-
-	wg.Wait()
+	// first therm.Run is called
+	err := therm.Run(ctx, 20)
+	assert.NoError(t, err)
 }
 
 func TestThermometerError(t *testing.T) {
@@ -366,7 +367,10 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 
 	doneCh := make(chan struct{}, 1)
 	chillerMock := &mocks.Actuator{}
-	chillerMock.Mock.On("On").Return(nil).Run(func(args mock.Arguments) { doneCh <- struct{}{} })
+	chillerMock.Mock.On("On").Return(nil).Run(
+		func(args mock.Arguments) {
+			doneCh <- struct{}{}
+		})
 	chillerMock.Mock.On("Off").Return(errDeadActuator)
 
 	heaterMock := &mocks.Actuator{}
