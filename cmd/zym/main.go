@@ -75,7 +75,7 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
-	chamberManager, err := controller.NewChamberManager(ctx, chamberRepo, logger)
+	chamberManager, err := controller.NewChamberManager(chamberRepo, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not create chamber controller")
 	}
@@ -114,6 +114,7 @@ func wait(ctx context.Context, server *http.Server, serverErrors chan error, tim
 		ctx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
 		defer timeoutCancel()
 
+		//nolint: contextcheck // https://github.com/sylvia7788/contextcheck/issues/2
 		if err := server.Shutdown(ctx); err != nil {
 			logger.WithError(err).Error("Could not shutdown http server.")
 

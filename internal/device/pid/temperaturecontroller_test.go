@@ -49,7 +49,6 @@ func TestRunActuatorsOn(t *testing.T) {
 		{name: "above", temperature: 20, setPoint: 15, chillerOn: true, heaterOn: false},
 	}
 
-	
 	for _, tc := range tests {
 		tc := tc
 

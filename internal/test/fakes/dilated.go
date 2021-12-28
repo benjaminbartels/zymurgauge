@@ -13,7 +13,7 @@ type DilatedClock struct {
 	startTime  time.Time
 }
 
-func NewDilatedClock(multiplier float64) clock.Clock {
+func NewDilatedClock(multiplier float64) *DilatedClock {
 	return &DilatedClock{
 		multiplier: multiplier,
 		startTime:  time.Now(),

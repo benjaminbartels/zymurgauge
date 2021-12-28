@@ -74,7 +74,7 @@ func TestRoutes(t *testing.T) {
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
-		manager, _ := controller.NewChamberManager(ctx, repoMock, l)
+		manager, _ := controller.NewChamberManager(repoMock, l)
 
 		app := handlers.NewAPI(manager, devicePath, recipeMock, shutdown, logger)
 
@@ -82,7 +82,7 @@ func TestRoutes(t *testing.T) {
 			t.Parallel()
 
 			if tc.path == "/v1/chambers/"+chamberID+"/stop" {
-				_ = manager.GetChamber(chamberID).StartFermentation(1)
+				_ = manager.GetChamber(chamberID).StartFermentation(ctx, 1)
 			}
 
 			w := httptest.NewRecorder()

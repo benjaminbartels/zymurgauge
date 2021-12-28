@@ -12,23 +12,17 @@ output:
   uniq-by-line: true
 linters:
   enable:
-    - deadcode
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - structcheck
-    - typecheck
-    - unused
-    - varcheck
     - asciicheck
+    - bidichk
     - bodyclose
+    - contextcheck
     - cyclop
+    - deadcode
     - depguard
     - dogsled
     - dupl
     - durationcheck
+    - errcheck
     - errname
     - errorlint
     - exhaustive
@@ -54,14 +48,19 @@ linters:
     - gomodguard
     - goprintffuncname
     - gosec
+    - gosimple
+    - govet
     - ifshort
     - importas
+    - ineffassign
+    - ireturn
     - lll
     - makezero
     - misspell
     - nakedret
     - nestif
     - nilerr
+    - nilnil
     - nlreturn
     - noctx
     - nolintlint
@@ -72,13 +71,19 @@ linters:
     - revive
     - rowserrcheck
     - sqlclosecheck
+    - staticcheck
+    - structcheck
     - stylecheck
     - tagliatelle
+    - tenv
     - testpackage
     - thelper
     - tparallel
+    - typecheck
     - unconvert
     - unparam
+    - unused
+    - varcheck
     - wastedassign
     - whitespace
     - wrapcheck
@@ -86,6 +91,11 @@ linters:
   disable:
     - exhaustivestruct          # Not recommended globally
     - godox                     # Need to be able to commit code with TODO
+    - golint                    # Deprecated
+    - interfacer                # Deprecated
+    - maligned                  # Deprecated
+    - scopelint                 # Deprecated
+    - varnamelen                # Way too opinionated
 linters-settings:
   wrapcheck:
     ignoreSigs:
