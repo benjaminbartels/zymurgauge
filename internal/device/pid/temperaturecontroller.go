@@ -23,7 +23,7 @@ const (
 	dutyCycleMultiplyer                      = 100
 )
 
-var ErrAlreadyOn = errors.New("pid is already on") // TODO: rename on?
+var ErrAlreadyRunning = errors.New("pid is already running") // TODO: rename on?
 
 type TemperatureController struct {
 	thermometer         device.Thermometer
@@ -41,8 +41,8 @@ type TemperatureController struct {
 	heatingMinimum      time.Duration
 	clock               clock.Clock
 	logger              *logrus.Logger
-	isOn                bool
-	onMutex             sync.Mutex
+	isRunning           bool
+	runMutex            sync.Mutex
 }
 
 func NewPIDTemperatureController(thermometer device.Thermometer, chiller, heater device.Actuator,
@@ -175,23 +175,23 @@ func (t *TemperatureController) wait(ctx context.Context, waitTime time.Duration
 	case <-timer.C:
 		return true
 	case <-ctx.Done():
-		t.onMutex.Lock()
-		defer t.onMutex.Unlock()
-		t.isOn = false
+		t.runMutex.Lock()
+		defer t.runMutex.Unlock()
+		t.isRunning = false
 
 		return false
 	}
 }
 
 func (t *TemperatureController) Run(ctx context.Context, setPoint float64) error {
-	t.onMutex.Lock()
-	if t.isOn {
-		return ErrAlreadyOn
+	t.runMutex.Lock()
+	if t.isRunning {
+		return ErrAlreadyRunning
 	}
 
-	t.isOn = true
+	t.isRunning = true
 
-	t.onMutex.Unlock()
+	t.runMutex.Unlock()
 
 	chillerPID := newPID(t.chillerKp, t.chillerKi, t.chillerKd, pidMin, pidMax)
 	chillerPID.Set(setPoint)
