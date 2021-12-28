@@ -49,9 +49,10 @@ func TestRunActuatorsOn(t *testing.T) {
 		{name: "above", temperature: 20, setPoint: 15, chillerOn: true, heaterOn: false},
 	}
 
-	// nolint: paralleltest // False positives with ANY "Run" not in a loop
+	
 	for _, tc := range tests {
 		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			l, _ := logtest.NewNullLogger()
@@ -134,7 +135,6 @@ func TestRunDutyCycle(t *testing.T) {
 		{name: "100% duty", temperature: 30, expectedElapsedTime: 100 * time.Millisecond},
 	}
 
-	// nolint: paralleltest // False positives with ANY "Run" not in a loop
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {

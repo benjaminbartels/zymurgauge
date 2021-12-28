@@ -35,7 +35,6 @@ func TestRunAlreadyRunningError(t *testing.T) {
 	interval := tilt.SetInterval(1 * time.Millisecond)
 	monitor := tilt.NewMonitor(scannerMock, l, timeout, interval)
 
-	// nolint: paralleltest // False positives with ANY "Run" not in a loop
 	scannerMock.On("Scan", mock.Anything, mock.Anything, mock.Anything).Return(context.DeadlineExceeded).Run(
 		func(args mock.Arguments) {
 			err := monitor.Run(ctx)
