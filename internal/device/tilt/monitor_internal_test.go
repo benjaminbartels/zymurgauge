@@ -19,6 +19,7 @@ const (
 	specificGravity = 0.999
 )
 
+//nolint: gochecknoglobals
 var (
 	orangeManufacurerData = []byte{
 		76, 0, 2, 21, 164, 149, 187, 80, 197, 177, 75, 68, 181, 18, 19, 112, 240, 45, 116, 222, 0, 68, 3, 231, 197,
