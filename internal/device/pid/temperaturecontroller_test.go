@@ -254,7 +254,7 @@ func TestRunAlreadyRunningError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	thermometerMock := &mocks.Thermometer{}
-	thermometerMock.On("GetTemperature").Return(20.0, nil)
+	thermometerMock.On("GetTemperature").Return(1.0, nil)
 
 	doneCh := make(chan struct{}, 1)
 	chillerMock := &mocks.Actuator{}
@@ -268,16 +268,27 @@ func TestRunAlreadyRunningError(t *testing.T) {
 
 	ctx := context.Background()
 
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+
 	go func() {
-		// first therm.Run is called
-		err := therm.Run(ctx, 20)
-		assert.NoError(t, err)
+		// wait until first therm.Run is called
+		<-doneCh
+
+		err := therm.Run(ctx, 2)
+		assert.ErrorIs(t, err, pid.ErrAlreadyRunning)
+		wg.Done()
 	}()
 
-	<-doneCh
+	go func() {
+		// first therm.Run is called
+		wg.Done()
 
-	err := therm.Run(ctx, 66)
-	assert.ErrorIs(t, err, pid.ErrAlreadyRunning)
+		_ = therm.Run(ctx, 1)
+	}()
+
+	wg.Wait()
 }
 
 func TestThermometerError(t *testing.T) {

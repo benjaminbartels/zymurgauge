@@ -1,6 +1,6 @@
 package device
 
-// Hydrometer represents a device that can read gravity.
+// Hydrometer represents a device that can read specific gravity.
 type Hydrometer interface {
-	GetGravity() (float64, error)
+	GetSpecificGravity() (float64, error)
 }

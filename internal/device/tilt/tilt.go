@@ -3,7 +3,13 @@ package tilt
 import (
 	"math"
 
+	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/pkg/errors"
+)
+
+var (
+	_ device.Thermometer = (*Tilt)(nil)
+	_ device.Hydrometer  = (*Tilt)(nil)
 )
 
 type Tilt struct {
@@ -20,7 +26,7 @@ func (t *Tilt) GetTemperature() (float64, error) {
 	return math.Round(float64(t.ibeacon.Major-32)/1.8*100) / 100, nil
 }
 
-func (t *Tilt) GetGravity() (float64, error) {
+func (t *Tilt) GetSpecificGravity() (float64, error) {
 	if t.ibeacon == nil {
 		return 0, ErrIBeaconIsNil
 	}

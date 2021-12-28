@@ -7,8 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/pkg/errors"
 )
+
+var _ device.Thermometer = (*Ds18b20)(nil)
 
 const (
 	slave = "w1_slave"

@@ -6,22 +6,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-ble/ble"
-	"github.com/go-ble/ble/linux"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	tiltID       = "4c000215a495" // TODO: remove preamble
-	Red    Color = "Red"
-	Green  Color = "Green"
-	Black  Color = "Black"
-	Purple Color = "Purple"
-	Orange Color = "Orange"
-	Blue   Color = "Blue"
-	Yellow Color = "Yellow"
-	Pink   Color = "Pink"
+	tiltID                        = "4c000215a495" // TODO: remove preamble
+	defaultTimeout  time.Duration = 5 * time.Second
+	defaultInterval time.Duration = 1 * time.Second
+	Red             Color         = "Red"
+	Green           Color         = "Green"
+	Black           Color         = "Black"
+	Purple          Color         = "Purple"
+	Orange          Color         = "Orange"
+	Blue            Color         = "Blue"
+	Yellow          Color         = "Yellow"
+	Pink            Color         = "Pink"
 )
 
 var (
@@ -44,21 +45,27 @@ var colors = map[string]Color{
 type Color string
 
 type Monitor struct {
+	scanner         bluetooth.Scanner
+	logger          *logrus.Logger
 	timeout         time.Duration
 	interval        time.Duration
-	logger          *logrus.Logger
-	availibleColors []Color
+	availableColors []Color
 	tilts           map[Color]*Tilt
 	isRunning       bool
 	runMutex        sync.Mutex
 }
 
-func NewMonitor(timeout, interval time.Duration, logger *logrus.Logger) *Monitor {
+func NewMonitor(scanner bluetooth.Scanner, logger *logrus.Logger, options ...OptionsFunc) *Monitor {
 	m := &Monitor{
-		timeout:  timeout,
-		interval: interval,
+		scanner:  scanner,
+		timeout:  defaultTimeout,
+		interval: defaultInterval,
 		tilts:    make(map[Color]*Tilt),
 		logger:   logger,
+	}
+
+	for _, option := range options {
+		option(m)
 	}
 
 	for _, color := range colors {
@@ -66,6 +73,20 @@ func NewMonitor(timeout, interval time.Duration, logger *logrus.Logger) *Monitor
 	}
 
 	return m
+}
+
+type OptionsFunc func(*Monitor)
+
+func SetTimeout(timeout time.Duration) OptionsFunc {
+	return func(t *Monitor) {
+		t.timeout = timeout
+	}
+}
+
+func SetInterval(interval time.Duration) OptionsFunc {
+	return func(t *Monitor) {
+		t.interval = interval
+	}
 }
 
 func (m *Monitor) GetTilt(color Color) (*Tilt, error) { // TODO: check for race?
@@ -82,23 +103,27 @@ func (m *Monitor) Run(ctx context.Context) error {
 		return ErrAlreadyRunning
 	}
 
-	device, err := linux.NewDevice()
+	m.isRunning = true
+
+	m.runMutex.Unlock()
+
+	device, err := m.scanner.NewDevice()
 	if err != nil {
 		return errors.Wrap(err, "could not create new device")
 	}
 
-	ble.SetDefaultDevice(device)
+	m.scanner.SetDefaultDevice(device)
 
 	return m.startCycle(ctx)
 }
 
 func (m *Monitor) startCycle(ctx context.Context) error {
 	for {
-		m.availibleColors = []Color{}
+		m.availableColors = []Color{}
 
-		scanCtx := ble.WithSigHandler(context.WithTimeout(ctx, m.timeout))
+		scanCtx := m.scanner.WithSigHandler(context.WithTimeout(ctx, m.timeout))
 
-		if err := ble.Scan(scanCtx, false, m.advHandler, m.advFilter); err != nil {
+		if err := m.scanner.Scan(scanCtx, m.handler, m.filter); err != nil {
 			switch {
 			case errors.Is(err, context.DeadlineExceeded):
 			case errors.Is(err, context.Canceled):
@@ -109,7 +134,7 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 		}
 
 		for _, color := range colors {
-			if !containsColor(m.availibleColors, color) {
+			if !containsColor(m.availableColors, color) {
 				m.tilts[color].ibeacon = nil
 			}
 		}
@@ -129,21 +154,27 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 	}
 }
 
-func (m *Monitor) advFilter(adv ble.Advertisement) bool {
-	return len(adv.ManufacturerData()) >= 25 && hex.EncodeToString(adv.ManufacturerData())[0:12] == tiltID
-}
+func (m *Monitor) handler(adv bluetooth.Advertisement) {
+	ibeacon, err := NewIBeacon(adv.ManufacturerData())
+	if err != nil {
+		m.logger.WithError(err).Error("could not create new IBeacon")
 
-func (m *Monitor) advHandler(adv ble.Advertisement) {
-	ibeacon := NewIBeacon(adv.ManufacturerData())
+		return
+	}
+
 	color := colors[ibeacon.UUID]
-	m.availibleColors = append(m.availibleColors, color)
+	m.availableColors = append(m.availableColors, color)
 	m.tilts[color].ibeacon = ibeacon
 	m.logger.Debugf("Discovered Tilt - Color: %s, UUID: %s, Major: %d, Minor: %d\n", colors[ibeacon.UUID],
 		ibeacon.UUID, ibeacon.Major, ibeacon.Minor)
 }
 
-func containsColor(elems []Color, v Color) bool {
-	for _, s := range elems {
+func (m *Monitor) filter(adv bluetooth.Advertisement) bool {
+	return len(adv.ManufacturerData()) >= 25 && hex.EncodeToString(adv.ManufacturerData())[0:12] == tiltID
+}
+
+func containsColor(colors []Color, v Color) bool {
+	for _, s := range colors {
 		if v == s {
 			return true
 		}
