@@ -35,15 +35,13 @@ type Chamber struct {
 	CurrentBatch            *batch.Batch `json:"currentBatch,omitempty"`
 	CurrentFermentationStep int          `json:"currentFermentationStep"`
 	ModTime                 time.Time    `json:"modTime"`
-	mainCtx                 context.Context
 	logger                  *logrus.Logger
 	temperatureController   device.TemperatureController
 	cancelFunc              context.CancelFunc
 	runMutex                *sync.Mutex
 }
 
-func (c *Chamber) Configure(ctx context.Context, logger *logrus.Logger) error {
-	c.mainCtx = ctx
+func (c *Chamber) Configure(logger *logrus.Logger) error {
 	c.logger = logger
 
 	thermometer, err := CreateThermometer(c.ThermometerID)
@@ -70,7 +68,7 @@ func (c *Chamber) Configure(ctx context.Context, logger *logrus.Logger) error {
 	return nil
 }
 
-func (c *Chamber) StartFermentation(step int) error {
+func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
@@ -87,7 +85,7 @@ func (c *Chamber) StartFermentation(step int) error {
 	}
 
 	temp := c.CurrentBatch.Fermentation.Steps[step-1].StepTemp
-	ctx, cancelFunc := context.WithCancel(c.mainCtx)
+	ctx, cancelFunc := context.WithCancel(ctx)
 	c.cancelFunc = cancelFunc
 
 	go func() {

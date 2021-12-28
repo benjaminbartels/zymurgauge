@@ -3,18 +3,15 @@ package handlers_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
-)
-
-const (
-	thermometerID = "28-0000071cbc72"
 )
 
 //nolint: paralleltest // False positives with r.Run not in a loop
@@ -29,15 +26,19 @@ func TestGetAllThermometers(t *testing.T) {
 func getAllThermometers(t *testing.T) {
 	t.Parallel()
 
+	file, err := ioutil.TempFile("", "28-*")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer os.Remove(file.Name())
+
 	w, r, ctx := setupHandlerTest("", nil)
 
-	expected := []string{thermometerID, "28-0000041ab222"}
+	expected := []string{filepath.Base(file.Name())}
 
-	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return(expected, nil)
-
-	handler := &handlers.ThermometersHandler{Repo: repoMock}
-	err := handler.GetAll(ctx, w, r, httprouter.Params{})
+	handler := &handlers.ThermometersHandler{DevicePath: os.TempDir()}
+	err = handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
 	resp := w.Result()
@@ -56,10 +57,8 @@ func getAllThermometersEmpty(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 
 	expected := []string{}
-	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return(expected, nil)
 
-	handler := &handlers.ThermometersHandler{Repo: repoMock}
+	handler := &handlers.ThermometersHandler{DevicePath: devicePath}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -78,13 +77,10 @@ func getAllThermometersRepoError(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return([]string{}, errSomeError)
-
-	handler := &handlers.ThermometersHandler{Repo: repoMock}
+	handler := &handlers.ThermometersHandler{DevicePath: "]["} // force glob to error
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	// TODO: Waiting on PR for ErrorContains(): https://github.com/stretchr/testify/pull/1022
-	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all thermometers from"))
+	assert.Contains(t, err.Error(), "could not get all thermometers ids from onewire bus")
 }
 
 func getAllThermometersRespondError(t *testing.T) {
@@ -93,10 +89,7 @@ func getAllThermometersRespondError(t *testing.T) {
 	w, r, _ := setupHandlerTest("", nil)
 	ctx := context.Background()
 
-	repoMock := &mocks.ThermometerRepo{}
-	repoMock.On("GetThermometerIDs").Return([]string{}, nil)
-
-	handler := &handlers.ThermometersHandler{Repo: repoMock}
+	handler := &handlers.ThermometersHandler{DevicePath: devicePath}
 	// use new ctx to force error
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), respondErrMsg)

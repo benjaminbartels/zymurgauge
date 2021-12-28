@@ -19,6 +19,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+const devicePath = "/"
+
 func TestRoutes(t *testing.T) {
 	t.Parallel()
 
@@ -65,9 +67,6 @@ func TestRoutes(t *testing.T) {
 		repoMock.On("SaveChamber", mock.Anything).Return(nil)
 		repoMock.On("DeleteChamber", mock.Anything).Return(nil)
 
-		thermometerMock := &mocks.ThermometerRepo{}
-		thermometerMock.On("GetThermometerIDs", mock.Anything).Return([]string{}, nil)
-
 		recipeMock := &mocks.BatchRepo{}
 		recipeMock.On("GetAllBatches", mock.Anything).Return([]batch.Batch{}, nil)
 		recipeMock.On("GetBatch", mock.Anything, batchID).Return(&r, nil)
@@ -75,15 +74,15 @@ func TestRoutes(t *testing.T) {
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
-		manager, _ := controller.NewChamberManager(ctx, repoMock, l)
+		manager, _ := controller.NewChamberManager(repoMock, l)
 
-		app := handlers.NewAPI(manager, thermometerMock, recipeMock, shutdown, logger)
+		app := handlers.NewAPI(manager, devicePath, recipeMock, shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.path == "/v1/chambers/"+chamberID+"/stop" {
-				_ = manager.GetChamber(chamberID).StartFermentation(1)
+				_ = manager.GetChamber(chamberID).StartFermentation(ctx, 1)
 			}
 
 			w := httptest.NewRecorder()

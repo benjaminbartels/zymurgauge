@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"sync"
 
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -16,16 +15,14 @@ type ChamberManager struct {
 	repo     chamber.Repo
 	chambers sync.Map
 	// chambers map[string]*chamber.Chamber
-	mainCtx context.Context
-	logger  *logrus.Logger
+	logger *logrus.Logger
 }
 
-func NewChamberManager(ctx context.Context, repo chamber.Repo, logger *logrus.Logger) (*ChamberManager, error) {
+func NewChamberManager(repo chamber.Repo, logger *logrus.Logger) (*ChamberManager, error) {
 	c := &ChamberManager{
 		repo: repo,
 		// chambers: make(map[string]*chamber.Chamber),
-		mainCtx: ctx,
-		logger:  logger,
+		logger: logger,
 	}
 
 	chambers, err := c.repo.GetAllChambers()
@@ -36,7 +33,7 @@ func NewChamberManager(ctx context.Context, repo chamber.Repo, logger *logrus.Lo
 	var errs error
 
 	for i := range chambers {
-		if err := chambers[i].Configure(c.mainCtx, logger); err != nil {
+		if err := chambers[i].Configure(logger); err != nil {
 			errs = multierror.Append(errs,
 				errors.Wrapf(err, "could not configure temperature controller for chamber %s", chambers[i].Name))
 		}
@@ -79,7 +76,7 @@ func (c *ChamberManager) SaveChamber(chamber *chamber.Chamber) error {
 
 	c.chambers.Store(chamber.ID, chamber)
 
-	if err := chamber.Configure(c.mainCtx, c.logger); err != nil {
+	if err := chamber.Configure(c.logger); err != nil {
 		return errors.Wrap(err, "could not configure chamber")
 	}
 

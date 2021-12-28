@@ -3,35 +3,31 @@
 
 package chamber
 
-import (
-	"github.com/benjaminbartels/zymurgauge/internal/device"
-)
-
 // The program is only meant to run on linux on arm. This file only exists to prevent compilation issues on non
 // linux/arm systems.
 
 const stubTemperature = 25
 
-func CreateThermometer(thermometerID string) (device.Thermometer, error) {
-	return &stubThermometer{thermometerID: thermometerID}, nil
+func CreateThermometer(thermometerID string) (*StubThermometer, error) {
+	return &StubThermometer{thermometerID: thermometerID}, nil
 }
 
-func CreateActuator(pin string) (device.Actuator, error) {
-	return &stubActuator{pin: pin}, nil
+func CreateActuator(pin string) (*StubActuator, error) {
+	return &StubActuator{pin: pin}, nil
 }
 
-type stubThermometer struct {
+type StubThermometer struct {
 	thermometerID string
 }
 
-func (t *stubThermometer) GetTemperature() (float64, error) {
+func (t *StubThermometer) GetTemperature() (float64, error) {
 	return stubTemperature, nil
 }
 
-type stubActuator struct {
+type StubActuator struct {
 	pin string
 }
 
-func (a *stubActuator) On() error { return nil }
+func (a *StubActuator) On() error { return nil }
 
-func (a *stubActuator) Off() error { return nil }
+func (a *StubActuator) Off() error { return nil }

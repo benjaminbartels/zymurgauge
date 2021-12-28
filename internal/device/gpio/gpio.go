@@ -1,4 +1,4 @@
-package raspberrypi
+package gpio
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"
@@ -7,22 +7,22 @@ import (
 	"periph.io/x/periph/conn/gpio/gpioreg"
 )
 
-var _ device.Actuator = (*GPIOActuator)(nil)
+var _ device.Actuator = (*Actuator)(nil)
 
-type GPIOActuator struct {
+type Actuator struct {
 	pin gpio.PinIO
 }
 
-func NewGPIOActuator(pinID string) (*GPIOActuator, error) {
+func NewGPIOActuator(pinID string) (*Actuator, error) {
 	pin := gpioreg.ByName(pinID)
 	if pin == nil {
 		return nil, errors.Errorf("Could not open %s", pinID)
 	}
 
-	return &GPIOActuator{pin: pin}, nil
+	return &Actuator{pin: pin}, nil
 }
 
-func (a *GPIOActuator) On() error {
+func (a *Actuator) On() error {
 	if err := a.pin.Out(gpio.High); err != nil {
 		return errors.Wrapf(err, "could not set pin %s to high", a.pin.Name())
 	}
@@ -30,7 +30,7 @@ func (a *GPIOActuator) On() error {
 	return nil
 }
 
-func (a *GPIOActuator) Off() error {
+func (a *Actuator) Off() error {
 	if err := a.pin.Out(gpio.Low); err != nil {
 		return errors.Wrapf(err, "could not set pin %s to low", a.pin.Name())
 	}

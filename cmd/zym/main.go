@@ -12,6 +12,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
+	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -74,12 +75,10 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
-	chamberManager, err := controller.NewChamberManager(ctx, chamberRepo, logger)
+	chamberManager, err := controller.NewChamberManager(chamberRepo, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not create chamber controller")
 	}
-
-	thermometerRepo := createThermometerRepo()
 
 	brewfather := brewfather.New(brewfather.APIURL, cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
 
@@ -91,7 +90,7 @@ func run(logger *logrus.Logger) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberManager, thermometerRepo, brewfather, shutdown, logger),
+		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfather, shutdown, logger),
 	}
 
 	httpServerErrors := make(chan error, 1)
@@ -115,6 +114,7 @@ func wait(ctx context.Context, server *http.Server, serverErrors chan error, tim
 		ctx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
 		defer timeoutCancel()
 
+		//nolint: contextcheck // https://github.com/sylvia7788/contextcheck/issues/2
 		if err := server.Shutdown(ctx); err != nil {
 			logger.WithError(err).Error("Could not shutdown http server.")
 

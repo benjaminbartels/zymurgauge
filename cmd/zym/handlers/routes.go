@@ -9,7 +9,6 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
-	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/sirupsen/logrus"
@@ -23,7 +22,7 @@ const (
 )
 
 // NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberController *controller.ChamberManager, thermometerRepo device.ThermometerRepo,
+func NewAPI(chamberController *controller.ChamberManager, devicePath string,
 	batchRepo batch.Repo, shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberController,
@@ -31,11 +30,11 @@ func NewAPI(chamberController *controller.ChamberManager, thermometerRepo device
 	}
 
 	thermometersHandler := &ThermometersHandler{
-		Repo: thermometerRepo,
+		DevicePath: devicePath,
 	}
 
 	batchesHandler := &BatchesHandler{
-		Repo: batchRepo,
+		BatchRepo: batchRepo,
 	}
 
 	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger))

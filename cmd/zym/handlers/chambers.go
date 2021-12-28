@@ -107,7 +107,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 		return web.NewRequestError(fmt.Sprintf("step %s is invalid", stepVal), http.StatusBadRequest)
 	}
 
-	if err := c.StartFermentation(step); err != nil {
+	if err := c.StartFermentation(ctx, step); err != nil {
 		switch {
 		case errors.Is(err, chamber.ErrInvalidStep):
 			return web.NewRequestError(fmt.Sprintf("step %d is invalid for chamber '%s'", step, id), http.StatusBadRequest)
