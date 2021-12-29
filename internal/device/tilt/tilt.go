@@ -8,8 +8,7 @@ import (
 )
 
 var (
-	_ device.Thermometer = (*Tilt)(nil)
-	_ device.Hydrometer  = (*Tilt)(nil)
+	_ device.ThermometerAndHydrometer = (*Tilt)(nil)
 )
 
 type Tilt struct {

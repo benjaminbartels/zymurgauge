@@ -1,11 +1,14 @@
-package configurator
+package chamber
 
-import "github.com/benjaminbartels/zymurgauge/internal/device/tilt"
+import (
+	"github.com/benjaminbartels/zymurgauge/internal/device"
+	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
+)
 
-type ConfiguratorIface interface {
-	CreateDs18b20(thermometerID string) (*StubThermometer, error)
-	CreateTilt(color tilt.Color) (*StubTilt, error)
-	CreateGPIOActuator(pin string) (*StubGPIOActuator, error)
+type Configurator interface {
+	CreateDs18b20(thermometerID string) (device.Thermometer, error)
+	CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error)
+	CreateGPIOActuator(pin string) (device.Actuator, error)
 }
 
 const (
@@ -43,14 +46,14 @@ func (t *StubTilt) GetSpecificGravity() (float64, error) {
 
 type StubConfigurator struct{}
 
-func (c StubConfigurator) CreateDs18b20(thermometerID string) (*StubThermometer, error) {
+func (c StubConfigurator) CreateDs18b20(thermometerID string) (device.Thermometer, error) {
 	return &StubThermometer{thermometerID: thermometerID}, nil
 }
 
-func (c StubConfigurator) CreateTilt(color tilt.Color) (*StubTilt, error) {
+func (c StubConfigurator) CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error) {
 	return &StubTilt{color: color}, nil
 }
 
-func (c StubConfigurator) CreateGPIOActuator(pin string) (*StubGPIOActuator, error) {
+func (c StubConfigurator) CreateGPIOActuator(pin string) (device.Actuator, error) {
 	return &StubGPIOActuator{pin: pin}, nil
 }

@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
-	"github.com/benjaminbartels/zymurgauge/internal/configurator"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -16,11 +15,11 @@ type ChamberManager struct {
 	repo     chamber.Repo
 	chambers sync.Map
 	// chambers map[string]*chamber.Chamber
-	configurator configurator.ConfiguratorIface
+	configurator chamber.Configurator
 	logger       *logrus.Logger
 }
 
-func NewChamberManager(repo chamber.Repo, configurator configurator.ConfiguratorIface,
+func NewChamberManager(repo chamber.Repo, configurator chamber.Configurator,
 	logger *logrus.Logger) (*ChamberManager, error) {
 	c := &ChamberManager{
 		repo:         repo,

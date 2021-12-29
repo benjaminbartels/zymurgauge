@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
-	"github.com/benjaminbartels/zymurgauge/internal/configurator"
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
@@ -60,7 +59,7 @@ type Chamber struct {
 
 // TODO: refactor to use generics in the future.
 
-func (c *Chamber) Configure(configurator configurator.ConfiguratorIface, logger *logrus.Logger) error {
+func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) error {
 	c.logger = logger
 
 	var (

@@ -11,9 +11,11 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
-	"github.com/benjaminbartels/zymurgauge/internal/configurator"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
+	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -35,7 +37,8 @@ type config struct {
 	ShutdownTimeout     time.Duration `default:"20s"`
 	BrewfatherAPIUserID string        `required:"true"`
 	BrewfatherAPIKey    string        `required:"true"`
-	Debug               bool          `default:"false"`
+	BleScannerTimeout   time.Duration
+	Debug               bool `default:"false"`
 }
 
 func main() {
@@ -76,7 +79,17 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
-	chamberManager, err := controller.NewChamberManager(chamberRepo, configurator.StubConfigurator{}, logger)
+	scanner := bluetooth.NewBLEScanner()
+
+	configurator := &chamber.DefaultConfigurator{
+		TiltMonitor: *tilt.NewMonitor(scanner, logger),
+	}
+
+	// cannot use configurator (variable of type *configurator.Configurator) as configurator.ConfiguratorIface value in argument to controller.NewChamberManager: wrong type for method CreateDs18b20 (
+	//have func(thermometerID string) (*github.com/benjaminbartels/zymurgauge/internal/device/onewire.Ds18b20, error),
+	//want func(thermometerID string) (*github.com/benjaminbartels/zymurgauge/internal/configurator.StubThermometer, error))
+
+	chamberManager, err := controller.NewChamberManager(chamberRepo, configurator, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not create chamber controller")
 	}
