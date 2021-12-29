@@ -11,8 +11,11 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
+	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -34,7 +37,8 @@ type config struct {
 	ShutdownTimeout     time.Duration `default:"20s"`
 	BrewfatherAPIUserID string        `required:"true"`
 	BrewfatherAPIKey    string        `required:"true"`
-	Debug               bool          `default:"false"`
+	BleScannerTimeout   time.Duration
+	Debug               bool `default:"false"`
 }
 
 func main() {
@@ -75,12 +79,16 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
-	chamberManager, err := controller.NewChamberManager(chamberRepo, logger)
+	configurator := &chamber.DefaultConfigurator{
+		TiltMonitor: *tilt.NewMonitor(bluetooth.NewBLEScanner(), logger),
+	}
+
+	chamberManager, err := controller.NewChamberManager(chamberRepo, configurator, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not create chamber controller")
 	}
 
-	brewfather := brewfather.New(brewfather.APIURL, cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
+	brewfather := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
@@ -92,7 +100,6 @@ func run(logger *logrus.Logger) error {
 		IdleTimeout:  cfg.IdleTimeout,
 		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfather, shutdown, logger),
 	}
-
 	httpServerErrors := make(chan error, 1)
 
 	go func() {

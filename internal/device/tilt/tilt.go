@@ -7,10 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	_ device.Thermometer = (*Tilt)(nil)
-	_ device.Hydrometer  = (*Tilt)(nil)
-)
+var _ device.ThermometerAndHydrometer = (*Tilt)(nil)
 
 type Tilt struct {
 	ibeacon *IBeacon

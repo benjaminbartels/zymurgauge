@@ -13,7 +13,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
-	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
+	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -52,6 +52,23 @@ func TestRoutes(t *testing.T) {
 
 		c := chamber.Chamber{
 			ID: chamberID,
+			DeviceConfigs: []chamber.DeviceConfig{
+				{
+					ID:    "1",
+					Type:  "ds18b20",
+					Roles: []string{"thermometer"},
+				},
+				{
+					ID:    "2",
+					Type:  "gpio",
+					Roles: []string{"chiller"},
+				},
+				{
+					ID:    "3",
+					Type:  "gpio",
+					Roles: []string{"heater"},
+				},
+			},
 			CurrentBatch: &batch.Batch{
 				Fermentation: batch.Fermentation{
 					Steps: []batch.FermentationStep{{StepTemp: 22}},
@@ -74,7 +91,7 @@ func TestRoutes(t *testing.T) {
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
-		manager, _ := controller.NewChamberManager(repoMock, l)
+		manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
 
 		app := handlers.NewAPI(manager, devicePath, recipeMock, shutdown, logger)
 

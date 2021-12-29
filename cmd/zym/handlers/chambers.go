@@ -20,13 +20,13 @@ type Status struct {
 }
 
 type ChambersHandler struct {
-	ChamberController *controller.ChamberManager
-	Logger            *logrus.Logger // TODO: use log entry logger
+	ChamberManager *controller.ChamberManager
+	Logger         *logrus.Logger // TODO: use log entry logger
 }
 
 func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	p httprouter.Params) error {
-	chambers := h.ChamberController.GetAllChambers()
+	chambers := h.ChamberManager.GetAllChambers()
 
 	if err := web.Respond(ctx, w, chambers, http.StatusOK); err != nil {
 		return errors.Wrap(err, "problem responding to client")
@@ -38,7 +38,7 @@ func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *
 func (h *ChambersHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
-	c := h.ChamberController.GetChamber(id)
+	c := h.ChamberManager.GetChamber(id)
 	if c == nil {
 		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}
@@ -56,7 +56,7 @@ func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *ht
 		return errors.Wrap(err, "could not parse chamber")
 	}
 
-	if err := h.ChamberController.SaveChamber(&chamber); err != nil {
+	if err := h.ChamberManager.SaveChamber(&chamber); err != nil {
 		return errors.Wrap(err, "could not save chamber to controller")
 	}
 
@@ -71,7 +71,7 @@ func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *
 	p httprouter.Params) error {
 	id := p.ByName("id")
 
-	c := h.ChamberController.GetChamber(id)
+	c := h.ChamberManager.GetChamber(id)
 	if c == nil {
 		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}
@@ -80,7 +80,7 @@ func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *
 		h.Logger.WithError(err).Warn("Error occurred while stopping fermentation")
 	}
 
-	if err := h.ChamberController.DeleteChamber(id); err != nil {
+	if err := h.ChamberManager.DeleteChamber(id); err != nil {
 		return errors.Wrapf(err, "could not delete chamber %s from controller", id)
 	}
 
@@ -95,7 +95,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 	p httprouter.Params) error {
 	id := p.ByName("id")
 
-	c := h.ChamberController.GetChamber(id)
+	c := h.ChamberManager.GetChamber(id)
 	if c == nil {
 		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}
@@ -126,7 +126,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 func (h *ChambersHandler) Stop(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
-	c := h.ChamberController.GetChamber(id)
+	c := h.ChamberManager.GetChamber(id)
 	if c == nil {
 		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}

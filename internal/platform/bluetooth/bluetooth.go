@@ -2,7 +2,6 @@ package bluetooth
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-ble/ble"
 	"github.com/go-ble/ble/linux"
@@ -26,19 +25,10 @@ type Device interface {
 	ble.Device
 }
 
-type BLEScanner struct {
-	timeout time.Duration
-	handler func(adv Advertisement)
-	filter  func(adv Advertisement) bool
-}
+type BLEScanner struct{}
 
-func NewBLEScanner(timeout time.Duration, handler func(adv Advertisement),
-	filter func(adv Advertisement) bool) *BLEScanner {
-	return &BLEScanner{
-		timeout: timeout,
-		handler: handler,
-		filter:  filter,
-	}
+func NewBLEScanner() *BLEScanner {
+	return &BLEScanner{}
 }
 
 func (b *BLEScanner) NewDevice() (*linux.Device, error) {
@@ -55,7 +45,7 @@ func (b *BLEScanner) SetDefaultDevice(device Device) {
 }
 
 func (b *BLEScanner) WithSigHandler(ctx context.Context, cancel func()) context.Context {
-	return ble.WithSigHandler(context.WithTimeout(ctx, b.timeout))
+	return ble.WithSigHandler(ctx, cancel)
 }
 
 func (b *BLEScanner) Scan(ctx context.Context, h func(a Advertisement), f func(a Advertisement) bool) error {

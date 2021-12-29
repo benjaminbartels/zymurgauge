@@ -1,6 +1,7 @@
 package brewfather
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -12,8 +13,10 @@ import (
 )
 
 const (
-	APIURL      = "https://api.brewfather.app/v1/"
+	APIURL      = "https://api.brewfather.app/v1"
+	LogURL      = "http://log.brewfather.net/stream"
 	batchesPath = "batches"
+	tiltPath    = "tilt"
 )
 
 var (
@@ -25,26 +28,24 @@ var (
 var _ batch.Repo = (*Client)(nil)
 
 type Client struct {
-	client  *http.Client
-	baseURL string
+	client *http.Client
 }
 
-func New(baseURL, userID, apiKey string) *Client {
+func New(userID, apiKey string) *Client {
 	t := &transport{
 		userID: userID,
 		apiKey: apiKey,
 	}
 
 	c := &Client{
-		client:  &http.Client{Transport: t},
-		baseURL: baseURL,
+		client: &http.Client{Transport: t},
 	}
 
 	return c
 }
 
 func (s *Client) GetAllBatches(ctx context.Context) ([]batch.Batch, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", s.baseURL, batchesPath), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", APIURL, batchesPath), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batches")
 	}
@@ -69,7 +70,7 @@ func (s *Client) GetAllBatches(ctx context.Context) ([]batch.Batch, error) {
 }
 
 func (s *Client) GetBatch(ctx context.Context, id string) (*batch.Batch, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", s.baseURL, batchesPath, id), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", APIURL, batchesPath, id), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batch")
 	}
@@ -93,6 +94,32 @@ func (s *Client) GetBatch(ctx context.Context, id string) (*batch.Batch, error) 
 	b := convertBatch(batch)
 
 	return &b, nil
+}
+
+func (s *Client) LogTilt(ctx context.Context, id string, log TiltLogEntry) error {
+	data, err := json.Marshal(log)
+	if err != nil {
+		return errors.Wrap(err, "could not marshal TiltLogEntry")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/%s?=%s", LogURL, tiltPath, id),
+		bytes.NewBuffer(data))
+	if err != nil {
+		return errors.Wrap(err, "could not create POST request for TiltLogEntry")
+	}
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "could not POST TiltLogEntry")
+	}
+
+	defer resp.Body.Close()
+
+	if err := parseStatusCode(resp.StatusCode); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func convertBatchs(batches []Batch) []batch.Batch {

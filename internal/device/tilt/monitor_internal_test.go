@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
+	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/platform"
 	"github.com/go-ble/ble/linux"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
