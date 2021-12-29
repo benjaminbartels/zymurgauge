@@ -24,6 +24,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint: gochecknoglobals
+var testChamber = chamber.Chamber{
+	ID: chamberID,
+	DeviceConfigs: []chamber.DeviceConfig{
+		{
+			ID:    "1",
+			Type:  "ds18b20",
+			Roles: []string{"thermometer"},
+		},
+		{
+			ID:    "2",
+			Type:  "gpio",
+			Roles: []string{"chiller"},
+		},
+		{
+			ID:    "3",
+			Type:  "gpio",
+			Roles: []string{"heater"},
+		},
+	},
+	CurrentBatch: &batch.Batch{
+		Fermentation: batch.Fermentation{
+			Steps: []batch.FermentationStep{{StepTemp: 22}},
+		},
+	},
+}
+
 //nolint: paralleltest // False positives with r.Run not in a loop
 func TestGetAllChambers(t *testing.T) {
 	t.Parallel()
@@ -281,21 +308,13 @@ func TestDeleteChamber(t *testing.T) {
 	t.Run("deleteChamberNotFound", deleteChamberNotFound)
 	t.Run("deleteChamberControllerDeleteError", deleteChamberControllerDeleteError)
 	t.Run("deleteChamberControllerStopFermentationError", deleteChamberControllerStopFermentationError)
-	t.Run("deleteChamberControllerDeleteError", deleteChamberControllerDeleteError)
 	t.Run("deleteChamberRespondError", deleteChamberRespondError)
 }
 
 func deleteChamberFermenting(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
-			},
-		},
-	}
+	c := testChamber
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, hook := logtest.NewNullLogger()
@@ -401,14 +420,7 @@ func TestStartFermentation(t *testing.T) {
 func startFermentationSuccess(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
-			},
-		},
-	}
+	c := testChamber
 	step := 1
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
 	l, _ := logtest.NewNullLogger()
@@ -425,14 +437,7 @@ func startFermentationSuccess(t *testing.T) {
 func startFermentationStepParseError(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
-			},
-		},
-	}
+	c := testChamber
 	step := "One"
 	w, r, ctx := setupHandlerTest("step="+step, nil)
 	l, _ := logtest.NewNullLogger()
@@ -454,14 +459,7 @@ func startFermentationStepParseError(t *testing.T) {
 func startFermentationInvalidStep(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
-			},
-		},
-	}
+	c := testChamber
 	step := 2
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
 	l, _ := logtest.NewNullLogger()
@@ -526,14 +524,7 @@ func startFermentationNoBatch(t *testing.T) {
 func startFermentationRespondError(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
-			},
-		},
-	}
+	c := testChamber
 	step := 1
 	w, r, _ := setupHandlerTest("step="+strconv.Itoa(step), nil)
 	l, _ := logtest.NewNullLogger()
@@ -560,14 +551,7 @@ func TestStopFermentation(t *testing.T) {
 func stopFermentationSuccess(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
-			},
-		},
-	}
+	c := testChamber
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
@@ -606,14 +590,7 @@ func stopFermentationNotFound(t *testing.T) {
 func stopFermentationNotFermenting(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
-			},
-		},
-	}
+	c := testChamber
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
@@ -635,14 +612,7 @@ func stopFermentationNotFermenting(t *testing.T) {
 func stopFermentationRespondError(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
-			},
-		},
-	}
+	c := testChamber
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
@@ -681,8 +651,6 @@ func assertChambersAreEqual(t *testing.T, c1, c2 chamber.Chamber) {
 	t.Helper()
 	assert.Equal(t, c1.ID, c2.ID)
 	assert.Equal(t, c1.Name, c2.Name)
-	assert.Equal(t, c1.ChillerPin, c2.ChillerPin)
-	assert.Equal(t, c1.HeaterPin, c2.HeaterPin)
 	assert.Equal(t, c1.ChillerKp, c2.ChillerKp)
 	assert.Equal(t, c1.ChillerKi, c2.ChillerKi)
 	assert.Equal(t, c1.ChillerKd, c2.ChillerKd)

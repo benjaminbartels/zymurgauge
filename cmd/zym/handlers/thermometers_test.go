@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,10 +25,9 @@ func TestGetAllThermometers(t *testing.T) {
 func getAllThermometers(t *testing.T) {
 	t.Parallel()
 
-	file, err := ioutil.TempFile("", "28-*")
-	if err != nil {
-		log.Fatal(err)
-	}
+	file, err := os.Create("28-1234567890")
+	assert.NoError(t, err)
+	file.Close()
 
 	defer os.Remove(file.Name())
 
@@ -37,7 +35,7 @@ func getAllThermometers(t *testing.T) {
 
 	expected := []string{filepath.Base(file.Name())}
 
-	handler := &handlers.ThermometersHandler{DevicePath: os.TempDir()}
+	handler := &handlers.ThermometersHandler{DevicePath: "./"}
 	err = handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 

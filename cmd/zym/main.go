@@ -80,7 +80,7 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber controller")
 	}
 
-	brewfather := brewfather.New(brewfather.APIURL, cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
+	brewfather := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
