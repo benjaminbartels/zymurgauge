@@ -79,15 +79,9 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
-	scanner := bluetooth.NewBLEScanner()
-
 	configurator := &chamber.DefaultConfigurator{
-		TiltMonitor: *tilt.NewMonitor(scanner, logger),
+		TiltMonitor: *tilt.NewMonitor(bluetooth.NewBLEScanner(), logger),
 	}
-
-	// cannot use configurator (variable of type *configurator.Configurator) as configurator.ConfiguratorIface value in argument to controller.NewChamberManager: wrong type for method CreateDs18b20 (
-	//have func(thermometerID string) (*github.com/benjaminbartels/zymurgauge/internal/device/onewire.Ds18b20, error),
-	//want func(thermometerID string) (*github.com/benjaminbartels/zymurgauge/internal/configurator.StubThermometer, error))
 
 	chamberManager, err := controller.NewChamberManager(chamberRepo, configurator, logger)
 	if err != nil {
@@ -106,7 +100,6 @@ func run(logger *logrus.Logger) error {
 		IdleTimeout:  cfg.IdleTimeout,
 		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfather, shutdown, logger),
 	}
-
 	httpServerErrors := make(chan error, 1)
 
 	go func() {

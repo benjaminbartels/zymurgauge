@@ -25,8 +25,7 @@ type Device interface {
 	ble.Device
 }
 
-type BLEScanner struct {
-}
+type BLEScanner struct{}
 
 func NewBLEScanner() *BLEScanner {
 	return &BLEScanner{}
