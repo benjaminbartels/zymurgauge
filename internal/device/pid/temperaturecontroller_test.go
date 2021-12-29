@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
-	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
+	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/device"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"

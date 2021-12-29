@@ -1,4 +1,4 @@
-package chamber
+package configurator
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"
@@ -7,7 +7,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CreateDs18b20(thermometerID string) (device.Thermometer, error) {
+type Configurator struct{}
+
+func (c Configurator) CreateDs18b20(thermometerID string) (*onewire.Ds18b20, error) {
 	ds18b20, err := onewire.NewDs18b20(thermometerID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not create new Ds18b20 thermometer %s", thermometerID)
@@ -16,7 +18,7 @@ func CreateDs18b20(thermometerID string) (device.Thermometer, error) {
 	return ds18b20, nil
 }
 
-func CreateTilt(thermometerID string) (device.Thermometer, error) {
+func (c Configurator) CreateTilt(thermometerID string) (device.Thermometer, error) {
 	ds18b20, err := onewire.NewDs18b20(thermometerID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not create new Ds18b20 thermometer %s", thermometerID)
@@ -25,7 +27,7 @@ func CreateTilt(thermometerID string) (device.Thermometer, error) {
 	return ds18b20, nil
 }
 
-func CreateGPIOActuator(pin string) (device.Actuator, error) {
+func (c Configurator) CreateGPIOActuator(pin string) (device.Actuator, error) {
 	actuator, err := gpio.NewGPIOActuator(pin)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not create new raspberry pi gpio actuator for pin %s", pin)

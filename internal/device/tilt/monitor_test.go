@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
-	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
+	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/platform"
 	"github.com/go-ble/ble/linux"
 	"github.com/pkg/errors"
 	logtest "github.com/sirupsen/logrus/hooks/test"

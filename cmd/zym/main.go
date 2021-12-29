@@ -11,6 +11,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/configurator"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
@@ -75,7 +76,7 @@ func run(logger *logrus.Logger) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
-	chamberManager, err := controller.NewChamberManager(chamberRepo, logger)
+	chamberManager, err := controller.NewChamberManager(chamberRepo, configurator.StubConfigurator{}, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not create chamber controller")
 	}

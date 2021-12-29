@@ -12,7 +12,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
+	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 )

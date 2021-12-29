@@ -1,12 +1,12 @@
-//go:build !linux || !arm
-// +build !linux !arm
+package configurator
 
-package chamber
+import "github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 
-// The program is only meant to run on linux on arm. This file only exists to prevent compilation issues on non
-// linux/arm systems.
-
-// TODO: Force stubs from unit tests?
+type ConfiguratorIface interface {
+	CreateDs18b20(thermometerID string) (*StubThermometer, error)
+	CreateTilt(color tilt.Color) (*StubTilt, error)
+	CreateGPIOActuator(pin string) (*StubGPIOActuator, error)
+}
 
 const (
 	stubTemperature     = 25
@@ -30,7 +30,7 @@ func (a *StubGPIOActuator) On() error { return nil }
 func (a *StubGPIOActuator) Off() error { return nil }
 
 type StubTilt struct {
-	color string
+	color tilt.Color
 }
 
 func (t *StubTilt) GetTemperature() (float64, error) {
@@ -41,14 +41,16 @@ func (t *StubTilt) GetSpecificGravity() (float64, error) {
 	return stubSpecificGravity, nil
 }
 
-func CreateDs18b20(thermometerID string) (*StubThermometer, error) {
+type StubConfigurator struct{}
+
+func (c StubConfigurator) CreateDs18b20(thermometerID string) (*StubThermometer, error) {
 	return &StubThermometer{thermometerID: thermometerID}, nil
 }
 
-func CreateTilt(color string) (*StubTilt, error) {
+func (c StubConfigurator) CreateTilt(color tilt.Color) (*StubTilt, error) {
 	return &StubTilt{color: color}, nil
 }
 
-func CreateGPIOActuator(pin string) (*StubGPIOActuator, error) {
+func (c StubConfigurator) CreateGPIOActuator(pin string) (*StubGPIOActuator, error) {
 	return &StubGPIOActuator{pin: pin}, nil
 }

@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/configurator"
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
+	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -19,6 +21,11 @@ var (
 	ErrNoCurrentBatch    = errors.New("chamber does not have a current batch")
 	ErrNotFermenting     = errors.New("fermentation has not started")
 )
+
+type Fermentor interface {
+	StartFermentation(ctx context.Context, step int) error
+	StopFermentation() error
+}
 
 type DeviceConfig struct {
 	ID    string   `json:"id"`
@@ -53,7 +60,7 @@ type Chamber struct {
 
 // TODO: refactor to use generics in the future.
 
-func (c *Chamber) Configure(logger *logrus.Logger) error {
+func (c *Chamber) Configure(configurator configurator.ConfiguratorIface, logger *logrus.Logger) error {
 	c.logger = logger
 
 	var (
@@ -64,19 +71,19 @@ func (c *Chamber) Configure(logger *logrus.Logger) error {
 	for _, deviceConfig := range c.DeviceConfigs {
 		switch deviceConfig.Type {
 		case "ds18b20":
-			createdDevice, err = CreateDs18b20(deviceConfig.ID)
+			createdDevice, err = configurator.CreateDs18b20(deviceConfig.ID)
 			if err != nil {
 				return errors.Wrapf(err, "could not create new Ds18b20 thermometer %s", c.ID)
 			}
 
 		case "tilt":
-			createdDevice, err = CreateTilt(deviceConfig.ID)
+			createdDevice, err = configurator.CreateTilt(tilt.Color(deviceConfig.ID))
 			if err != nil {
 				return errors.Wrapf(err, "could not create new Tilt %s", c.ID)
 			}
 
 		case "gpio":
-			createdDevice, err = CreateGPIOActuator(deviceConfig.ID)
+			createdDevice, err = configurator.CreateGPIOActuator(deviceConfig.ID)
 			if err != nil {
 				return errors.Wrapf(err, "could not create new Tilt %s", c.ID)
 			}
