@@ -21,11 +21,6 @@ var (
 	ErrNotFermenting     = errors.New("fermentation has not started")
 )
 
-type Fermentor interface {
-	StartFermentation(ctx context.Context, step int) error
-	StopFermentation() error
-}
-
 type DeviceConfig struct {
 	ID    string   `json:"id"`
 	Type  string   `json:"type"`
@@ -123,7 +118,7 @@ func (c *Chamber) assign(d interface{}, roles []string) error {
 		}
 
 		if !ok {
-			return errors.Errorf("unable to assign role %s, type assertion failed", role)
+			return errors.Errorf("type assertion failed for role %s", role)
 		}
 	}
 

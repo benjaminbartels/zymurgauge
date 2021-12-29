@@ -8,7 +8,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -83,7 +82,7 @@ func run(logger *logrus.Logger) error {
 		TiltMonitor: *tilt.NewMonitor(bluetooth.NewBLEScanner(), logger),
 	}
 
-	chamberManager, err := controller.NewChamberManager(chamberRepo, configurator, logger)
+	chamberManager, err := chamber.NewManager(chamberRepo, configurator, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not create chamber controller")
 	}

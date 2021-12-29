@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -19,9 +18,9 @@ import (
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 //nolint: gochecknoglobals
@@ -56,6 +55,7 @@ func TestGetAllChambers(t *testing.T) {
 	t.Parallel()
 	t.Run("getAllChambers", getAllChambers)
 	t.Run("getAllChambersEmpty", getAllChambersEmpty)
+	t.Run("getAllChamberOtherError", getAllChamberOtherError)
 	t.Run("getAllChambersRespondError", getAllChambersRespondError)
 }
 
@@ -64,17 +64,15 @@ func getAllChambers(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
-	chambers := []chamber.Chamber{
+	chambers := []*chamber.Chamber{
 		{ID: chamberID},
 		{ID: "dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1"},
 	}
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return(chambers, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("GetAll").Return(chambers, nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -82,7 +80,7 @@ func getAllChambers(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := []chamber.Chamber{}
+	result := []*chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 
@@ -94,13 +92,12 @@ func getAllChambersEmpty(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
-	chambers := []chamber.Chamber{}
+	chambers := []*chamber.Chamber{}
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return(chambers, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("GetAll").Return(chambers, nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -108,10 +105,28 @@ func getAllChambersEmpty(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := []chamber.Chamber{}
+	result := []*chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 	assert.Equal(t, chambers, result)
+}
+
+func getAllChamberOtherError(t *testing.T) {
+	t.Parallel()
+
+	c := &chamber.Chamber{ID: chamberID}
+	jsonBytes, _ := json.Marshal(c)
+
+	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
+	l, _ := logtest.NewNullLogger()
+
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("GetAll").Return(nil, errors.New("controllerMock error"))
+
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
+
+	err := handler.GetAll(ctx, w, r, httprouter.Params{})
+	assert.Contains(t, err.Error(), fmt.Sprintf(controllerErrMsg, "get all chambers from"))
 }
 
 func getAllChambersRespondError(t *testing.T) {
@@ -120,11 +135,10 @@ func getAllChambersRespondError(t *testing.T) {
 	w, r, _ := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("GetAll").Return([]*chamber.Chamber{}, nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	// use new ctx to force error
 	err := handler.GetAll(context.Background(), w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), respondErrMsg)
@@ -135,6 +149,7 @@ func TestGetChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("getChamberFound", getChamberFound)
 	t.Run("getChamberNotFound", getChamberNotFound)
+	t.Run("getChamberOtherError", getChamberOtherError)
 	t.Run("getChamberRespondError", getChamberRespondError)
 }
 
@@ -144,12 +159,11 @@ func getChamberFound(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	chambers := []chamber.Chamber{{ID: chamberID}}
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return(chambers, nil)
+	c := &chamber.Chamber{ID: chamberID}
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Get", chamberID).Return(c, nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.NoError(t, err)
@@ -159,25 +173,22 @@ func getChamberFound(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := chamber.Chamber{}
+	result := &chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
-	assertChambersAreEqual(t, chambers[0], result)
+	assertChambersAreEqual(t, c, result)
 }
 
 func getChamberNotFound(t *testing.T) {
 	t.Parallel()
 
-	chambers := []chamber.Chamber{}
-
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return(chambers, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Get", chamberID).Return(nil, nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "chamber", chamberID))
@@ -188,19 +199,35 @@ func getChamberNotFound(t *testing.T) {
 	assert.Equal(t, reqErr.Status, http.StatusNotFound)
 }
 
-func getChamberRespondError(t *testing.T) {
+func getChamberOtherError(t *testing.T) {
 	t.Parallel()
 
-	chambers := []chamber.Chamber{{ID: chamberID}}
+	c := &chamber.Chamber{ID: chamberID}
+	jsonBytes, _ := json.Marshal(c)
+
+	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
+	l, _ := logtest.NewNullLogger()
+
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Get", chamberID).Return(nil, errors.New("controllerMock error"))
+
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
+
+	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	assert.Contains(t, err.Error(), fmt.Sprintf(controllerErrMsg, "get chamber "+chamberID+" from"))
+}
+
+func getChamberRespondError(t *testing.T) {
+	t.Parallel()
 
 	w, r, _ := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return(chambers, nil)
+	c := &chamber.Chamber{ID: chamberID}
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Get", chamberID).Return(c, nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
 	// use new ctx to force error
 	err := handler.Get(context.Background(), w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
@@ -212,25 +239,23 @@ func TestSaveChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("saveChamber", saveChamber)
 	t.Run("saveChamberParseError", saveChamberParseError)
-	t.Run("saveChamberManagerError", saveChamberManagerError)
+	t.Run("saveChamberOtherError", saveChamberOtherError)
 	t.Run("saveChamberRespondError", saveChamberRespondError)
 }
 
 func saveChamber(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{ID: chamberID}
+	c := &chamber.Chamber{ID: chamberID}
 	jsonBytes, _ := json.Marshal(c)
 
 	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
-	repoMock.On("SaveChamber", &c).Return(nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Save", c).Return(nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
 	err := handler.Save(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
@@ -239,7 +264,7 @@ func saveChamber(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := chamber.Chamber{}
+	result := &chamber.Chamber{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 }
@@ -250,31 +275,28 @@ func saveChamberParseError(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("GetAll").Return([]*chamber.Chamber{}, nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
 	err := handler.Save(ctx, w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), parseErrorMsg)
 }
 
-func saveChamberManagerError(t *testing.T) {
+func saveChamberOtherError(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{ID: chamberID}
+	c := &chamber.Chamber{ID: chamberID}
 	jsonBytes, _ := json.Marshal(c)
 
 	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
-	repoMock.On("SaveChamber", &c).Return(errors.New("repoMock error"))
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Save", c).Return(errors.New("controllerMock error"))
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
 	err := handler.Save(ctx, w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), fmt.Sprintf(controllerErrMsg, "save chamber to"))
@@ -283,18 +305,16 @@ func saveChamberManagerError(t *testing.T) {
 func saveChamberRespondError(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{ID: chamberID}
+	c := &chamber.Chamber{ID: chamberID}
 	jsonBytes, _ := json.Marshal(c)
 
 	w, r, _ := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
-	repoMock.On("SaveChamber", &c).Return(nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Save", c).Return(nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
 	// use new ctx to force error
 	err := handler.Save(context.Background(), w, r, httprouter.Params{})
@@ -306,8 +326,7 @@ func TestDeleteChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("deleteChamberFermenting", deleteChamberFermenting)
 	t.Run("deleteChamberNotFound", deleteChamberNotFound)
-	t.Run("deleteChamberManagerDeleteError", deleteChamberManagerDeleteError)
-	t.Run("deleteChamberManagerStopFermentationError", deleteChamberManagerStopFermentationError)
+	t.Run("deleteChamberOtherError", deleteChamberOtherError)
 	t.Run("deleteChamberRespondError", deleteChamberRespondError)
 }
 
@@ -321,12 +340,11 @@ func deleteChamberFermenting(t *testing.T) {
 
 	_ = c.Configure(chamber.StubConfigurator{}, l)
 	_ = c.StartFermentation(ctx, 1)
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
-	repoMock.On("DeleteChamber", chamberID).Return(nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Delete", chamberID).Return(nil)
+
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.NoError(t, err)
 	assert.Nil(t, hook.LastEntry())
@@ -338,54 +356,35 @@ func deleteChamberNotFound(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Delete", chamberID).Return(chamber.ErrNotFound)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "chamber", chamberID))
 
 	var reqErr *web.RequestError
 
 	assert.ErrorAs(t, err, &reqErr)
-	assert.Equal(t, reqErr.Status, http.StatusNotFound)
+
+	assert.Equal(t, http.StatusNotFound, reqErr.Status)
 }
 
-func deleteChamberManagerDeleteError(t *testing.T) {
+func deleteChamberOtherError(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{ID: chamberID}
+	c := &chamber.Chamber{ID: chamberID}
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
-	repoMock.On("DeleteChamber", chamberID).Return(errSomeError)
+	_ = c.Configure(chamber.StubConfigurator{}, l)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Delete", chamberID).Return(errSomeError)
+
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(controllerErrMsg, "delete chamber "+chamberID+" from"))
-}
-
-func deleteChamberManagerStopFermentationError(t *testing.T) {
-	t.Parallel()
-
-	w, r, ctx := setupHandlerTest("", nil)
-	l, hook := logtest.NewNullLogger()
-
-	c := chamber.Chamber{ID: chamberID}
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
-	repoMock.On("DeleteChamber", chamberID).Return(nil)
-
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
-	err := handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
-	assert.NoError(t, err)
-	assert.Equal(t, hook.LastEntry().Level, logrus.WarnLevel)
-	assert.Equal(t, hook.LastEntry().Message, "Error occurred while stopping fermentation")
 }
 
 func deleteChamberRespondError(t *testing.T) {
@@ -394,13 +393,10 @@ func deleteChamberRespondError(t *testing.T) {
 	w, r, _ := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	c := chamber.Chamber{ID: chamberID}
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
-	repoMock.On("DeleteChamber", chamberID).Return(nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Delete", chamberID).Return(nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	// use new ctx to force error
 	err := handler.Delete(context.Background(), w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), respondErrMsg)
@@ -414,22 +410,24 @@ func TestStartFermentation(t *testing.T) {
 	t.Run("startFermentationInvalidStep", startFermentationInvalidStep)
 	t.Run("startFermentationNotFound", startFermentationNotFound)
 	t.Run("startFermentationNoBatch", startFermentationNoBatch)
+	t.Run("startFermentationOtherError", startFermentationOtherError)
 	t.Run("startFermentationRespondError", startFermentationRespondError)
 }
 
 func startFermentationSuccess(t *testing.T) {
 	t.Parallel()
 
+	l, _ := logtest.NewNullLogger()
 	c := testChamber
+	_ = c.Configure(chamber.StubConfigurator{}, l)
+
 	step := 1
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
-	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
 	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.NoError(t, err)
 }
@@ -437,16 +435,16 @@ func startFermentationSuccess(t *testing.T) {
 func startFermentationStepParseError(t *testing.T) {
 	t.Parallel()
 
+	l, _ := logtest.NewNullLogger()
 	c := testChamber
+	_ = c.Configure(chamber.StubConfigurator{}, l)
+
 	step := "One"
 	w, r, ctx := setupHandlerTest("step="+step, nil)
-	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+	controllerMock := &mocks.Controller{}
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
 	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf("step %s is invalid", step))
 
@@ -459,16 +457,17 @@ func startFermentationStepParseError(t *testing.T) {
 func startFermentationInvalidStep(t *testing.T) {
 	t.Parallel()
 
+	l, _ := logtest.NewNullLogger()
 	c := testChamber
+	_ = c.Configure(chamber.StubConfigurator{}, l)
+
 	step := 2
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
-	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(chamber.ErrInvalidStep)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
 	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf("step %d is invalid for chamber '%s'", step, chamberID))
 
@@ -485,11 +484,10 @@ func startFermentationNotFound(t *testing.T) {
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(chamber.ErrNotFound)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "chamber", chamberID))
 
@@ -502,16 +500,14 @@ func startFermentationNotFound(t *testing.T) {
 func startFermentationNoBatch(t *testing.T) {
 	t.Parallel()
 
-	c := chamber.Chamber{ID: chamberID}
 	step := 1
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(chamber.ErrNoCurrentBatch)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf("chamber '%s' does not have a current batch", chamberID))
 
@@ -521,19 +517,33 @@ func startFermentationNoBatch(t *testing.T) {
 	assert.Equal(t, reqErr.Status, http.StatusBadRequest)
 }
 
+func startFermentationOtherError(t *testing.T) {
+	t.Parallel()
+
+	step := 1
+	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
+	l, _ := logtest.NewNullLogger()
+
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(errors.New("controllerMock error"))
+
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
+
+	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	assert.Contains(t, err.Error(), fmt.Sprintf("could not start fermentation for chamber %s", chamberID))
+}
+
 func startFermentationRespondError(t *testing.T) {
 	t.Parallel()
 
-	c := testChamber
 	step := 1
 	w, r, _ := setupHandlerTest("step="+strconv.Itoa(step), nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StartFermentation", mock.Anything, chamberID, step).Return(nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	// use new ctx to force error
 	err := handler.Start(context.Background(), w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), respondErrMsg)
@@ -545,6 +555,7 @@ func TestStopFermentation(t *testing.T) {
 	t.Run("stopFermentationSuccess", stopFermentationSuccess)
 	t.Run("stopFermentationNotFound", stopFermentationNotFound)
 	t.Run("stopFermentationNotFermenting", stopFermentationNotFermenting)
+	t.Run("stopFermentationOtherError", stopFermentationOtherError)
 	t.Run("stopFermentationRespondError", stopFermentationRespondError)
 }
 
@@ -558,11 +569,10 @@ func stopFermentationSuccess(t *testing.T) {
 	_ = c.Configure(chamber.StubConfigurator{}, l)
 	_ = c.StartFermentation(ctx, 1)
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StopFermentation", chamberID).Return(nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
 	err := handler.Stop(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.NoError(t, err)
 }
@@ -573,11 +583,10 @@ func stopFermentationNotFound(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StopFermentation", chamberID).Return(chamber.ErrNotFound)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Stop(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "chamber", chamberID))
 
@@ -590,16 +599,13 @@ func stopFermentationNotFound(t *testing.T) {
 func stopFermentationNotFermenting(t *testing.T) {
 	t.Parallel()
 
-	c := testChamber
-
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StopFermentation", chamberID).Return(chamber.ErrNotFermenting)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Stop(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf("chamber '%s' is not fermenting", chamberID))
 
@@ -607,6 +613,21 @@ func stopFermentationNotFermenting(t *testing.T) {
 
 	assert.ErrorAs(t, err, &reqErr)
 	assert.Equal(t, reqErr.Status, http.StatusBadRequest)
+}
+
+func stopFermentationOtherError(t *testing.T) {
+	t.Parallel()
+
+	w, r, ctx := setupHandlerTest("", nil)
+	l, _ := logtest.NewNullLogger()
+
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StopFermentation", chamberID).Return(errors.New("controllerMock error"))
+
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
+
+	err := handler.Stop(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	assert.Contains(t, err.Error(), fmt.Sprintf("could not stop fermentation for chamber %s", chamberID))
 }
 
 func stopFermentationRespondError(t *testing.T) {
@@ -619,17 +640,16 @@ func stopFermentationRespondError(t *testing.T) {
 	_ = c.Configure(chamber.StubConfigurator{}, l)
 	_ = c.StartFermentation(ctx, 1)
 
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("StopFermentation", chamberID).Return(nil)
 
-	manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-	handler := &handlers.ChambersHandler{ChamberManager: manager, Logger: l}
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	// use new ctx to force error
 	err := handler.Stop(context.Background(), w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), respondErrMsg)
 }
 
-func assetChamberListsAreEqual(t *testing.T, c1, c2 []chamber.Chamber) {
+func assetChamberListsAreEqual(t *testing.T, c1, c2 []*chamber.Chamber) {
 	t.Helper()
 	assert.Equal(t, len(c1), len(c2))
 
@@ -647,7 +667,7 @@ func assetChamberListsAreEqual(t *testing.T, c1, c2 []chamber.Chamber) {
 	}
 }
 
-func assertChambersAreEqual(t *testing.T, c1, c2 chamber.Chamber) {
+func assertChambersAreEqual(t *testing.T, c1, c2 *chamber.Chamber) {
 	t.Helper()
 	assert.Equal(t, c1.ID, c2.ID)
 	assert.Equal(t, c1.Name, c2.Name)

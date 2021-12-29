@@ -43,8 +43,8 @@ func NewChamberRepo(db *bbolt.DB) (*ChamberRepo, error) {
 }
 
 // GetAll returns all Chambers.
-func (r *ChamberRepo) GetAllChambers() ([]chamber.Chamber, error) {
-	chambers := []chamber.Chamber{}
+func (r *ChamberRepo) GetAll() ([]*chamber.Chamber, error) {
+	chambers := []*chamber.Chamber{}
 
 	if err := r.db.View(func(tx *bbolt.Tx) error {
 		err := tx.Bucket([]byte(chamberBucket)).ForEach(func(k, v []byte) error {
@@ -52,7 +52,7 @@ func (r *ChamberRepo) GetAllChambers() ([]chamber.Chamber, error) {
 			if err := json.Unmarshal(v, &c); err != nil {
 				return errors.Wrap(err, "could not unmarshal Chamber")
 			}
-			chambers = append(chambers, c)
+			chambers = append(chambers, &c)
 
 			return nil
 		})
@@ -66,7 +66,7 @@ func (r *ChamberRepo) GetAllChambers() ([]chamber.Chamber, error) {
 }
 
 // Get returns a Chamber by its ID.
-func (r *ChamberRepo) GetChamber(id string) (*chamber.Chamber, error) {
+func (r *ChamberRepo) Get(id string) (*chamber.Chamber, error) {
 	var c *chamber.Chamber
 
 	if err := r.db.View(func(tx *bbolt.Tx) error {
@@ -85,7 +85,7 @@ func (r *ChamberRepo) GetChamber(id string) (*chamber.Chamber, error) {
 }
 
 // Save creates or updates a Chamber.
-func (r *ChamberRepo) SaveChamber(c *chamber.Chamber) error {
+func (r *ChamberRepo) Save(c *chamber.Chamber) error {
 	if c.ID == "" {
 		c.ID = uuid.NewString()
 	}
@@ -110,7 +110,7 @@ func (r *ChamberRepo) SaveChamber(c *chamber.Chamber) error {
 }
 
 // Delete permanently removes a Chamber.
-func (r *ChamberRepo) DeleteChamber(id string) error {
+func (r *ChamberRepo) Delete(id string) error {
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
 		bu := tx.Bucket([]byte(chamberBucket))
 		if err := bu.Delete([]byte(id)); err != nil {

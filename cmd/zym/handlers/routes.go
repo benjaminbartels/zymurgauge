@@ -7,8 +7,8 @@ import (
 	"net/http/pprof"
 	"os"
 
-	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/sirupsen/logrus"
@@ -22,11 +22,11 @@ const (
 )
 
 // NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberManager *controller.ChamberManager, devicePath string,
+func NewAPI(chamberManager chamber.Controller, devicePath string,
 	batchRepo batch.Repo, shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
 	chambersHandler := &ChambersHandler{
-		ChamberManager: chamberManager,
-		Logger:         logger,
+		ChamberController: chamberManager,
+		Logger:            logger,
 	}
 
 	thermometersHandler := &ThermometersHandler{
