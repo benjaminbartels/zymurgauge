@@ -113,6 +113,15 @@ linters-settings:
       mnd:
         ignored-functions: strconv.ParseFloat,math.Round,make
         ignored-numbers: 32,100,1000
+  ireturn:
+    allow:
+      - anon
+      - error
+      - empty
+      - stdlib
+      - device.Thermometer,
+      - device.ThermometerAndHydrometer
+      - device.Actuator
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

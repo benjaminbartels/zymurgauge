@@ -96,16 +96,6 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 		}
 	}
 
-	// chiller, err := CreateGPIOActuator(c.ChillerPin)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "could not create new chiller gpio actuator for pin %s", c.ChillerPin)
-	// }
-
-	// heater, err := CreateGPIOActuator(c.HeaterPin)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "could not create new heater gpio actuator for pin %s", c.HeaterPin)
-	// }
-
 	c.temperatureController = pid.NewPIDTemperatureController(
 		c.thermometer, c.chiller, c.heater, c.ChillerKp, c.ChillerKi, c.ChillerKd,
 		c.HeaterKp, c.HeaterKi, c.HeaterKd, logger)
@@ -121,23 +111,19 @@ func (c *Chamber) assign(d interface{}, roles []string) error {
 
 		switch role {
 		case "thermometer":
-			if c.thermometer, ok = d.(device.Thermometer); !ok {
-				return errors.New("device is not a thermometer")
-			}
+			c.thermometer, ok = d.(device.Thermometer)
 		case "hydrometer":
-			if c.hydrometer, ok = d.(device.Hydrometer); !ok {
-				return errors.New("device is not a hydrometer")
-			}
+			c.hydrometer, ok = d.(device.Hydrometer)
 		case "chiller":
-			if c.chiller, ok = d.(device.Actuator); !ok {
-				return errors.New("device is not a hydrometer")
-			}
+			c.chiller, ok = d.(device.Actuator)
 		case "heater":
-			if c.heater, ok = d.(device.Actuator); !ok {
-				return errors.New("device is not a hydrometer")
-			}
+			c.heater, ok = d.(device.Actuator)
 		default:
 			return ErrInvalidDeviceRole
+		}
+
+		if !ok {
+			return errors.Errorf("unable to assign role %s, type assertion failed", role)
 		}
 	}
 
