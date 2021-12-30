@@ -121,7 +121,7 @@ func getBatchFound(t *testing.T) {
 
 	expected := batch.Batch{ID: batchID}
 	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetBatch", ctx, batchID).Return(&expected, nil)
+	repoMock.On("Get", ctx, batchID).Return(&expected, nil)
 
 	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
@@ -145,7 +145,7 @@ func getBatchNotFoundError(t *testing.T) {
 	var expected *batch.Batch
 
 	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetBatch", ctx, batchID).Return(expected, brewfather.ErrNotFound)
+	repoMock.On("Get", ctx, batchID).Return(expected, brewfather.ErrNotFound)
 
 	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
@@ -163,7 +163,7 @@ func getBatchIsNil(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 
 	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetBatch", ctx, batchID).Return(nil, nil)
+	repoMock.On("Get", ctx, batchID).Return(nil, nil)
 
 	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
@@ -183,7 +183,7 @@ func getBatchRepoError(t *testing.T) {
 	var expected *batch.Batch
 
 	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetBatch", ctx, batchID).Return(expected, errSomeError)
+	repoMock.On("Get", ctx, batchID).Return(expected, errSomeError)
 
 	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
@@ -198,7 +198,7 @@ func getBatchRespondError(t *testing.T) {
 
 	expected := batch.Batch{ID: batchID}
 	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetBatch", ctx, batchID).Return(&expected, nil)
+	repoMock.On("Get", ctx, batchID).Return(&expected, nil)
 
 	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
 	// use new ctx to force error
