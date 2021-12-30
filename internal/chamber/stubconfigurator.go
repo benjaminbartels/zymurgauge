@@ -43,17 +43,3 @@ func (t *StubTilt) GetTemperature() (float64, error) {
 func (t *StubTilt) GetSpecificGravity() (float64, error) {
 	return stubSpecificGravity, nil
 }
-
-type StubConfigurator struct{}
-
-func (c StubConfigurator) CreateDs18b20(thermometerID string) (device.Thermometer, error) {
-	return &StubThermometer{thermometerID: thermometerID}, nil
-}
-
-func (c StubConfigurator) CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error) {
-	return &StubTilt{color: color}, nil
-}
-
-func (c StubConfigurator) CreateGPIOActuator(pin string) (device.Actuator, error) {
-	return &StubGPIOActuator{pin: pin}, nil
-}

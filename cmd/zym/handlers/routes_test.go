@@ -9,7 +9,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/benjaminbartels/zymurgauge/cmd/zym/controller"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -50,7 +49,7 @@ func TestRoutes(t *testing.T) {
 		ctx := context.Background()
 		l, _ := logtest.NewNullLogger()
 
-		c := chamber.Chamber{
+		c := &chamber.Chamber{
 			ID: chamberID,
 			DeviceConfigs: []chamber.DeviceConfig{
 				{
@@ -76,30 +75,44 @@ func TestRoutes(t *testing.T) {
 			},
 		}
 
+		configuratorMock := &mocks.Configurator{}
+		configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+		configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+		configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+		err := c.Configure(configuratorMock, l)
+		assert.NoError(t, err)
+
 		r := batch.Batch{ID: batchID}
 
-		repoMock := &mocks.ChamberRepo{}
-		repoMock.On("GetAllChambers").Return([]chamber.Chamber{c}, nil)
-		repoMock.On("GetChamber", mock.Anything).Return(&c, nil)
-		repoMock.On("SaveChamber", mock.Anything).Return(nil)
-		repoMock.On("DeleteChamber", mock.Anything).Return(nil)
+		chambers := []*chamber.Chamber{c}
+
+		controllerMock := &mocks.Controller{}
+		controllerMock.On("GetAll").Return(chambers, nil)
+		controllerMock.On("Get", mock.Anything).Return(c, nil)
+		controllerMock.On("Save", mock.Anything).Return(nil)
+		controllerMock.On("Delete", mock.Anything).Return(nil)
+		controllerMock.On("StartFermentation", mock.Anything, chamberID, 1).Return(nil)
+		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
 		recipeMock := &mocks.BatchRepo{}
-		recipeMock.On("GetAllBatches", mock.Anything).Return([]batch.Batch{}, nil)
-		recipeMock.On("GetBatch", mock.Anything, batchID).Return(&r, nil)
+		recipeMock.On("GetAll", mock.Anything).Return([]batch.Batch{}, nil)
+		recipeMock.On("Get", mock.Anything, batchID).Return(&r, nil)
 
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
-		manager, _ := controller.NewChamberManager(repoMock, chamber.StubConfigurator{}, l)
-
-		app := handlers.NewAPI(manager, devicePath, recipeMock, shutdown, logger)
+		app := handlers.NewAPI(controllerMock, devicePath, recipeMock, shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
 
 			if tc.path == "/v1/chambers/"+chamberID+"/stop" {
-				_ = manager.GetChamber(chamberID).StartFermentation(ctx, 1)
+				c, err := controllerMock.Get(chamberID)
+				assert.NoError(t, err)
+
+				err = c.StartFermentation(ctx, 1)
+				assert.NoError(t, err)
 			}
 
 			w := httptest.NewRecorder()

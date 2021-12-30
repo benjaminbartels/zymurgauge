@@ -44,7 +44,7 @@ func New(userID, apiKey string) *Client {
 	return c
 }
 
-func (s *Client) GetAllBatches(ctx context.Context) ([]batch.Batch, error) {
+func (s *Client) GetAll(ctx context.Context) ([]batch.Batch, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", APIURL, batchesPath), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batches")
@@ -69,7 +69,7 @@ func (s *Client) GetAllBatches(ctx context.Context) ([]batch.Batch, error) {
 	return convertBatchs(batches), nil
 }
 
-func (s *Client) GetBatch(ctx context.Context, id string) (*batch.Batch, error) {
+func (s *Client) Get(ctx context.Context, id string) (*batch.Batch, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", APIURL, batchesPath, id), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batch")
