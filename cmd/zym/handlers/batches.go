@@ -18,7 +18,7 @@ type BatchesHandler struct {
 
 func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	p httprouter.Params) error {
-	batches, err := h.BatchRepo.GetAllBatches(ctx)
+	batches, err := h.BatchRepo.GetAll(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get all batches from repository")
 	}
@@ -33,7 +33,7 @@ func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *h
 func (h *BatchesHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
-	batch, err := h.BatchRepo.GetBatch(ctx, id)
+	batch, err := h.BatchRepo.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, brewfather.ErrNotFound) {
 			return web.NewRequestError(fmt.Sprintf("batch '%s' not found", id), http.StatusNotFound)
