@@ -84,7 +84,7 @@ func getAllChambers(t *testing.T) {
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 
-	assetChamberListsAreEqual(t, chambers, result)
+	assertChamberListsAreEqual(t, chambers, result)
 }
 
 func getAllChambersEmpty(t *testing.T) {
@@ -148,7 +148,7 @@ func getAllChambersRespondError(t *testing.T) {
 func TestGetChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("getChamberFound", getChamberFound)
-	t.Run("getChamberNotFound", getChamberNotFound)
+	t.Run("getChamberNotFoundError", getChamberNotFoundError)
 	t.Run("getChamberOtherError", getChamberOtherError)
 	t.Run("getChamberRespondError", getChamberRespondError)
 }
@@ -179,7 +179,7 @@ func getChamberFound(t *testing.T) {
 	assertChambersAreEqual(t, c, result)
 }
 
-func getChamberNotFound(t *testing.T) {
+func getChamberNotFoundError(t *testing.T) {
 	t.Parallel()
 
 	w, r, ctx := setupHandlerTest("", nil)
@@ -324,13 +324,13 @@ func saveChamberRespondError(t *testing.T) {
 //nolint: paralleltest // False positives with r.Run not in a loop
 func TestDeleteChamber(t *testing.T) {
 	t.Parallel()
-	t.Run("deleteChamberFermenting", deleteChamberFermenting)
-	t.Run("deleteChamberNotFound", deleteChamberNotFound)
+	t.Run("deleteChamber", deleteChamber)
+	t.Run("deleteChamberNotFoundError", deleteChamberNotFoundError)
 	t.Run("deleteChamberOtherError", deleteChamberOtherError)
 	t.Run("deleteChamberRespondError", deleteChamberRespondError)
 }
 
-func deleteChamberFermenting(t *testing.T) {
+func deleteChamber(t *testing.T) {
 	t.Parallel()
 
 	c := testChamber
@@ -338,19 +338,27 @@ func deleteChamberFermenting(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 	l, hook := logtest.NewNullLogger()
 
-	_ = c.Configure(chamber.StubConfigurator{}, l)
-	_ = c.StartFermentation(ctx, 1)
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+	err := c.Configure(configuratorMock, l)
+	assert.NoError(t, err)
+
+	err = c.StartFermentation(ctx, 1)
+	assert.NoError(t, err)
 
 	controllerMock := &mocks.Controller{}
 	controllerMock.On("Delete", chamberID).Return(nil)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
-	err := handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	err = handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.NoError(t, err)
 	assert.Nil(t, hook.LastEntry())
 }
 
-func deleteChamberNotFound(t *testing.T) {
+func deleteChamberNotFoundError(t *testing.T) {
 	t.Parallel()
 
 	w, r, ctx := setupHandlerTest("", nil)
@@ -377,13 +385,19 @@ func deleteChamberOtherError(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
 
-	_ = c.Configure(chamber.StubConfigurator{}, l)
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+	err := c.Configure(configuratorMock, l)
+	assert.NoError(t, err)
 
 	controllerMock := &mocks.Controller{}
 	controllerMock.On("Delete", chamberID).Return(errSomeError)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
-	err := handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	err = handler.Delete(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(controllerErrMsg, "delete chamber "+chamberID+" from"))
 }
 
@@ -405,21 +419,28 @@ func deleteChamberRespondError(t *testing.T) {
 //nolint: paralleltest // False positives with r.Run not in a loop
 func TestStartFermentation(t *testing.T) {
 	t.Parallel()
-	t.Run("startFermentationSuccess", startFermentationSuccess)
+	t.Run("startFermentation", startFermentation)
 	t.Run("startFermentationStepParseError", startFermentationStepParseError)
-	t.Run("startFermentationInvalidStep", startFermentationInvalidStep)
-	t.Run("startFermentationNotFound", startFermentationNotFound)
-	t.Run("startFermentationNoBatch", startFermentationNoBatch)
+	t.Run("startFermentationInvalidStepError", startFermentationInvalidStepError)
+	t.Run("startFermentationNotFoundError", startFermentationNotFoundError)
+	t.Run("startFermentationNoBatchError", startFermentationNoBatchError)
 	t.Run("startFermentationOtherError", startFermentationOtherError)
 	t.Run("startFermentationRespondError", startFermentationRespondError)
 }
 
-func startFermentationSuccess(t *testing.T) {
+func startFermentation(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
 	c := testChamber
-	_ = c.Configure(chamber.StubConfigurator{}, l)
+
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+	err := c.Configure(configuratorMock, l)
+	assert.NoError(t, err)
 
 	step := 1
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
@@ -428,7 +449,7 @@ func startFermentationSuccess(t *testing.T) {
 	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(nil)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
-	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	err = handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.NoError(t, err)
 }
 
@@ -437,7 +458,14 @@ func startFermentationStepParseError(t *testing.T) {
 
 	l, _ := logtest.NewNullLogger()
 	c := testChamber
-	_ = c.Configure(chamber.StubConfigurator{}, l)
+
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+	err := c.Configure(configuratorMock, l)
+	assert.NoError(t, err)
 
 	step := "One"
 	w, r, ctx := setupHandlerTest("step="+step, nil)
@@ -445,7 +473,7 @@ func startFermentationStepParseError(t *testing.T) {
 	controllerMock := &mocks.Controller{}
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
-	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	err = handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf("step %s is invalid", step))
 
 	var reqErr *web.RequestError
@@ -454,12 +482,19 @@ func startFermentationStepParseError(t *testing.T) {
 	assert.Equal(t, reqErr.Status, http.StatusBadRequest)
 }
 
-func startFermentationInvalidStep(t *testing.T) {
+func startFermentationInvalidStepError(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
 	c := testChamber
-	_ = c.Configure(chamber.StubConfigurator{}, l)
+
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+	err := c.Configure(configuratorMock, l)
+	assert.NoError(t, err)
 
 	step := 2
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
@@ -468,7 +503,7 @@ func startFermentationInvalidStep(t *testing.T) {
 	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(chamber.ErrInvalidStep)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
-	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	err = handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf("step %d is invalid for chamber '%s'", step, chamberID))
 
 	var reqErr *web.RequestError
@@ -477,7 +512,7 @@ func startFermentationInvalidStep(t *testing.T) {
 	assert.Equal(t, reqErr.Status, http.StatusBadRequest)
 }
 
-func startFermentationNotFound(t *testing.T) {
+func startFermentationNotFoundError(t *testing.T) {
 	t.Parallel()
 
 	step := 1
@@ -497,7 +532,7 @@ func startFermentationNotFound(t *testing.T) {
 	assert.Equal(t, reqErr.Status, http.StatusNotFound)
 }
 
-func startFermentationNoBatch(t *testing.T) {
+func startFermentationNoBatchError(t *testing.T) {
 	t.Parallel()
 
 	step := 1
@@ -552,32 +587,41 @@ func startFermentationRespondError(t *testing.T) {
 //nolint: paralleltest // False positives with r.Run not in a loop
 func TestStopFermentation(t *testing.T) {
 	t.Parallel()
-	t.Run("stopFermentationSuccess", stopFermentationSuccess)
-	t.Run("stopFermentationNotFound", stopFermentationNotFound)
-	t.Run("stopFermentationNotFermenting", stopFermentationNotFermenting)
+	t.Run("stopFermentation", stopFermentation)
+	t.Run("stopFermentationNotFoundError", stopFermentationNotFoundError)
+	t.Run("stopFermentationNotFermentingError", stopFermentationNotFermentingError)
 	t.Run("stopFermentationOtherError", stopFermentationOtherError)
 	t.Run("stopFermentationRespondError", stopFermentationRespondError)
 }
 
-func stopFermentationSuccess(t *testing.T) {
+func stopFermentation(t *testing.T) {
 	t.Parallel()
 
 	c := testChamber
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
-	_ = c.Configure(chamber.StubConfigurator{}, l)
-	_ = c.StartFermentation(ctx, 1)
+
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+	err := c.Configure(configuratorMock, l)
+	assert.NoError(t, err)
+
+	err = c.StartFermentation(ctx, 1)
+	assert.NoError(t, err)
 
 	controllerMock := &mocks.Controller{}
 	controllerMock.On("StopFermentation", chamberID).Return(nil)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
-	err := handler.Stop(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	err = handler.Stop(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.NoError(t, err)
 }
 
-func stopFermentationNotFound(t *testing.T) {
+func stopFermentationNotFoundError(t *testing.T) {
 	t.Parallel()
 
 	w, r, ctx := setupHandlerTest("", nil)
@@ -596,7 +640,7 @@ func stopFermentationNotFound(t *testing.T) {
 	assert.Equal(t, reqErr.Status, http.StatusNotFound)
 }
 
-func stopFermentationNotFermenting(t *testing.T) {
+func stopFermentationNotFermentingError(t *testing.T) {
 	t.Parallel()
 
 	w, r, ctx := setupHandlerTest("", nil)
@@ -637,19 +681,28 @@ func stopFermentationRespondError(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
-	_ = c.Configure(chamber.StubConfigurator{}, l)
-	_ = c.StartFermentation(ctx, 1)
+
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+	err := c.Configure(configuratorMock, l)
+	assert.NoError(t, err)
+
+	err = c.StartFermentation(ctx, 1)
+	assert.NoError(t, err)
 
 	controllerMock := &mocks.Controller{}
 	controllerMock.On("StopFermentation", chamberID).Return(nil)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	// use new ctx to force error
-	err := handler.Stop(context.Background(), w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	err = handler.Stop(context.Background(), w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), respondErrMsg)
 }
 
-func assetChamberListsAreEqual(t *testing.T, c1, c2 []*chamber.Chamber) {
+func assertChamberListsAreEqual(t *testing.T, c1, c2 []*chamber.Chamber) {
 	t.Helper()
 	assert.Equal(t, len(c1), len(c2))
 

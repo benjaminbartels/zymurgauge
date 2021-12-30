@@ -67,19 +67,19 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 		case "ds18b20":
 			createdDevice, err = configurator.CreateDs18b20(deviceConfig.ID)
 			if err != nil {
-				return errors.Wrapf(err, "could not create new Ds18b20 thermometer %s", c.ID)
+				return errors.Wrapf(err, "could not create new Ds18b20 %s", deviceConfig.ID)
 			}
 
 		case "tilt":
 			createdDevice, err = configurator.CreateTilt(tilt.Color(deviceConfig.ID))
 			if err != nil {
-				return errors.Wrapf(err, "could not create new Tilt %s", c.ID)
+				return errors.Wrapf(err, "could not create new %s Tilt", deviceConfig.ID)
 			}
 
 		case "gpio":
 			createdDevice, err = configurator.CreateGPIOActuator(deviceConfig.ID)
 			if err != nil {
-				return errors.Wrapf(err, "could not create new Tilt %s", c.ID)
+				return errors.Wrapf(err, "could not create new GPIO %s", deviceConfig.ID)
 			}
 
 		default:
@@ -101,28 +101,30 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 }
 
 func (c *Chamber) assign(d interface{}, roles []string) error {
+	// type assertions will not fail
 	for _, role := range roles {
-		var ok bool
-
 		switch role {
 		case "thermometer":
-			c.thermometer, ok = d.(device.Thermometer)
+			c.thermometer, _ = d.(device.Thermometer)
 		case "hydrometer":
-			c.hydrometer, ok = d.(device.Hydrometer)
+			c.hydrometer, _ = d.(device.Hydrometer)
 		case "chiller":
-			c.chiller, ok = d.(device.Actuator)
+			c.chiller, _ = d.(device.Actuator)
 		case "heater":
-			c.heater, ok = d.(device.Actuator)
+			c.heater, _ = d.(device.Actuator)
 		default:
 			return ErrInvalidDeviceRole
-		}
-
-		if !ok {
-			return errors.Errorf("type assertion failed for role %s", role)
 		}
 	}
 
 	return nil
+}
+
+func (c *Chamber) IsFermenting() bool {
+	c.runMutex.Lock()
+	defer c.runMutex.Unlock()
+
+	return c.cancelFunc != nil
 }
 
 func (c *Chamber) StartFermentation(ctx context.Context, step int) error {

@@ -4,27 +4,31 @@ import (
 	"context"
 	"sync"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-var ErrNotFound = errors.New("chamber not found")
+var (
+	ErrNotFound   = errors.New("chamber not found")
+	ErrFermenting = errors.New("fermentation has started")
+)
 
 var _ Controller = (*Manager)(nil)
 
 type Manager struct {
 	repo         Repo
-	chambers     sync.Map
+	chambers     map[string]*Chamber
 	configurator Configurator
 	logger       *logrus.Logger
+	mutex        sync.RWMutex
 }
 
 func NewManager(repo Repo, configurator Configurator,
 	logger *logrus.Logger) (*Manager, error) {
 	m := &Manager{
 		repo:         repo,
+		chambers:     make(map[string]*Chamber),
 		configurator: configurator,
 		logger:       logger,
 	}
@@ -36,16 +40,20 @@ func NewManager(repo Repo, configurator Configurator,
 
 	var errs error
 
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	for i := range chambers {
+		// TODO: Configure implementation should vary based on arch
 		if err := chambers[i].Configure(configurator, logger); err != nil {
 			errs = multierror.Append(errs,
 				errors.Wrapf(err, "could not configure temperature controller for chamber %s", chambers[i].Name))
 		}
 
-		m.chambers.Store(chambers[i].ID, &chambers[i])
+		m.chambers[chambers[i].ID] = chambers[i]
 	}
 
-	if err != nil {
+	if errs != nil {
 		return m, errors.Wrap(errs, "could not configure all temperature controllers")
 	}
 
@@ -53,41 +61,43 @@ func NewManager(repo Repo, configurator Configurator,
 }
 
 func (m *Manager) GetAll() ([]*Chamber, error) {
-	chambers := []*Chamber{}
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
 
-	m.chambers.Range(func(key, value interface{}) bool {
-		spew.Dump(value)
+	chambers := make([]*Chamber, 0, len(m.chambers))
+	for _, chamber := range m.chambers {
+		chambers = append(chambers, chamber)
+	}
 
-		chambers = append(chambers, value.(*Chamber))
-
-		return true
-	})
-
+	// It is not possible for GetAll() to return an error
 	return chambers, nil
 }
 
 func (m *Manager) Get(id string) (*Chamber, error) {
-	var chamber *Chamber
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
 
-	value, ok := m.chambers.Load(id)
+	chamber, ok := m.chambers[id]
 	if !ok {
 		return chamber, nil
-	}
-
-	chamber, ok = value.(*Chamber)
-	if !ok {
-		return chamber, errors.Errorf("type assertion failed for chamber %s", id)
 	}
 
 	return chamber, nil
 }
 
 func (m *Manager) Save(chamber *Chamber) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	if c, ok := m.chambers[chamber.ID]; ok && c.IsFermenting() {
+		return ErrFermenting
+	}
+
+	m.chambers[chamber.ID] = chamber
+
 	if err := m.repo.Save(chamber); err != nil {
 		return errors.Wrap(err, "could not save chamber to repository")
 	}
-
-	m.chambers.Store(chamber.ID, chamber)
 
 	if err := chamber.Configure(m.configurator, m.logger); err != nil {
 		return errors.Wrap(err, "could not configure chamber")
@@ -97,24 +107,29 @@ func (m *Manager) Save(chamber *Chamber) error {
 }
 
 func (m *Manager) Delete(id string) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	if c, ok := m.chambers[id]; ok && c.IsFermenting() {
+		return ErrFermenting
+	}
+
 	if err := m.repo.Delete(id); err != nil {
 		return errors.Wrapf(err, "could not delete chamber %s from repository", id)
 	}
 
-	m.chambers.Delete(id)
+	delete(m.chambers, id)
 
 	return nil
 }
 
 func (m *Manager) StartFermentation(ctx context.Context, chamberID string, step int) error {
-	value, ok := m.chambers.Load(chamberID)
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	chamber, ok := m.chambers[chamberID]
 	if !ok {
 		return ErrNotFound
-	}
-
-	chamber, ok := value.(*Chamber)
-	if !ok {
-		return errors.Errorf("type assertion failed for chamber %s", chamberID)
 	}
 
 	err := chamber.StartFermentation(ctx, step)
@@ -126,14 +141,12 @@ func (m *Manager) StartFermentation(ctx context.Context, chamberID string, step 
 }
 
 func (m *Manager) StopFermentation(chamberID string) error {
-	value, ok := m.chambers.Load(chamberID)
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	chamber, ok := m.chambers[chamberID]
 	if !ok {
 		return ErrNotFound
-	}
-
-	chamber, ok := value.(*Chamber)
-	if !ok {
-		return errors.Errorf("type assertion failed for chamber %s", chamberID)
 	}
 
 	err := chamber.StopFermentation()

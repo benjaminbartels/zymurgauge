@@ -23,7 +23,7 @@ const (
 	dutyCycleMultiplyer                      = 100
 )
 
-var ErrAlreadyRunning = errors.New("pid is already running") // TODO: rename on?
+var ErrAlreadyRunning = errors.New("pid is already running")
 
 type TemperatureController struct {
 	thermometer         device.Thermometer

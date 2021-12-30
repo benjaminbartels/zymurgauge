@@ -9,7 +9,7 @@ type Controller interface {
 }
 
 type Repo interface {
-	GetAll() ([]*Chamber, error) // TODO: add ctx? // TODO: should this return a slice of pointers?
+	GetAll() ([]*Chamber, error) // TODO: add ctx?
 	Get(id string) (*Chamber, error)
 	Save(c *Chamber) error
 	Delete(id string) error

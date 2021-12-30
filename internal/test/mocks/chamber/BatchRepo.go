@@ -15,8 +15,8 @@ type BatchRepo struct {
 	mock.Mock
 }
 
-// GetAllBatches provides a mock function with given fields: ctx
-func (_m *BatchRepo) GetAllBatches(ctx context.Context) ([]batch.Batch, error) {
+// GetAll provides a mock function with given fields: ctx
+func (_m *BatchRepo) GetAll(ctx context.Context) ([]batch.Batch, error) {
 	ret := _m.Called(ctx)
 
 	var r0 []batch.Batch
@@ -38,8 +38,8 @@ func (_m *BatchRepo) GetAllBatches(ctx context.Context) ([]batch.Batch, error) {
 	return r0, r1
 }
 
-// GetBatch provides a mock function with given fields: ctx, id
-func (_m *BatchRepo) GetBatch(ctx context.Context, id string) (*batch.Batch, error) {
+// Get provides a mock function with given fields: ctx, id
+func (_m *BatchRepo) Get(ctx context.Context, id string) (*batch.Batch, error) {
 	ret := _m.Called(ctx, id)
 
 	var r0 *batch.Batch

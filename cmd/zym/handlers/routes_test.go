@@ -75,7 +75,12 @@ func TestRoutes(t *testing.T) {
 			},
 		}
 
-		err := c.Configure(chamber.StubConfigurator{}, l)
+		configuratorMock := &mocks.Configurator{}
+		configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+		configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+		configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+
+		err := c.Configure(configuratorMock, l)
 		assert.NoError(t, err)
 
 		r := batch.Batch{ID: batchID}
@@ -91,8 +96,8 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
 		recipeMock := &mocks.BatchRepo{}
-		recipeMock.On("GetAllBatches", mock.Anything).Return([]batch.Batch{}, nil) // TODO: rename GetAllBatches?
-		recipeMock.On("GetBatch", mock.Anything, batchID).Return(&r, nil)
+		recipeMock.On("GetAll", mock.Anything).Return([]batch.Batch{}, nil)
+		recipeMock.On("Get", mock.Anything, batchID).Return(&r, nil)
 
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
@@ -106,7 +111,8 @@ func TestRoutes(t *testing.T) {
 				c, err := controllerMock.Get(chamberID)
 				assert.NoError(t, err)
 
-				_ = c.StartFermentation(ctx, 1)
+				err = c.StartFermentation(ctx, 1)
+				assert.NoError(t, err)
 			}
 
 			w := httptest.NewRecorder()
