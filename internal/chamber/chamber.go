@@ -21,6 +21,12 @@ var (
 	ErrNotFermenting     = errors.New("fermentation has not started")
 )
 
+type TemperatureControllerConfig struct {
+	Name                      string         `json:"name"`
+	TemperatureControllerType string         `json:"type"`
+	DeviceConfigs             []DeviceConfig `json:"deviceConfigs"`
+}
+
 type DeviceConfig struct {
 	ID    string   `json:"id"`
 	Type  string   `json:"type"`

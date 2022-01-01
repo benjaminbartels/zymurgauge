@@ -404,7 +404,7 @@ func createTestChambers() []*chamber.Chamber {
 			},
 		},
 		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "28-051693ec41ff", Type: "ds18b20", Roles: []string{"thermometer"}},
+			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"thermometer"}},
 			{ID: "GPIO2", Type: "gpio", Roles: []string{"chiller"}},
 			{ID: "GPIO3", Type: "gpio", Roles: []string{"heater"}},
 		},

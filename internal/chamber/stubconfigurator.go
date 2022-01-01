@@ -1,15 +1,8 @@
 package chamber
 
 import (
-	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 )
-
-type Configurator interface {
-	CreateDs18b20(thermometerID string) (device.Thermometer, error)
-	CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error)
-	CreateGPIOActuator(pin string) (device.Actuator, error)
-}
 
 const (
 	stubTemperature     = 25

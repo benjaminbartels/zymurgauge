@@ -29,7 +29,7 @@ func TestConfigure(t *testing.T) {
 }
 
 const (
-	ds18b20ID = "28-051693ec41ff"
+	ds18b20ID = "28-0000071cbc72"
 	tiltColor = "orange"
 	gpio02    = "GPIO2"
 )

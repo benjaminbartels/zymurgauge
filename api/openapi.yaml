@@ -344,12 +344,28 @@ components:
           format: uuid
         name:
           type: string
-        thermometerId:
-          type: string
-        chillerPin:
-          type: string
-        heaterPin:
-          type: string
+        deviceConfigs:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              type:
+                type: string
+                enum:
+                  - ds18b20
+                  - gpio
+                  - tilt
+              roles:
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - thermometer
+                    - chiller
+                    - heater
+                    - hydrometer
         chillerKp:
           type: number
           format: double
@@ -397,9 +413,19 @@ components:
       value:
         id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
         name: My Fermentation Chamber
-        thermometerId: 28-0000071cbc72
-        chillerPin: "1"
-        heaterPin: "2"
+        deviceConfigs:
+          - id: 28-0000071cbc72
+          - type: "ds18b20"
+          - roles:
+            - "thermometer"
+          - id: GPIO2
+          - type: "gpio"
+          - roles:
+            - "chiller"
+          - id: GPIO3
+          - type: "gpio"
+          - roles:
+            - "heater"
         chillerKp: 1.0
         chillerKi: 2.0
         chillerKd: 3.0
@@ -430,9 +456,19 @@ components:
       value:
         - id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
           name: My Fermentation Chamber
-          thermometerId: 28-0000071cbc72
-          chillerPin: "1"
-          heaterPin: "2"
+          deviceConfigs:
+            - id: 28-0000071cbc72
+            - type: "ds18b20"
+            - roles:
+              - "thermometer"
+            - id: GPIO2
+            - type: "gpio"
+            - roles:
+              - "chiller"
+            - id: GPIO3
+            - type: "gpio"
+            - roles:
+              - "heater"
           chillerKp: 1.0
           chillerKi: 2.0
           chillerKd: 3.0
@@ -461,9 +497,20 @@ components:
           modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
         - id: dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1
           name: My Fermentation Chamber
-          thermometerId: 28-0000041ab222
-          chillerPin: 1
-          heaterPin: 2
+          deviceConfigs:
+            - id: orange
+            - type: "tilt"
+            - roles:
+              - "thermometer"
+              - "hydrometer"
+            - id: GPIO2
+            - type: "gpio"
+            - roles:
+              - "chiller"
+            - id: GPIO3
+            - type: "gpio"
+            - roles:
+              - "heater"
           chillerKp: 1.0
           chillerKi: 2.0
           chillerKd: 3.0
@@ -474,9 +521,19 @@ components:
     newChamber:
       value:
         name: My Fermentation Chamber
-        thermometerId: 28-0000071cbc72
-        chillerPin: "1"
-        heaterPin: "2"
+        deviceConfigs:
+          - id: 28-0000071cbc72
+          - type: "ds18b20"
+          - roles:
+            - "thermometer"
+          - id: GPIO2
+          - type: "gpio"
+          - roles:
+            - "chiller"
+          - id: GPIO3
+          - type: "gpio"
+          - roles:
+            - "heater"
         chillerKp: 1.0
         chillerKi: 2.0
         chillerKd: 3.0
@@ -487,9 +544,19 @@ components:
       value:
         id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
         name: My Fermentation Chamber
-        thermometerId: 28-0000071cbc72
-        chillerPin: "1"
-        heaterPin: "2"
+        deviceConfigs:
+          - id: 28-0000071cbc72
+          - type: "ds18b20"
+          - roles:
+            - "thermometer"
+          - id: GPIO2
+          - type: "gpio"
+          - roles:
+            - "chiller"
+          - id: GPIO3
+          - type: "gpio"
+          - roles:
+            - "heater"
         chillerKp: 1.0
         chillerKi: 2.0
         chillerKd: 3.0
