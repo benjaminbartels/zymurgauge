@@ -128,8 +128,15 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 		dutyTime := time.Duration(float64(period.Nanoseconds()) * dutyCycle)
 		waitTime := period - dutyTime
 
+		t.logger.Debugf("Actuator %s set point is %.4f°C", name, pid.Get())
 		t.logger.Debugf("Actuator %s current temperature is %.4f°C", name, temperature)
+
+		p, i, d := pid.PID()
+		t.logger.Debugf("Actuator %s PID is %f, %f, %f", name, p, i, d)
+		t.logger.Debugf("Actuator %s time since last update is %s", name, since)
+		t.logger.Debugf("Actuator %s output is %f", name, output)
 		t.logger.Debugf("Actuator %s dutyCycle is %.2f%%", name, dutyCycle*dutyCycleMultiplyer)
+		t.logger.Debugf("Actuator %s dutyTime is %s", name, dutyTime)
 		t.logger.Debugf("Actuator %s waitTime is %s", name, waitTime)
 
 		if dutyTime > 0 {

@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
+	"periph.io/x/host/v3"
 )
 
 const (
@@ -59,13 +60,26 @@ func run(logger *logrus.Logger) error {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
+	if _, err := host.Init(); err != nil {
+		return errors.Wrap(err, "could not initialize gpio")
+	}
+
 	ctx, interruptCancel := c.WithInterrupt(context.Background())
 	defer interruptCancel()
+
+	errCh := make(chan error, 1)
 
 	go func() {
 		if err := http.ListenAndServe(cfg.DebugHost, handlers.DebugMux()); err != nil {
 			logger.WithError(err).Errorf("Debug endpoint %s closed.", cfg.DebugHost)
 		}
+	}()
+
+	scanner := bluetooth.NewBLEScanner()
+	monitor := tilt.NewMonitor(scanner, logger)
+
+	go func() {
+		errCh <- monitor.Run(ctx)
 	}()
 
 	db, err := bbolt.Open("data/zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: 1 * time.Second})
@@ -82,9 +96,9 @@ func run(logger *logrus.Logger) error {
 		TiltMonitor: *tilt.NewMonitor(bluetooth.NewBLEScanner(), logger),
 	}
 
-	chamberManager, err := chamber.NewManager(chamberRepo, configurator, logger)
+	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, logger)
 	if err != nil {
-		return errors.Wrap(err, "could not create chamber controller")
+		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}
 
 	brewfather := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
@@ -99,21 +113,20 @@ func run(logger *logrus.Logger) error {
 		IdleTimeout:  cfg.IdleTimeout,
 		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfather, shutdown, logger),
 	}
-	httpServerErrors := make(chan error, 1)
 
 	go func() {
 		logger.Infof("zymurgauge version %s started, listening at %s", build, cfg.Host)
-		httpServerErrors <- httpServer.ListenAndServe()
+		errCh <- httpServer.ListenAndServe()
 	}()
 
-	return wait(ctx, httpServer, httpServerErrors, cfg.ShutdownTimeout, logger)
+	return wait(ctx, httpServer, errCh, cfg.ShutdownTimeout, logger)
 }
 
-func wait(ctx context.Context, server *http.Server, serverErrors chan error, timeout time.Duration,
+func wait(ctx context.Context, server *http.Server, errCh chan error, timeout time.Duration,
 	logger *logrus.Logger) error {
 	select {
-	case err := <-serverErrors:
-		return errors.Wrap(err, "fatal http server error occurred")
+	case err := <-errCh:
+		return errors.Wrap(err, "fatal error occurred")
 	case <-ctx.Done():
 		logger.Info("stopping zymurgauge")
 

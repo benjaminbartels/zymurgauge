@@ -40,7 +40,7 @@ func newManagerGetAllError(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(repoMock, configuratorMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all chambers from"))
 	assert.Nil(t, manager)
 }
@@ -63,7 +63,7 @@ func newManagerConfigureErrors(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(repoMock, configuratorMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
 	assert.Contains(t, err.Error(), "could not configure all temperature controllers")
 	assert.NotNil(t, manager)
 }
@@ -168,7 +168,7 @@ func saveChamberFermentingError(t *testing.T) {
 	manager, repoMock := setupManagerTest(t, testChambers)
 	repoMock.On("Save", testChambers[0]).Return(nil)
 
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 
 	err = manager.Save(testChambers[0])
@@ -203,7 +203,7 @@ func saveChamberConfigureError(t *testing.T) {
 	}
 
 	err = manager.Save(c)
-	assert.Contains(t, err.Error(), "could not configure chamber")
+	assert.ErrorIs(t, err, chamber.ErrInvalidConfig)
 }
 
 //nolint: paralleltest // False positives with r.Run not in a loop
@@ -238,7 +238,7 @@ func deleteChamberFermentingError(t *testing.T) {
 	manager, repoMock := setupManagerTest(t, testChambers)
 	repoMock.On("Delete", chamberID).Return(nil)
 
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 
 	err = manager.Delete(chamberID)
@@ -273,7 +273,7 @@ func startFermentation(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 }
 
@@ -283,10 +283,10 @@ func startFermentationNextStep(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 
-	err = manager.StartFermentation(context.Background(), chamberID, 2)
+	err = manager.StartFermentation(chamberID, 2)
 	assert.NoError(t, err)
 }
 
@@ -296,7 +296,7 @@ func startFermentationNotFoundError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(context.Background(), "", 1)
+	err := manager.StartFermentation("", 1)
 	assert.ErrorIs(t, err, chamber.ErrNotFound)
 }
 
@@ -307,7 +307,7 @@ func startFermentationNoCurrentBatchError(t *testing.T) {
 	testChambers[0].CurrentBatch = nil
 	manager, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.ErrorIs(t, err, chamber.ErrNoCurrentBatch)
 }
 
@@ -317,7 +317,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(context.Background(), chamberID, 9)
+	err := manager.StartFermentation(chamberID, 9)
 	assert.ErrorIs(t, err, chamber.ErrInvalidStep)
 }
 
@@ -336,7 +336,7 @@ func stopFermentation(t *testing.T) {
 
 	manager, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 
 	err = manager.StopFermentation(chamberID)
@@ -404,7 +404,7 @@ func createTestChambers() []*chamber.Chamber {
 			},
 		},
 		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "28-051693ec41ff", Type: "ds18b20", Roles: []string{"thermometer"}},
+			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"thermometer"}},
 			{ID: "GPIO2", Type: "gpio", Roles: []string{"chiller"}},
 			{ID: "GPIO3", Type: "gpio", Roles: []string{"heater"}},
 		},
@@ -434,7 +434,7 @@ func setupManagerTest(t *testing.T,
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(repoMock, configuratorMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
 	assert.NoError(t, err)
 
 	return manager, repoMock

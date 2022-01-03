@@ -239,6 +239,7 @@ func TestSaveChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("saveChamber", saveChamber)
 	t.Run("saveChamberParseError", saveChamberParseError)
+	t.Run("saveChamberInvalidConfigError", saveChamberInvalidConfigError)
 	t.Run("saveChamberOtherError", saveChamberOtherError)
 	t.Run("saveChamberRespondError", saveChamberRespondError)
 }
@@ -276,12 +277,39 @@ func saveChamberParseError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	controllerMock := &mocks.Controller{}
-	controllerMock.On("GetAll").Return([]*chamber.Chamber{}, nil)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
 	err := handler.Save(ctx, w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), parseErrorMsg)
+}
+
+func saveChamberInvalidConfigError(t *testing.T) {
+	t.Parallel()
+
+	c := &chamber.Chamber{ID: chamberID}
+	jsonBytes, _ := json.Marshal(c)
+
+	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
+	l, _ := logtest.NewNullLogger()
+
+	deepErr := errors.New("some deeep error")
+	cfgErr := errors.Wrapf(deepErr, "could not create new Ds18b20 %s", "333")
+
+	myErr := errors.Wrap(chamber.ErrInvalidConfig, cfgErr.Error())
+
+	controllerMock := &mocks.Controller{}
+	controllerMock.On("Save", c).Return(myErr)
+
+	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
+
+	err := handler.Save(ctx, w, r, httprouter.Params{})
+	assert.Contains(t, err.Error(), "configuration is invalid")
+
+	var reqErr *web.RequestError
+
+	assert.ErrorAs(t, err, &reqErr)
+	assert.Equal(t, reqErr.Status, http.StatusBadRequest)
 }
 
 func saveChamberOtherError(t *testing.T) {
@@ -446,7 +474,7 @@ func startFermentation(t *testing.T) {
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
 
 	controllerMock := &mocks.Controller{}
-	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(nil)
+	controllerMock.On("StartFermentation", chamberID, step).Return(nil)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
 	err = handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
@@ -500,7 +528,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 	w, r, ctx := setupHandlerTest("step="+strconv.Itoa(step), nil)
 
 	controllerMock := &mocks.Controller{}
-	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(chamber.ErrInvalidStep)
+	controllerMock.On("StartFermentation", chamberID, step).Return(chamber.ErrInvalidStep)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock}
 	err = handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
@@ -520,7 +548,7 @@ func startFermentationNotFoundError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	controllerMock := &mocks.Controller{}
-	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(chamber.ErrNotFound)
+	controllerMock.On("StartFermentation", chamberID, step).Return(chamber.ErrNotFound)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
@@ -540,7 +568,7 @@ func startFermentationNoBatchError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	controllerMock := &mocks.Controller{}
-	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(chamber.ErrNoCurrentBatch)
+	controllerMock.On("StartFermentation", chamberID, step).Return(chamber.ErrNoCurrentBatch)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	err := handler.Start(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
@@ -560,7 +588,7 @@ func startFermentationOtherError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	controllerMock := &mocks.Controller{}
-	controllerMock.On("StartFermentation", ctx, chamberID, step).Return(errors.New("controllerMock error"))
+	controllerMock.On("StartFermentation", chamberID, step).Return(errors.New("controllerMock error"))
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
@@ -576,7 +604,7 @@ func startFermentationRespondError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	controllerMock := &mocks.Controller{}
-	controllerMock.On("StartFermentation", mock.Anything, chamberID, step).Return(nil)
+	controllerMock.On("StartFermentation", chamberID, step).Return(nil)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 	// use new ctx to force error

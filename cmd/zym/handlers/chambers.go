@@ -57,16 +57,20 @@ func (h *ChambersHandler) Get(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	chamber, err := parseChamber(r)
+	c, err := parseChamber(r)
 	if err != nil {
 		return errors.Wrap(err, "could not parse chamber")
 	}
 
-	if err := h.ChamberController.Save(&chamber); err != nil {
+	if err := h.ChamberController.Save(&c); err != nil {
+		if errors.Is(err, chamber.ErrInvalidConfig) {
+			return web.NewRequestError("configuration is invalid", http.StatusBadRequest)
+		}
+
 		return errors.Wrap(err, "could not save chamber to controller")
 	}
 
-	if err := web.Respond(ctx, w, chamber, http.StatusOK); err != nil {
+	if err := web.Respond(ctx, w, c, http.StatusOK); err != nil {
 		return errors.Wrap(err, "problem responding to client")
 	}
 
@@ -103,7 +107,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 		return web.NewRequestError(fmt.Sprintf("step %s is invalid", stepVal), http.StatusBadRequest)
 	}
 
-	if err := h.ChamberController.StartFermentation(ctx, id, step); err != nil {
+	if err := h.ChamberController.StartFermentation(id, step); err != nil {
 		// TODO: better error handling?
 		switch {
 		case errors.Is(err, chamber.ErrNotFound):

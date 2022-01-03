@@ -10,13 +10,15 @@ import (
 )
 
 var (
-	ErrNotFound   = errors.New("chamber not found")
-	ErrFermenting = errors.New("fermentation has started")
+	ErrNotFound      = errors.New("chamber not found")
+	ErrFermenting    = errors.New("fermentation has started")
+	ErrInvalidConfig = errors.New("configuration is invalid")
 )
 
 var _ Controller = (*Manager)(nil)
 
 type Manager struct {
+	ctx          context.Context
 	repo         Repo
 	chambers     map[string]*Chamber
 	configurator Configurator
@@ -24,9 +26,10 @@ type Manager struct {
 	mutex        sync.RWMutex
 }
 
-func NewManager(repo Repo, configurator Configurator,
+func NewManager(ctx context.Context, repo Repo, configurator Configurator,
 	logger *logrus.Logger) (*Manager, error) {
 	m := &Manager{
+		ctx:          ctx,
 		repo:         repo,
 		chambers:     make(map[string]*Chamber),
 		configurator: configurator,
@@ -93,15 +96,15 @@ func (m *Manager) Save(chamber *Chamber) error {
 		return ErrFermenting
 	}
 
-	m.chambers[chamber.ID] = chamber
+	if err := chamber.Configure(m.configurator, m.logger); err != nil { //
+		return ErrInvalidConfig // TODO: wrap details of error
+	}
 
 	if err := m.repo.Save(chamber); err != nil {
 		return errors.Wrap(err, "could not save chamber to repository")
 	}
 
-	if err := chamber.Configure(m.configurator, m.logger); err != nil {
-		return errors.Wrap(err, "could not configure chamber")
-	}
+	m.chambers[chamber.ID] = chamber
 
 	return nil
 }
@@ -123,7 +126,7 @@ func (m *Manager) Delete(id string) error {
 	return nil
 }
 
-func (m *Manager) StartFermentation(ctx context.Context, chamberID string, step int) error {
+func (m *Manager) StartFermentation(chamberID string, step int) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -132,7 +135,7 @@ func (m *Manager) StartFermentation(ctx context.Context, chamberID string, step 
 		return ErrNotFound
 	}
 
-	err := chamber.StartFermentation(ctx, step)
+	err := chamber.StartFermentation(m.ctx, step)
 	if err != nil {
 		return errors.Wrap(err, "could not start fermentation")
 	}

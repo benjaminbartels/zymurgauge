@@ -97,17 +97,8 @@ linters:
     - scopelint                 # Deprecated
     - varnamelen                # Way too opinionated
 linters-settings:
-  wrapcheck:
-    ignoreSigs:
-      - .Errorf(
-      - errors.New(
-      - errors.Unwrap(
-      - .Wrap(
-      - .Wrapf(
-      - .WithMessage(
-      - .WithMessagef(
-      - .WithStack(
-      - .NewRequestError(       # used in create RequestError
+  funlen:
+    lines: -1
   gomnd:
     settings:
       mnd:
@@ -122,6 +113,17 @@ linters-settings:
       - device.Thermometer,
       - device.ThermometerAndHydrometer
       - device.Actuator
+  wrapcheck:
+    ignoreSigs:
+      - .Errorf(
+      - errors.New(
+      - errors.Unwrap(
+      - .Wrap(
+      - .Wrapf(
+      - .WithMessage(
+      - .WithMessagef(
+      - .WithStack(
+      - .NewRequestError(       # used in create RequestError
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

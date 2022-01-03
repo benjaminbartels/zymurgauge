@@ -1,5 +1,8 @@
 FROM golang:1.17 as debug
 
+# TODO: Docker is not working at the moment. Need to enable Bluetooth, GPIO and onewire  
+# TODO: Don't run as root
+
 WORKDIR /go/src/github.com/benjaminbartels/zymurgauge
 
 COPY . .

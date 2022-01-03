@@ -3,10 +3,7 @@
 package chamber
 
 import (
-	context "context"
-
 	chamber "github.com/benjaminbartels/zymurgauge/internal/chamber"
-
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -89,13 +86,13 @@ func (_m *Controller) Save(c *chamber.Chamber) error {
 	return r0
 }
 
-// StartFermentation provides a mock function with given fields: ctx, chamberID, step
-func (_m *Controller) StartFermentation(ctx context.Context, chamberID string, step int) error {
-	ret := _m.Called(ctx, chamberID, step)
+// StartFermentation provides a mock function with given fields: chamberID, step
+func (_m *Controller) StartFermentation(chamberID string, step int) error {
+	ret := _m.Called(chamberID, step)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, int) error); ok {
-		r0 = rf(ctx, chamberID, step)
+	if rf, ok := ret.Get(0).(func(string, int) error); ok {
+		r0 = rf(chamberID, step)
 	} else {
 		r0 = ret.Error(0)
 	}
