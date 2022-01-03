@@ -60,8 +60,7 @@ func run(logger *logrus.Logger) error {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	_, err := host.Init()
-	if err != nil {
+	if _, err := host.Init(); err != nil {
 		return errors.Wrap(err, "could not initialize gpio")
 	}
 

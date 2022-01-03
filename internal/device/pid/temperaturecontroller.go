@@ -130,6 +130,7 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 
 		t.logger.Debugf("Actuator %s set point is %.4f°C", name, pid.Get())
 		t.logger.Debugf("Actuator %s current temperature is %.4f°C", name, temperature)
+
 		p, i, d := pid.PID()
 		t.logger.Debugf("Actuator %s PID is %f, %f, %f", name, p, i, d)
 		t.logger.Debugf("Actuator %s time since last update is %s", name, since)

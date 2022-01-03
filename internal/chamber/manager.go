@@ -126,7 +126,7 @@ func (m *Manager) Delete(id string) error {
 	return nil
 }
 
-func (m *Manager) StartFermentation(ctx context.Context, chamberID string, step int) error {
+func (m *Manager) StartFermentation(chamberID string, step int) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 

@@ -168,7 +168,7 @@ func saveChamberFermentingError(t *testing.T) {
 	manager, repoMock := setupManagerTest(t, testChambers)
 	repoMock.On("Save", testChambers[0]).Return(nil)
 
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 
 	err = manager.Save(testChambers[0])
@@ -238,7 +238,7 @@ func deleteChamberFermentingError(t *testing.T) {
 	manager, repoMock := setupManagerTest(t, testChambers)
 	repoMock.On("Delete", chamberID).Return(nil)
 
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 
 	err = manager.Delete(chamberID)
@@ -273,7 +273,7 @@ func startFermentation(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 }
 
@@ -283,10 +283,10 @@ func startFermentationNextStep(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 
-	err = manager.StartFermentation(context.Background(), chamberID, 2)
+	err = manager.StartFermentation(chamberID, 2)
 	assert.NoError(t, err)
 }
 
@@ -296,7 +296,7 @@ func startFermentationNotFoundError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(context.Background(), "", 1)
+	err := manager.StartFermentation("", 1)
 	assert.ErrorIs(t, err, chamber.ErrNotFound)
 }
 
@@ -307,7 +307,7 @@ func startFermentationNoCurrentBatchError(t *testing.T) {
 	testChambers[0].CurrentBatch = nil
 	manager, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.ErrorIs(t, err, chamber.ErrNoCurrentBatch)
 }
 
@@ -317,7 +317,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(context.Background(), chamberID, 9)
+	err := manager.StartFermentation(chamberID, 9)
 	assert.ErrorIs(t, err, chamber.ErrInvalidStep)
 }
 
@@ -336,7 +336,7 @@ func stopFermentation(t *testing.T) {
 
 	manager, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(context.Background(), chamberID, 1)
+	err := manager.StartFermentation(chamberID, 1)
 	assert.NoError(t, err)
 
 	err = manager.StopFermentation(chamberID)

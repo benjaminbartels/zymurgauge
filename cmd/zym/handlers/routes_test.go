@@ -92,7 +92,7 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("Get", mock.Anything).Return(c, nil)
 		controllerMock.On("Save", mock.Anything).Return(nil)
 		controllerMock.On("Delete", mock.Anything).Return(nil)
-		controllerMock.On("StartFermentation", mock.Anything, chamberID, 1).Return(nil)
+		controllerMock.On("StartFermentation", chamberID, 1).Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
 		recipeMock := &mocks.BatchRepo{}
