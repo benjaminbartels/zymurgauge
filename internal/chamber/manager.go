@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("chamber not found")
+	ErrNotFound   = errors.New("chamber not found")
+	ErrFermenting = errors.New("fermentation has started")
 )
 
 var _ Controller = (*Manager)(nil)

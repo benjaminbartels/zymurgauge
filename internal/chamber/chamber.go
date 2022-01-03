@@ -18,7 +18,6 @@ var (
 	ErrInvalidDeviceRole = errors.New("invalid device role")
 	ErrInvalidStep       = errors.New("invalid step")
 	ErrNoCurrentBatch    = errors.New("chamber does not have a current batch")
-	ErrFermenting        = errors.New("fermentation has already started")
 	ErrNotFermenting     = errors.New("fermentation has not started")
 	ErrNotConfigured     = errors.New("chamber is not configured")
 )
@@ -140,10 +139,6 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
-
-	if c.cancelFunc != nil {
-		return ErrFermenting
-	}
 
 	if c.CurrentBatch == nil {
 		return ErrNoCurrentBatch

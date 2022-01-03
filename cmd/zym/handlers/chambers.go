@@ -112,8 +112,6 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 			return web.NewRequestError(fmt.Sprintf("step %d is invalid for chamber '%s'", step, id), http.StatusBadRequest)
 		case errors.Is(err, chamber.ErrNoCurrentBatch):
 			return web.NewRequestError(fmt.Sprintf("chamber '%s' does not have a current batch", id), http.StatusBadRequest)
-		case errors.Is(err, chamber.ErrFermenting):
-			return web.NewRequestError(fmt.Sprintf("chamber '%s' is already fermenting", id), http.StatusBadRequest) // TODO: Add unit test to test this
 		default:
 			return errors.Wrapf(err, "could not start fermentation for chamber %s", id)
 		}
