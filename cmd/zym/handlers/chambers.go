@@ -89,7 +89,7 @@ func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *
 		return errors.Wrapf(err, "could not delete chamber %s from controller", id)
 	}
 
-	if err := web.Respond(ctx, w, nil, http.StatusOK); err != nil {
+	if err := web.Respond(ctx, w, &Status{Message: "Success"}, http.StatusOK); err != nil {
 		return errors.Wrap(err, "problem responding to client")
 	}
 
