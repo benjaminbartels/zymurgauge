@@ -2,7 +2,6 @@ package pid
 
 import (
 	"context"
-	"math"
 	"sync"
 	"time"
 
@@ -15,10 +14,8 @@ import (
 )
 
 const (
-	chillerPidMin              float64       = -100
-	chillerPidMax              float64       = 0
-	heaterPidMin               float64       = 0
-	heaterPidMax               float64       = 100
+	pidMin                     float64       = 0
+	pidMax                     float64       = 100
 	defaultChillingCyclePeriod time.Duration = 30 * time.Minute
 	defaultHeatingCyclePeriod  time.Duration = 10 * time.Minute
 	defaultChillingMinimum     time.Duration = 10 * time.Minute
@@ -118,8 +115,6 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 	actuator device.Actuator, period, minimum time.Duration) error {
 	lastUpdateTime := t.clock.Now()
 
-	pid.OutputLimits()
-
 	for {
 		temperature, err := t.thermometer.GetTemperature()
 		if err != nil {
@@ -128,13 +123,15 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 
 		since := t.clock.Since(lastUpdateTime)
 		output := pid.UpdateDuration(temperature, since)
-		min, max := pid.OutputLimits()
-		dutyCycle := math.Abs(output / (max - min))
+		dutyCycle := output / pidMax
 		lastUpdateTime = t.clock.Now()
 		dutyTime := time.Duration(float64(period.Nanoseconds()) * dutyCycle)
 		waitTime := period - dutyTime
 
+		t.logger.Debugf("Actuator %s set point is %.4f°C", name, pid.Get())
 		t.logger.Debugf("Actuator %s current temperature is %.4f°C", name, temperature)
+		p, i, d := pid.PID()
+		t.logger.Debugf("Actuator %s PID is %f, %f, %f", name, p, i, d)
 		t.logger.Debugf("Actuator %s time since last update is %s", name, since)
 		t.logger.Debugf("Actuator %s output is %f", name, output)
 		t.logger.Debugf("Actuator %s dutyCycle is %.2f%%", name, dutyCycle*dutyCycleMultiplyer)
@@ -204,15 +201,13 @@ func (t *TemperatureController) Run(ctx context.Context, setPoint float64) error
 
 	t.runMutex.Unlock()
 
-	chillerPID := newPID(t.chillerKp, t.chillerKi, t.chillerKd, chillerPidMin, chillerPidMax)
+	chillerPID := newPID(t.chillerKp, t.chillerKi, t.chillerKd, pidMin, pidMax)
 	chillerPID.Set(setPoint)
 
-	heaterPID := newPID(t.heaterKp, t.heaterKi, t.heaterKd, heaterPidMin, heaterPidMax)
+	heaterPID := newPID(t.heaterKp, t.heaterKi, t.heaterKd, pidMin, pidMax)
 	heaterPID.Set(setPoint)
 
 	g, ctx := errgroup.WithContext(ctx)
-
-	// TODO: make only one PID required
 
 	g.Go(func() error {
 		return t.startCycle(ctx, "chiller", chillerPID, t.chiller, t.chillingCyclePeriod, t.chillingMinimum)
