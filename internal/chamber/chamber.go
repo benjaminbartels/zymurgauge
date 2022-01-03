@@ -19,6 +19,7 @@ var (
 	ErrInvalidStep       = errors.New("invalid step")
 	ErrNoCurrentBatch    = errors.New("chamber does not have a current batch")
 	ErrNotFermenting     = errors.New("fermentation has not started")
+	ErrNotConfigured     = errors.New("chamber is not configured")
 )
 
 type TemperatureControllerConfig struct {
@@ -38,7 +39,7 @@ type DeviceConfig struct {
 type Chamber struct {
 	ID                      string         `json:"id"`
 	Name                    string         `json:"name"`
-	DeviceConfigs           []DeviceConfig `json:"thermometer"`
+	DeviceConfigs           []DeviceConfig `json:"deviceConfigs"`
 	ChillerKp               float64        `json:"chillerKp"`
 	ChillerKi               float64        `json:"chillerKi"`
 	ChillerKd               float64        `json:"chillerKd"`
@@ -55,6 +56,7 @@ type Chamber struct {
 	heater                  device.Actuator
 	temperatureController   device.TemperatureController
 	cancelFunc              context.CancelFunc
+	isConfigured            bool
 	runMutex                *sync.Mutex
 }
 
@@ -103,6 +105,8 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 
 	c.runMutex = &sync.Mutex{}
 
+	c.isConfigured = true
+
 	return nil
 }
 
@@ -127,6 +131,9 @@ func (c *Chamber) assign(d interface{}, roles []string) error {
 }
 
 func (c *Chamber) IsFermenting() bool {
+	if !c.isConfigured {
+		return false
+	}
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
@@ -134,6 +141,10 @@ func (c *Chamber) IsFermenting() bool {
 }
 
 func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
+	if !c.isConfigured {
+		return ErrNotConfigured
+	}
+
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
@@ -163,6 +174,10 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 }
 
 func (c *Chamber) StopFermentation() error {
+	if !c.isConfigured {
+		return ErrNotConfigured
+	}
+
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
