@@ -99,7 +99,7 @@ func run(logger *logrus.Logger) error {
 
 	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, logger)
 	if err != nil {
-		return errors.Wrap(err, "could not create chamber controller")
+		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}
 
 	brewfather := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)

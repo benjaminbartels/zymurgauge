@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	ErrNotFound   = errors.New("chamber not found")
-	ErrFermenting = errors.New("fermentation has started")
+	ErrNotFound      = errors.New("chamber not found")
+	ErrFermenting    = errors.New("fermentation has started")
+	ErrInvalidConfig = errors.New("configuration is invalid")
 )
 
 var _ Controller = (*Manager)(nil)
@@ -47,7 +48,6 @@ func NewManager(ctx context.Context, repo Repo, configurator Configurator,
 
 	for i := range chambers {
 		// TODO: Configure implementation should vary based on arch
-		// TODO: prevent Configure from killing service on start if config is bad
 		if err := chambers[i].Configure(configurator, logger); err != nil {
 			errs = multierror.Append(errs,
 				errors.Wrapf(err, "could not configure temperature controller for chamber %s", chambers[i].Name))
@@ -96,15 +96,15 @@ func (m *Manager) Save(chamber *Chamber) error {
 		return ErrFermenting
 	}
 
+	if err := chamber.Configure(m.configurator, m.logger); err != nil { //
+		return ErrInvalidConfig // TODO: wrap details of error
+	}
+
 	if err := m.repo.Save(chamber); err != nil {
 		return errors.Wrap(err, "could not save chamber to repository")
 	}
 
-	m.chambers[chamber.ID] = chamber // TODO: add unit test for this
-
-	if err := chamber.Configure(m.configurator, m.logger); err != nil {
-		return errors.Wrap(err, "could not configure chamber")
-	}
+	m.chambers[chamber.ID] = chamber
 
 	return nil
 }

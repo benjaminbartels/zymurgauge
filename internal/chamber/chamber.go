@@ -130,8 +130,6 @@ func (c *Chamber) assign(d interface{}, roles []string) error {
 	return nil
 }
 
-// TODO: add unit test to ensure that fermentation can start stopped after being stopped
-
 func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 	if !c.isConfigured {
 		return ErrNotConfigured
