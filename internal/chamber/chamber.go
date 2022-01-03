@@ -2,7 +2,6 @@ package chamber
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -191,16 +190,12 @@ func (c *Chamber) StopFermentation() error {
 }
 
 func (c *Chamber) IsFermenting() bool {
-	fmt.Println("### IsFermenting called")
-	fmt.Println("### !c.isConfigured = ", !c.isConfigured)
 	if !c.isConfigured {
 		return false
 	}
+
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
-
-	fmt.Println("### c.cancelFunc = ", c.cancelFunc)
-	fmt.Println("### c.cancelFunc != nil = ", c.cancelFunc != nil)
 
 	return c.cancelFunc != nil
 }
