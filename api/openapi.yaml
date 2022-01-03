@@ -258,7 +258,7 @@ paths:
                 type: array
                 items:
                   type: string
-              example: [28-0000071cbc72, 28-0000041ab222]
+              example: [28-000006285484, 28-0000041ab222]
         '500':
           description: Internal Server Error
           content:
@@ -304,7 +304,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
           example: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
       responses:
         '200':
@@ -392,7 +391,6 @@ components:
       properties:
         id:
           type: string
-          format: uuid
         name:
           type: string
         modTime:
@@ -414,17 +412,17 @@ components:
         id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
         name: My Fermentation Chamber
         deviceConfigs:
-          - id: 28-0000071cbc72
-          - type: "ds18b20"
-          - roles:
+          - id: 28-000006285484
+            type: "ds18b20"
+            roles:
             - "thermometer"
-          - id: GPIO2
-          - type: "gpio"
-          - roles:
+          - id: GPIO22
+            type: "gpio"
+            roles:
             - "chiller"
-          - id: GPIO3
-          - type: "gpio"
-          - roles:
+          - id: GPIO17
+            type: "gpio"
+            roles:
             - "heater"
         chillerKp: 1.0
         chillerKi: 2.0
@@ -451,23 +449,23 @@ components:
                 stepTime: 30
                 stepTemp: 18.3
         currentFermentationStep: 2
-        modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+        modTime: "2021-10-28T09:54:07.155132Z"
     chambers:
       value:
         - id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
           name: My Fermentation Chamber
           deviceConfigs:
-            - id: 28-0000071cbc72
-            - type: "ds18b20"
-            - roles:
+            - id: 28-000006285484
+              type: "ds18b20"
+              roles:
               - "thermometer"
-            - id: GPIO2
-            - type: "gpio"
-            - roles:
+            - id: GPIO22
+              type: "gpio"
+              roles:
               - "chiller"
-            - id: GPIO3
-            - type: "gpio"
-            - roles:
+            - id: GPIO17
+              type: "gpio"
+              roles:
               - "heater"
           chillerKp: 1.0
           chillerKi: 2.0
@@ -494,22 +492,22 @@ components:
                   stepTime: 30
                   stepTemp: 18.3
           currentFermentationStep: 2
-          modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+          modTime: "2021-10-28T09:54:07.155132Z"
         - id: dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1
           name: My Fermentation Chamber
           deviceConfigs:
             - id: orange
-            - type: "tilt"
-            - roles:
+              type: "tilt"
+              roles:
               - "thermometer"
               - "hydrometer"
-            - id: GPIO2
-            - type: "gpio"
-            - roles:
+            - id: GPIO22
+              type: "gpio"
+              roles:
               - "chiller"
-            - id: GPIO3
-            - type: "gpio"
-            - roles:
+            - id: GPIO17
+              type: "gpio"
+              roles:
               - "heater"
           chillerKp: 1.0
           chillerKi: 2.0
@@ -517,22 +515,22 @@ components:
           heaterKp: 1.2
           heaterKi: 2.3
           heaterKd: 3.4
-          modTime: 2021-10-28 09:54:07.155132 -0600 MDT m=+0.000777430
+          modTime: "2021-10-28T09:54:07.155132Z"
     newChamber:
       value:
         name: My Fermentation Chamber
         deviceConfigs:
-          - id: 28-0000071cbc72
-          - type: "ds18b20"
-          - roles:
+          - id: 28-000006285484
+            type: "ds18b20"
+            roles:
             - "thermometer"
-          - id: GPIO2
-          - type: "gpio"
-          - roles:
+          - id: GPIO22
+            type: "gpio"
+            roles:
             - "chiller"
-          - id: GPIO3
-          - type: "gpio"
-          - roles:
+          - id: GPIO17
+            type: "gpio"
+            roles:
             - "heater"
         chillerKp: 1.0
         chillerKi: 2.0
@@ -545,17 +543,17 @@ components:
         id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
         name: My Fermentation Chamber
         deviceConfigs:
-          - id: 28-0000071cbc72
-          - type: "ds18b20"
-          - roles:
+          - id: 28-000006285484
+            type: "ds18b20"
+            roles:
             - "thermometer"
-          - id: GPIO2
-          - type: "gpio"
-          - roles:
+          - id: GPIO22
+            type: "gpio"
+            roles:
             - "chiller"
-          - id: GPIO3
-          - type: "gpio"
-          - roles:
+          - id: GPIO17
+            type: "gpio"
+            roles:
             - "heater"
         chillerKp: 1.0
         chillerKi: 2.0
