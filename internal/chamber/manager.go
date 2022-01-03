@@ -10,8 +10,7 @@ import (
 )
 
 var (
-	ErrNotFound   = errors.New("chamber not found")
-	ErrFermenting = errors.New("fermentation has started")
+	ErrNotFound = errors.New("chamber not found")
 )
 
 var _ Controller = (*Manager)(nil)
@@ -47,6 +46,7 @@ func NewManager(ctx context.Context, repo Repo, configurator Configurator,
 
 	for i := range chambers {
 		// TODO: Configure implementation should vary based on arch
+		// TODO: prevent Configure from killing service on start if config is bad
 		if err := chambers[i].Configure(configurator, logger); err != nil {
 			errs = multierror.Append(errs,
 				errors.Wrapf(err, "could not configure temperature controller for chamber %s", chambers[i].Name))

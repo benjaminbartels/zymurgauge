@@ -2,6 +2,7 @@ package chamber
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ var (
 	ErrInvalidDeviceRole = errors.New("invalid device role")
 	ErrInvalidStep       = errors.New("invalid step")
 	ErrNoCurrentBatch    = errors.New("chamber does not have a current batch")
+	ErrFermenting        = errors.New("fermentation has already started")
 	ErrNotFermenting     = errors.New("fermentation has not started")
 	ErrNotConfigured     = errors.New("chamber is not configured")
 )
@@ -130,15 +132,7 @@ func (c *Chamber) assign(d interface{}, roles []string) error {
 	return nil
 }
 
-func (c *Chamber) IsFermenting() bool {
-	if !c.isConfigured {
-		return false
-	}
-	c.runMutex.Lock()
-	defer c.runMutex.Unlock()
-
-	return c.cancelFunc != nil
-}
+// TODO: add unit test to ensure that fermentation can start stopped after being stopped
 
 func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 	if !c.isConfigured {
@@ -147,6 +141,10 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
+
+	if c.cancelFunc != nil {
+		return ErrFermenting
+	}
 
 	if c.CurrentBatch == nil {
 		return ErrNoCurrentBatch
@@ -187,5 +185,22 @@ func (c *Chamber) StopFermentation() error {
 
 	c.cancelFunc()
 
+	c.cancelFunc = nil
+
 	return nil
+}
+
+func (c *Chamber) IsFermenting() bool {
+	fmt.Println("### IsFermenting called")
+	fmt.Println("### !c.isConfigured = ", !c.isConfigured)
+	if !c.isConfigured {
+		return false
+	}
+	c.runMutex.Lock()
+	defer c.runMutex.Unlock()
+
+	fmt.Println("### c.cancelFunc = ", c.cancelFunc)
+	fmt.Println("### c.cancelFunc != nil = ", c.cancelFunc != nil)
+
+	return c.cancelFunc != nil
 }
