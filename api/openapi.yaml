@@ -424,12 +424,12 @@ components:
             type: "gpio"
             roles:
             - "heater"
-        chillerKp: 1.0
-        chillerKi: 2.0
-        chillerKd: 3.0
-        heaterKp: 1.2
-        heaterKi: 2.3
-        heaterKd: 3.4
+        chillerKp: -1.0
+        chillerKi: -1.0
+        chillerKd: -1.0
+        heaterKp: 1.0
+        heaterKi: 1.0
+        heaterKd: 1.0
         currentBatch:
           id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
           name: My Pale Ale
@@ -467,12 +467,12 @@ components:
               type: "gpio"
               roles:
               - "heater"
-          chillerKp: 1.0
-          chillerKi: 2.0
-          chillerKd: 3.0
-          heaterKp: 1.2
-          heaterKi: 2.3
-          heaterKd: 3.4
+          chillerKp: -1.0
+          chillerKi: -1.0
+          chillerKd: -1.0
+          heaterKp: 1.0
+          heaterKi: 1.0
+          heaterKd: 1.0
           currentBatch:
             id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
             name: My Pale Ale
@@ -509,12 +509,12 @@ components:
               type: "gpio"
               roles:
               - "heater"
-          chillerKp: 1.0
-          chillerKi: 2.0
-          chillerKd: 3.0
-          heaterKp: 1.2
-          heaterKi: 2.3
-          heaterKd: 3.4
+          chillerKp: -1.0
+          chillerKi: -1.0
+          chillerKd: -1.0
+          heaterKp: 1.0
+          heaterKi: 1.0
+          heaterKd: 1.0
           modTime: "2021-10-28T09:54:07.155132Z"
     newChamber:
       value:
@@ -532,12 +532,12 @@ components:
             type: "gpio"
             roles:
             - "heater"
-        chillerKp: 1.0
-        chillerKi: 2.0
-        chillerKd: 3.0
-        heaterKp: 1.2
-        heaterKi: 2.3
-        heaterKd: 3.4
+        chillerKp: -1.0
+        chillerKi: -1.0
+        chillerKd: -1.0
+        heaterKp: 1.0
+        heaterKi: 1.0
+        heaterKd: 1.0
     updateChamber:
       value:
         id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
@@ -555,12 +555,12 @@ components:
             type: "gpio"
             roles:
             - "heater"
-        chillerKp: 1.0
-        chillerKi: 2.0
-        chillerKd: 3.0
-        heaterKp: 1.2
-        heaterKi: 2.3
-        heaterKd: 3.4
+        chillerKp: -1.0
+        chillerKi: -1.0
+        chillerKd: -1.0
+        heaterKp: 1.0
+        heaterKi: 1.0
+        heaterKd: 1.0
     batch:
       value:
         id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
