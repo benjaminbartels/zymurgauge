@@ -15,14 +15,6 @@ const (
 	tiltID                        = "4c000215a495" // TODO: remove preamble
 	defaultTimeout  time.Duration = 5 * time.Second
 	defaultInterval time.Duration = 1 * time.Second
-	Red             Color         = "Red"
-	Green           Color         = "Green"
-	Black           Color         = "Black"
-	Purple          Color         = "Purple"
-	Orange          Color         = "Orange"
-	Blue            Color         = "Blue"
-	Yellow          Color         = "Yellow"
-	Pink            Color         = "Pink"
 )
 
 var (
