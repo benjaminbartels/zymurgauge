@@ -9,7 +9,7 @@ import (
 )
 
 type DefaultConfigurator struct {
-	TiltMonitor tilt.Monitor
+	TiltMonitor *tilt.Monitor
 }
 
 func (c *DefaultConfigurator) CreateDs18b20(thermometerID string) (device.Thermometer, error) {
@@ -22,12 +22,12 @@ func (c *DefaultConfigurator) CreateDs18b20(thermometerID string) (device.Thermo
 }
 
 func (c *DefaultConfigurator) CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error) {
-	ds18b20, err := c.TiltMonitor.GetTilt(color)
+	tilt, err := c.TiltMonitor.GetTilt(color)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not get %s tilt", color)
 	}
 
-	return ds18b20, nil
+	return tilt, nil
 }
 
 func (c *DefaultConfigurator) CreateGPIOActuator(pin string) (device.Actuator, error) {

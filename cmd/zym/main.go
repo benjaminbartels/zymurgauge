@@ -93,7 +93,7 @@ func run(logger *logrus.Logger) error {
 	}
 
 	configurator := &chamber.DefaultConfigurator{
-		TiltMonitor: *tilt.NewMonitor(bluetooth.NewBLEScanner(), logger),
+		TiltMonitor: monitor,
 	}
 
 	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, logger)

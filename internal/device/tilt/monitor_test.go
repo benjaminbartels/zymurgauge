@@ -151,7 +151,7 @@ func TestGetTiltNotFound(t *testing.T) {
 
 	scannerMock.On("Scan", mock.Anything, mock.Anything, mock.Anything).Return(context.DeadlineExceeded).Run(
 		func(args mock.Arguments) {
-			ti, err := monitor.GetTilt(tilt.Orange)
+			ti, err := monitor.GetTilt("badColor")
 			assert.Nil(t, ti)
 			assert.ErrorIs(t, err, tilt.ErrNotFound)
 

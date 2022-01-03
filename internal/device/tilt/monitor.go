@@ -15,14 +15,6 @@ const (
 	tiltID                        = "4c000215a495" // TODO: remove preamble
 	defaultTimeout  time.Duration = 5 * time.Second
 	defaultInterval time.Duration = 1 * time.Second
-	Red             Color         = "Red"
-	Green           Color         = "Green"
-	Black           Color         = "Black"
-	Purple          Color         = "Purple"
-	Orange          Color         = "Orange"
-	Blue            Color         = "Blue"
-	Yellow          Color         = "Yellow"
-	Pink            Color         = "Pink"
 )
 
 var (
@@ -32,14 +24,14 @@ var (
 
 //nolint:gochecknoglobals
 var colors = map[string]Color{
-	"a495bb10c5b14b44b5121370f02d74de": "Red",
-	"a495bb20c5b14b44b5121370f02d74de": "Green",
-	"a495bb30c5b14b44b5121370f02d74de": "Black",
-	"a495bb40c5b14b44b5121370f02d74de": "Purple",
-	"a495bb50c5b14b44b5121370f02d74de": "Orange",
-	"a495bb60c5b14b44b5121370f02d74de": "Blue",
-	"a495bb70c5b14b44b5121370f02d74de": "Yellow",
-	"a495bb80c5b14b44b5121370f02d74de": "Pink",
+	"a495bb10c5b14b44b5121370f02d74de": "red",
+	"a495bb20c5b14b44b5121370f02d74de": "green",
+	"a495bb30c5b14b44b5121370f02d74de": "black",
+	"a495bb40c5b14b44b5121370f02d74de": "purple",
+	"a495bb50c5b14b44b5121370f02d74de": "orange",
+	"a495bb60c5b14b44b5121370f02d74de": "blue",
+	"a495bb70c5b14b44b5121370f02d74de": "yellow",
+	"a495bb80c5b14b44b5121370f02d74de": "pink",
 }
 
 type Color string
@@ -90,11 +82,12 @@ func SetInterval(interval time.Duration) OptionsFunc {
 }
 
 func (m *Monitor) GetTilt(color Color) (*Tilt, error) { // TODO: check for race?
-	if m.tilts[color].ibeacon == nil {
+	tilt, ok := m.tilts[color]
+	if !ok {
 		return nil, ErrNotFound
 	}
 
-	return m.tilts[color], nil
+	return tilt, nil
 }
 
 func (m *Monitor) Run(ctx context.Context) error {

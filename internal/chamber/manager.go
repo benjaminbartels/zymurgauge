@@ -96,7 +96,9 @@ func (m *Manager) Save(chamber *Chamber) error {
 		return ErrFermenting
 	}
 
-	if err := chamber.Configure(m.configurator, m.logger); err != nil { //
+	if err := chamber.Configure(m.configurator, m.logger); err != nil {
+		m.logger.WithError(err).Error("Could not configure chamber")
+
 		return ErrInvalidConfig // TODO: wrap details of error
 	}
 

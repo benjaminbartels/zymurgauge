@@ -17,6 +17,7 @@ import (
 const (
 	temperature     = 20.0
 	specificGravity = 0.999
+	orange          = "orange"
 )
 
 //nolint: gochecknoglobals
@@ -53,7 +54,7 @@ func TestGetTilt(t *testing.T) {
 
 			monitor.handler(adv)
 
-			ti, err := monitor.GetTilt(Orange)
+			ti, err := monitor.GetTilt(orange)
 			assert.NoError(t, err)
 
 			temp, err := ti.GetTemperature()
@@ -108,7 +109,7 @@ func TestGetTiltIBeaconIsNilError(t *testing.T) {
 			case 2:
 				// on second first call to Scan check to see if orange tilt exists
 				var err error
-				orangeTilt, err = monitor.GetTilt(Orange)
+				orangeTilt, err = monitor.GetTilt(orange)
 				assert.NoError(t, err)
 
 				temp, err := orangeTilt.GetTemperature()
@@ -131,8 +132,8 @@ func TestGetTiltIBeaconIsNilError(t *testing.T) {
 				assert.Equal(t, sg, 0.0)
 
 				// check the GetTilt return not found now
-				orangeTilt, err = monitor.GetTilt(Orange)
-				assert.ErrorIs(t, err, ErrNotFound)
+				orangeTilt, err = monitor.GetTilt(orange)
+				assert.NoError(t, err)
 
 				// after third call to Scan stop monitor
 				stop()

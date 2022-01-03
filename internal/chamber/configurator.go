@@ -12,7 +12,7 @@ import (
 // linux/arm systems.
 
 type DefaultConfigurator struct {
-	TiltMonitor tilt.Monitor
+	TiltMonitor *tilt.Monitor
 }
 
 func (c *DefaultConfigurator) CreateDs18b20(thermometerID string) (device.Thermometer, error) {
