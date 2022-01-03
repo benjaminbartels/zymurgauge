@@ -3,8 +3,8 @@ package gpio
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/pkg/errors"
-	"periph.io/x/periph/conn/gpio"
-	"periph.io/x/periph/conn/gpio/gpioreg"
+	"periph.io/x/conn/v3/gpio"
+	"periph.io/x/conn/v3/gpio/gpioreg"
 )
 
 var _ device.Actuator = (*Actuator)(nil)
