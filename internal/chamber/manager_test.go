@@ -40,7 +40,7 @@ func newManagerGetAllError(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(repoMock, configuratorMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all chambers from"))
 	assert.Nil(t, manager)
 }
@@ -63,7 +63,7 @@ func newManagerConfigureErrors(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(repoMock, configuratorMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
 	assert.Contains(t, err.Error(), "could not configure all temperature controllers")
 	assert.NotNil(t, manager)
 }
@@ -434,7 +434,7 @@ func setupManagerTest(t *testing.T,
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(repoMock, configuratorMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
 	assert.NoError(t, err)
 
 	return manager, repoMock

@@ -17,6 +17,7 @@ var (
 var _ Controller = (*Manager)(nil)
 
 type Manager struct {
+	ctx          context.Context
 	repo         Repo
 	chambers     map[string]*Chamber
 	configurator Configurator
@@ -24,9 +25,10 @@ type Manager struct {
 	mutex        sync.RWMutex
 }
 
-func NewManager(repo Repo, configurator Configurator,
+func NewManager(ctx context.Context, repo Repo, configurator Configurator,
 	logger *logrus.Logger) (*Manager, error) {
 	m := &Manager{
+		ctx:          ctx,
 		repo:         repo,
 		chambers:     make(map[string]*Chamber),
 		configurator: configurator,
@@ -93,11 +95,11 @@ func (m *Manager) Save(chamber *Chamber) error {
 		return ErrFermenting
 	}
 
-	m.chambers[chamber.ID] = chamber
-
 	if err := m.repo.Save(chamber); err != nil {
 		return errors.Wrap(err, "could not save chamber to repository")
 	}
+
+	m.chambers[chamber.ID] = chamber // TODO: add unit test for this
 
 	if err := chamber.Configure(m.configurator, m.logger); err != nil {
 		return errors.Wrap(err, "could not configure chamber")
@@ -132,7 +134,7 @@ func (m *Manager) StartFermentation(ctx context.Context, chamberID string, step 
 		return ErrNotFound
 	}
 
-	err := chamber.StartFermentation(ctx, step)
+	err := chamber.StartFermentation(m.ctx, step)
 	if err != nil {
 		return errors.Wrap(err, "could not start fermentation")
 	}
