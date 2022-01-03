@@ -17,7 +17,6 @@ type Configurator interface {
 	CreateDs18b20(thermometerID string) (device.Thermometer, error)
 	CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error)
 	CreateGPIOActuator(pin string) (device.Actuator, error)
-	CreateTemperatureController(config []DeviceConfig) device.TemperatureController
 }
 
 type Repo interface {
