@@ -203,7 +203,8 @@ func saveChamberConfigureError(t *testing.T) {
 	}
 
 	err = manager.Save(c)
-	assert.ErrorIs(t, err, chamber.ErrInvalidConfig)
+	var cfgErr *chamber.ErrInvalidConfiguration
+	assert.ErrorAs(t, err, &cfgErr)
 }
 
 //nolint: paralleltest // False positives with r.Run not in a loop

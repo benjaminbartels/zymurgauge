@@ -22,6 +22,18 @@ var (
 	ErrNotConfigured     = errors.New("chamber is not configured")
 )
 
+type ErrInvalidConfiguration struct {
+	configErrors []string
+}
+
+func (e ErrInvalidConfiguration) Error() string {
+	return "configuration is invalid"
+}
+
+func (e ErrInvalidConfiguration) Problems() []string {
+	return e.configErrors
+}
+
 type TemperatureControllerConfig struct {
 	Name                      string         `json:"name"`
 	TemperatureControllerType string         `json:"type"`
@@ -68,6 +80,7 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 	var (
 		createdDevice interface{}
 		err           error
+		errs          []error
 	)
 
 	for _, deviceConfig := range c.DeviceConfigs {
@@ -75,27 +88,27 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 		case "ds18b20":
 			createdDevice, err = configurator.CreateDs18b20(deviceConfig.ID)
 			if err != nil {
-				return errors.Wrapf(err, "could not create new Ds18b20 %s", deviceConfig.ID)
+				errs = append(errs, errors.Wrapf(err, "could not create new Ds18b20 %s", deviceConfig.ID))
 			}
 
 		case "tilt":
 			createdDevice, err = configurator.CreateTilt(tilt.Color(deviceConfig.ID))
 			if err != nil {
-				return errors.Wrapf(err, "could not create new %s Tilt", deviceConfig.ID)
+				errs = append(errs, errors.Wrapf(err, "could not create new %s Tilt", deviceConfig.ID))
 			}
 
 		case "gpio":
 			createdDevice, err = configurator.CreateGPIOActuator(deviceConfig.ID)
 			if err != nil {
-				return errors.Wrapf(err, "could not create new GPIO %s", deviceConfig.ID)
+				errs = append(errs, errors.Wrapf(err, "could not create new GPIO %s", deviceConfig.ID))
 			}
 
 		default:
-			return ErrInvalidDeviceType
+			errs = append(errs, errors.Wrapf(err, "invalid device type %s", deviceConfig.Type))
 		}
 
 		if err := c.assign(createdDevice, deviceConfig.Roles); err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
 
@@ -123,7 +136,7 @@ func (c *Chamber) assign(d interface{}, roles []string) error {
 		case "heater":
 			c.heater, _ = d.(device.Actuator)
 		default:
-			return ErrInvalidDeviceRole
+			return errors.Errorf("invalid device role %s", role)
 		}
 	}
 

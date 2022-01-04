@@ -13,7 +13,7 @@ import (
 
 const (
 	tiltID                        = "4c000215a495" // TODO: remove preamble
-	defaultTimeout  time.Duration = 5 * time.Second
+	defaultTimeout  time.Duration = 10 * time.Second
 	defaultInterval time.Duration = 1 * time.Second
 )
 
@@ -130,7 +130,8 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 		}
 
 		for _, color := range colors {
-			if !containsColor(m.availableColors, color) {
+			if !containsColor(m.availableColors, color) && m.tilts[color].ibeacon != nil {
+				m.logger.Debugf("Tilt offline - Color: %s", color)
 				m.tilts[color].ibeacon = nil
 			}
 		}
@@ -160,9 +161,13 @@ func (m *Monitor) handler(adv bluetooth.Advertisement) {
 
 	color := colors[ibeacon.UUID]
 	m.availableColors = append(m.availableColors, color)
+
+	if m.tilts[color].ibeacon == nil {
+		m.logger.Debugf("Tilt Online - Color: %s, UUID: %s, Major: %d, Minor: %d", colors[ibeacon.UUID],
+			ibeacon.UUID, ibeacon.Major, ibeacon.Minor)
+	}
 	m.tilts[color].ibeacon = ibeacon
-	m.logger.Debugf("Discovered Tilt - Color: %s, UUID: %s, Major: %d, Minor: %d\n", colors[ibeacon.UUID],
-		ibeacon.UUID, ibeacon.Major, ibeacon.Minor)
+
 }
 
 func (m *Monitor) filter(adv bluetooth.Advertisement) bool {

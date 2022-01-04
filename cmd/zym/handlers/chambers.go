@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
@@ -62,12 +63,27 @@ func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *ht
 		return errors.Wrap(err, "could not parse chamber")
 	}
 
-	if err := h.ChamberController.Save(&c); err != nil {
-		if errors.Is(err, chamber.ErrInvalidConfig) {
-			return web.NewRequestError("configuration is invalid", http.StatusBadRequest)
-		}
+	// TODO: review and update openapi.yml for new errors
 
-		return errors.Wrap(err, "could not save chamber to controller")
+	if err := h.ChamberController.Save(&c); err != nil {
+		// TODO: better error handling?
+		var cfgError *chamber.ErrInvalidConfiguration
+		switch {
+		case errors.Is(err, cfgError):
+			_ = errors.As(err, cfgError)
+			var b strings.Builder
+			b.WriteString(err.Error())
+			for _, problem := range cfgError.Problems() {
+				b.WriteString(fmt.Sprintf("\n%s", problem))
+			}
+
+			return web.NewRequestError(b.String(), http.StatusBadRequest)
+
+		case errors.Is(err, chamber.ErrFermenting):
+			return web.NewRequestError("fermentation is in progress", http.StatusBadRequest)
+		default:
+			return errors.Wrap(err, "could not save chamber to controller")
+		}
 	}
 
 	if err := web.Respond(ctx, w, c, http.StatusOK); err != nil {
