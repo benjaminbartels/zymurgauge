@@ -5,21 +5,50 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
+	deviceMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/device"
+	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 const (
-	chamberID = "96f58a65-03c0-49f3-83ca-ab751bbf3768"
-
+	chamberID  = "96f58a65-03c0-49f3-83ca-ab751bbf3768"
 	repoErrMsg = "could not %s repository"
 )
+
+func createTestChambers() []*chamber.Chamber {
+	chamber1 := chamber.Chamber{
+		ID: chamberID,
+		CurrentBatch: &batch.Batch{
+			Fermentation: batch.Fermentation{
+				Steps: []batch.FermentationStep{{StepTemp: 22}, {StepTemp: 23}},
+			},
+		},
+		DeviceConfigs: []chamber.DeviceConfig{
+			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"thermometer"}},
+			{ID: "GPIO2", Type: "gpio", Roles: []string{"chiller"}},
+			{ID: "GPIO3", Type: "gpio", Roles: []string{"heater"}},
+		},
+	}
+	chamber2 := chamber.Chamber{
+		ID: "dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1",
+		DeviceConfigs: []chamber.DeviceConfig{
+			{ID: "orange", Type: "tilt", Roles: []string{"thermometer", "hydrometer"}},
+			{ID: "GPIO5", Type: "gpio", Roles: []string{"chiller"}},
+			{ID: "GPIO6", Type: "gpio", Roles: []string{"heater"}},
+		},
+	}
+
+	return []*chamber.Chamber{&chamber1, &chamber2}
+}
 
 //nolint: paralleltest // False positives with r.Run not in a loop
 func TestNewManager(t *testing.T) {
@@ -203,7 +232,9 @@ func saveChamberConfigureError(t *testing.T) {
 	}
 
 	err = manager.Save(c)
-	var cfgErr *chamber.ErrInvalidConfiguration
+
+	var cfgErr *chamber.InvalidConfigurationError
+
 	assert.ErrorAs(t, err, &cfgErr)
 }
 
@@ -266,6 +297,7 @@ func TestStartFermentation(t *testing.T) {
 	t.Run("startFermentationNotFoundError", startFermentationNotFoundError)
 	t.Run("startFermentationNoCurrentBatchError", startFermentationNoCurrentBatchError)
 	t.Run("startFermentationInvalidStepError", startFermentationInvalidStepError)
+	t.Run("startFermentationTemperatureControllerLogError", startFermentationTemperatureControllerLogError)
 }
 
 func startFermentation(t *testing.T) {
@@ -320,6 +352,49 @@ func startFermentationInvalidStepError(t *testing.T) {
 	manager, _ := setupManagerTest(t, testChambers)
 	err := manager.StartFermentation(chamberID, 9)
 	assert.ErrorIs(t, err, chamber.ErrInvalidStep)
+}
+
+func startFermentationTemperatureControllerLogError(t *testing.T) {
+	t.Parallel()
+
+	testChambers := createTestChambers()
+
+	l, hook := logtest.NewNullLogger()
+	repoMock := &mocks.ChamberRepo{}
+	repoMock.On("GetAll").Return(testChambers, nil)
+
+	thermometerMock := &deviceMocks.Thermometer{}
+	thermometerMock.On("GetTemperature").Return(0.0, errors.New("thermometerMock error"))
+
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(thermometerMock, nil)
+
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
+	assert.NoError(t, err)
+
+	doneCh := make(chan struct{}, 1)
+
+	go func() {
+		for {
+			if logContains(hook.AllEntries(), logrus.ErrorLevel, "could not run temperature controller for chamber") {
+				doneCh <- struct{}{}
+
+				return
+			}
+
+			<-time.After(100 * time.Millisecond)
+		}
+	}()
+
+	err = manager.StartFermentation(chamberID, 1)
+	assert.NoError(t, err)
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "log should contain expected value by now")
+	}
 }
 
 //nolint: paralleltest // False positives with r.Run not in a loop
@@ -396,32 +471,6 @@ func assertChambersAreEqual(t *testing.T, c1, c2 *chamber.Chamber) {
 	assert.Equal(t, c1.ModTime, c2.ModTime)
 }
 
-func createTestChambers() []*chamber.Chamber {
-	chamber1 := chamber.Chamber{
-		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}, {StepTemp: 23}},
-			},
-		},
-		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"thermometer"}},
-			{ID: "GPIO2", Type: "gpio", Roles: []string{"chiller"}},
-			{ID: "GPIO3", Type: "gpio", Roles: []string{"heater"}},
-		},
-	}
-	chamber2 := chamber.Chamber{
-		ID: "dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1",
-		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "orange", Type: "tilt", Roles: []string{"thermometer", "hydrometer"}},
-			{ID: "GPIO5", Type: "gpio", Roles: []string{"chiller"}},
-			{ID: "GPIO6", Type: "gpio", Roles: []string{"heater"}},
-		},
-	}
-
-	return []*chamber.Chamber{&chamber1, &chamber2}
-}
-
 func setupManagerTest(t *testing.T,
 	chambers []*chamber.Chamber) (*chamber.Manager, *mocks.ChamberRepo) {
 	t.Helper()
@@ -439,4 +488,16 @@ func setupManagerTest(t *testing.T,
 	assert.NoError(t, err)
 
 	return manager, repoMock
+}
+
+func logContains(logs []*logrus.Entry, level logrus.Level, substr string) bool {
+	found := false
+
+	for _, v := range logs {
+		if strings.Contains(v.Message, substr) && v.Level == level {
+			found = true
+		}
+	}
+
+	return found
 }

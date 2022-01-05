@@ -21,7 +21,7 @@ type Status struct {
 
 type ChambersHandler struct {
 	ChamberController chamber.Controller
-	Logger            *logrus.Logger // TODO: use log entry logger
+	Logger            *logrus.Logger // TODO: use logrus.Entry
 }
 
 func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
@@ -63,21 +63,21 @@ func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *ht
 		return errors.Wrap(err, "could not parse chamber")
 	}
 
-	// TODO: review and update openapi.yml for new errors
-
 	if err := h.ChamberController.Save(&c); err != nil {
 		// TODO: better error handling?
-		var cfgError *chamber.ErrInvalidConfiguration
+		var cfgError *chamber.InvalidConfigurationError
+
 		switch {
-		case errors.Is(err, cfgError):
-			_ = errors.As(err, cfgError)
+		case errors.As(err, &cfgError):
 			var b strings.Builder
-			b.WriteString(err.Error())
+
+			b.WriteString(fmt.Sprintf("%s: ", cfgError.Error()))
+
 			for _, problem := range cfgError.Problems() {
-				b.WriteString(fmt.Sprintf("\n%s", problem))
+				b.WriteString(fmt.Sprintf("%s, ", problem))
 			}
 
-			return web.NewRequestError(b.String(), http.StatusBadRequest)
+			return web.NewRequestError(strings.TrimSuffix(b.String(), ", "), http.StatusBadRequest)
 
 		case errors.Is(err, chamber.ErrFermenting):
 			return web.NewRequestError("fermentation is in progress", http.StatusBadRequest)
@@ -98,11 +98,14 @@ func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *
 	id := p.ByName("id")
 
 	if err := h.ChamberController.Delete(id); err != nil {
-		if errors.Is(err, chamber.ErrNotFound) {
+		switch {
+		case errors.Is(err, chamber.ErrNotFound):
 			return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
+		case errors.Is(err, chamber.ErrFermenting):
+			return web.NewRequestError("fermentation is in progress", http.StatusBadRequest)
+		default:
+			return errors.Wrapf(err, "could not delete chamber %s from controller", id)
 		}
-
-		return errors.Wrapf(err, "could not delete chamber %s from controller", id)
 	}
 
 	if err := web.Respond(ctx, w, &Status{Message: "Success"}, http.StatusOK); err != nil {

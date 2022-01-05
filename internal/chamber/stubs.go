@@ -1,12 +1,19 @@
 package chamber
 
 import (
+	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 )
 
 const (
 	stubTemperature     = 25
 	stubSpecificGravity = 0.950
+)
+
+var (
+	_ device.Thermometer              = (*StubThermometer)(nil)
+	_ device.Actuator                 = (*StubGPIOActuator)(nil)
+	_ device.ThermometerAndHydrometer = (*StubTilt)(nil)
 )
 
 type StubThermometer struct {

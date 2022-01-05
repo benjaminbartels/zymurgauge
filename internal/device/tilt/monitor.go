@@ -17,23 +17,6 @@ const (
 	defaultInterval time.Duration = 1 * time.Second
 )
 
-var (
-	ErrAlreadyRunning = errors.New("monitor is already running")
-	ErrNotFound       = errors.New("tilt not found")
-)
-
-//nolint:gochecknoglobals
-var colors = map[string]Color{
-	"a495bb10c5b14b44b5121370f02d74de": "red",
-	"a495bb20c5b14b44b5121370f02d74de": "green",
-	"a495bb30c5b14b44b5121370f02d74de": "black",
-	"a495bb40c5b14b44b5121370f02d74de": "purple",
-	"a495bb50c5b14b44b5121370f02d74de": "orange",
-	"a495bb60c5b14b44b5121370f02d74de": "blue",
-	"a495bb70c5b14b44b5121370f02d74de": "yellow",
-	"a495bb80c5b14b44b5121370f02d74de": "pink",
-}
-
 type Color string
 
 type Monitor struct {
@@ -45,6 +28,7 @@ type Monitor struct {
 	tilts           map[Color]*Tilt
 	isRunning       bool
 	runMutex        sync.Mutex
+	colors          map[string]Color
 }
 
 func NewMonitor(scanner bluetooth.Scanner, logger *logrus.Logger, options ...OptionsFunc) *Monitor {
@@ -54,13 +38,23 @@ func NewMonitor(scanner bluetooth.Scanner, logger *logrus.Logger, options ...Opt
 		interval: defaultInterval,
 		tilts:    make(map[Color]*Tilt),
 		logger:   logger,
+		colors: map[string]Color{
+			"a495bb10c5b14b44b5121370f02d74de": "red",
+			"a495bb20c5b14b44b5121370f02d74de": "green",
+			"a495bb30c5b14b44b5121370f02d74de": "black",
+			"a495bb40c5b14b44b5121370f02d74de": "purple",
+			"a495bb50c5b14b44b5121370f02d74de": "orange",
+			"a495bb60c5b14b44b5121370f02d74de": "blue",
+			"a495bb70c5b14b44b5121370f02d74de": "yellow",
+			"a495bb80c5b14b44b5121370f02d74de": "pink",
+		},
 	}
 
 	for _, option := range options {
 		option(m)
 	}
 
-	for _, color := range colors {
+	for _, color := range m.colors {
 		m.tilts[color] = &Tilt{}
 	}
 
@@ -129,26 +123,34 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 			}
 		}
 
-		for _, color := range colors {
+		for _, color := range m.colors {
 			if !containsColor(m.availableColors, color) && m.tilts[color].ibeacon != nil {
 				m.logger.Debugf("Tilt offline - Color: %s", color)
 				m.tilts[color].ibeacon = nil
 			}
 		}
 
-		timer := time.NewTimer(m.interval)
-		defer timer.Stop()
-
-		select {
-		case <-timer.C:
-		case <-ctx.Done():
-			m.runMutex.Lock()
-			defer m.runMutex.Unlock()
-			m.isRunning = false
-
-			return nil // TODO: should this return ctx.Err()
+		if m.wait(ctx) {
+			return nil
 		}
 	}
+}
+
+func (m *Monitor) wait(ctx context.Context) bool {
+	timer := time.NewTimer(m.interval)
+	defer timer.Stop()
+
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
+		m.runMutex.Lock()
+		defer m.runMutex.Unlock()
+		m.isRunning = false
+
+		return true
+	}
+
+	return false
 }
 
 func (m *Monitor) handler(adv bluetooth.Advertisement) {
@@ -159,15 +161,15 @@ func (m *Monitor) handler(adv bluetooth.Advertisement) {
 		return
 	}
 
-	color := colors[ibeacon.UUID]
+	color := m.colors[ibeacon.UUID]
 	m.availableColors = append(m.availableColors, color)
 
 	if m.tilts[color].ibeacon == nil {
-		m.logger.Debugf("Tilt Online - Color: %s, UUID: %s, Major: %d, Minor: %d", colors[ibeacon.UUID],
+		m.logger.Debugf("Tilt Online - Color: %s, UUID: %s, Major: %d, Minor: %d", m.colors[ibeacon.UUID],
 			ibeacon.UUID, ibeacon.Major, ibeacon.Minor)
 	}
-	m.tilts[color].ibeacon = ibeacon
 
+	m.tilts[color].ibeacon = ibeacon
 }
 
 func (m *Monitor) filter(adv bluetooth.Advertisement) bool {

@@ -20,15 +20,17 @@ const (
 	orange          = "orange"
 )
 
-//nolint: gochecknoglobals
-var (
-	orangeManufacurerData = []byte{
+func getOrangeTiltManufacurerData() []byte {
+	return []byte{
 		76, 0, 2, 21, 164, 149, 187, 80, 197, 177, 75, 68, 181, 18, 19, 112, 240, 45, 116, 222, 0, 68, 3, 231, 197,
 	}
-	invalidManufacurerData = []byte{
+}
+
+func getInvalidTiltManufacurerData() []byte {
+	return []byte{
 		76, 0, 2, 21, 164, 149, 187,
 	}
-)
+}
 
 func TestGetTilt(t *testing.T) {
 	t.Parallel()
@@ -47,7 +49,7 @@ func TestGetTilt(t *testing.T) {
 	scannerMock.On("Scan", mock.Anything, mock.Anything, mock.Anything).Return(context.DeadlineExceeded).Run(
 		func(args mock.Arguments) {
 			adv := &mocks.Advertisement{}
-			adv.Mock.On("ManufacturerData").Return(orangeManufacurerData)
+			adv.Mock.On("ManufacturerData").Return(getOrangeTiltManufacurerData)
 
 			isTilt := monitor.filter(adv)
 			assert.True(t, isTilt, "expected manufacurerData to represent a tilt")
@@ -100,7 +102,7 @@ func TestGetTiltIBeaconIsNilError(t *testing.T) {
 			case 1:
 				// on first call to Scan add orange tilt to monitor.tilts and monitor.availableColors
 				adv := &mocks.Advertisement{}
-				adv.Mock.On("ManufacturerData").Return(orangeManufacurerData)
+				adv.Mock.On("ManufacturerData").Return(getOrangeTiltManufacurerData)
 
 				isTilt := monitor.filter(adv)
 				assert.True(t, isTilt, "expected manufacurerData to represent a tilt")
@@ -161,7 +163,7 @@ func TestHandlerInvalidManufacturerDataLengthError(t *testing.T) {
 	scannerMock.On("Scan", mock.Anything, mock.Anything, mock.Anything).Return(context.DeadlineExceeded).Run(
 		func(args mock.Arguments) {
 			adv := &mocks.Advertisement{}
-			adv.Mock.On("ManufacturerData").Return(invalidManufacurerData)
+			adv.Mock.On("ManufacturerData").Return(getInvalidTiltManufacurerData)
 
 			monitor.handler(adv)
 

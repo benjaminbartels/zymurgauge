@@ -21,9 +21,14 @@ const (
 	defaultChillingMinimum     time.Duration = 10 * time.Minute
 	defaultHeatingMinimum      time.Duration = 10 * time.Second
 	dutyCycleMultiplyer                      = 100
+	ErrAlreadyRunning                        = Error("pid is already running")
 )
 
-var ErrAlreadyRunning = errors.New("pid is already running")
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
 
 type TemperatureController struct {
 	thermometer         device.Thermometer

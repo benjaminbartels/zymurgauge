@@ -13,38 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	ErrInvalidDeviceType = errors.New("invalid device type")
-	ErrInvalidDeviceRole = errors.New("invalid device role")
-	ErrInvalidStep       = errors.New("invalid step")
-	ErrNoCurrentBatch    = errors.New("chamber does not have a current batch")
-	ErrNotFermenting     = errors.New("fermentation has not started")
-	ErrNotConfigured     = errors.New("chamber is not configured")
-)
-
-type ErrInvalidConfiguration struct {
-	configErrors []string
-}
-
-func (e ErrInvalidConfiguration) Error() string {
-	return "configuration is invalid"
-}
-
-func (e ErrInvalidConfiguration) Problems() []string {
-	return e.configErrors
-}
-
-type TemperatureControllerConfig struct {
-	Name                      string         `json:"name"`
-	TemperatureControllerType string         `json:"type"`
-	DeviceConfigs             []DeviceConfig `json:"deviceConfigs"`
-}
-
-type DeviceConfig struct {
-	ID    string   `json:"id"`
-	Type  string   `json:"type"`
-	Roles []string `json:"roles"`
-}
+// TODO: NEXT Send updates tp brew father
 
 // Chamber represents an insulated box (fridge) with internal heating/cooling elements that reacts to changes in
 // monitored temperatures, by correcting small deviations from your desired fermentation temperature.
@@ -68,8 +37,13 @@ type Chamber struct {
 	heater                  device.Actuator
 	temperatureController   device.TemperatureController
 	cancelFunc              context.CancelFunc
-	isConfigured            bool
 	runMutex                *sync.Mutex
+}
+
+type DeviceConfig struct {
+	ID    string   `json:"id"`
+	Type  string   `json:"type"`
+	Roles []string `json:"roles"`
 }
 
 // TODO: refactor to use generics in the future.
@@ -77,37 +51,10 @@ type Chamber struct {
 func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) error {
 	c.logger = logger
 
-	var (
-		createdDevice interface{}
-		err           error
-		errs          []error
-	)
+	var errs []error
 
 	for _, deviceConfig := range c.DeviceConfigs {
-		switch deviceConfig.Type {
-		case "ds18b20":
-			createdDevice, err = configurator.CreateDs18b20(deviceConfig.ID)
-			if err != nil {
-				errs = append(errs, errors.Wrapf(err, "could not create new Ds18b20 %s", deviceConfig.ID))
-			}
-
-		case "tilt":
-			createdDevice, err = configurator.CreateTilt(tilt.Color(deviceConfig.ID))
-			if err != nil {
-				errs = append(errs, errors.Wrapf(err, "could not create new %s Tilt", deviceConfig.ID))
-			}
-
-		case "gpio":
-			createdDevice, err = configurator.CreateGPIOActuator(deviceConfig.ID)
-			if err != nil {
-				errs = append(errs, errors.Wrapf(err, "could not create new GPIO %s", deviceConfig.ID))
-			}
-
-		default:
-			errs = append(errs, errors.Wrapf(err, "invalid device type %s", deviceConfig.Type))
-		}
-
-		if err := c.assign(createdDevice, deviceConfig.Roles); err != nil {
+		if err := c.configureDevice(configurator, deviceConfig); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -118,12 +65,44 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 
 	c.runMutex = &sync.Mutex{}
 
-	c.isConfigured = true
+	if errs != nil {
+		return &InvalidConfigurationError{configErrors: errs}
+	}
 
 	return nil
 }
 
-func (c *Chamber) assign(d interface{}, roles []string) error {
+func (c *Chamber) configureDevice(configurator Configurator, deviceConfig DeviceConfig) error {
+	var (
+		createdDevice interface{}
+		err           error
+	)
+
+	switch deviceConfig.Type {
+	case "ds18b20":
+		if createdDevice, err = configurator.CreateDs18b20(deviceConfig.ID); err != nil {
+			return errors.Wrapf(err, "could not create new Ds18b20 %s", deviceConfig.ID)
+		}
+	case "tilt":
+		if createdDevice, err = configurator.CreateTilt(tilt.Color(deviceConfig.ID)); err != nil {
+			return errors.Wrapf(err, "could not create new %s Tilt", deviceConfig.ID)
+		}
+	case "gpio":
+		if createdDevice, err = configurator.CreateGPIOActuator(deviceConfig.ID); err != nil {
+			return errors.Wrapf(err, "could not create new GPIO %s", deviceConfig.ID)
+		}
+	default:
+		return errors.Errorf("invalid device type '%s'", deviceConfig.Type)
+	}
+
+	if err := c.assignDevice(createdDevice, deviceConfig.Roles); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Chamber) assignDevice(d interface{}, roles []string) error {
 	// type assertions will not fail
 	for _, role := range roles {
 		switch role {
@@ -136,7 +115,7 @@ func (c *Chamber) assign(d interface{}, roles []string) error {
 		case "heater":
 			c.heater, _ = d.(device.Actuator)
 		default:
-			return errors.Errorf("invalid device role %s", role)
+			return errors.Errorf("invalid device role '%s'", role)
 		}
 	}
 
@@ -144,10 +123,6 @@ func (c *Chamber) assign(d interface{}, roles []string) error {
 }
 
 func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
-	if !c.isConfigured {
-		return ErrNotConfigured
-	}
-
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
@@ -177,10 +152,6 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 }
 
 func (c *Chamber) StopFermentation() error {
-	if !c.isConfigured {
-		return ErrNotConfigured
-	}
-
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
@@ -196,10 +167,6 @@ func (c *Chamber) StopFermentation() error {
 }
 
 func (c *Chamber) IsFermenting() bool {
-	if !c.isConfigured {
-		return false
-	}
-
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
