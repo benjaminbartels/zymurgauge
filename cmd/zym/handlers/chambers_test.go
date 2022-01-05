@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
@@ -43,9 +43,11 @@ func getTestChamber() chamber.Chamber {
 				Roles: []string{"heater"},
 			},
 		},
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}},
+		CurrentBatch: &brewfather.Batch{
+			Recipe: brewfather.Recipe{
+				Fermentation: brewfather.Fermentation{
+					Steps: []brewfather.FermentationStep{{StepTemp: 22}},
+				},
 			},
 		},
 	}

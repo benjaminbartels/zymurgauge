@@ -59,7 +59,7 @@ func configureDs18b20Error(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(nil, errors.New("repoMock error"))
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(nil, errors.New("configuratorMock error"))
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
@@ -80,7 +80,7 @@ func configureTiltError(t *testing.T) {
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
-	configuratorMock.On("CreateTilt", mock.Anything).Return(nil, errors.New("repoMock error"))
+	configuratorMock.On("CreateTilt", mock.Anything).Return(nil, errors.New("configuratorMock error"))
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
 	c := createTestChambers()
@@ -101,8 +101,8 @@ func configureGPIOError(t *testing.T) {
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
-	configuratorMock.On("CreateGPIOActuator", gpio2).Return(nil, errors.New("repoMock error"))
-	configuratorMock.On("CreateGPIOActuator", gpio3).Return(nil, errors.New("repoMock error"))
+	configuratorMock.On("CreateGPIOActuator", gpio2).Return(nil, errors.New("configuratorMock error"))
+	configuratorMock.On("CreateGPIOActuator", gpio3).Return(nil, errors.New("configuratorMock error"))
 
 	c := createTestChambers()
 

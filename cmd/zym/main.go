@@ -37,6 +37,7 @@ type config struct {
 	ShutdownTimeout     time.Duration `default:"20s"`
 	BrewfatherAPIUserID string        `required:"true"`
 	BrewfatherAPIKey    string        `required:"true"`
+	BrewfatherTiltURL   string        `required:"false"`
 	BleScannerTimeout   time.Duration
 	Debug               bool `default:"false"`
 }
@@ -101,7 +102,12 @@ func run(logger *logrus.Logger) error {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}
 
-	brewfather := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
+	var opts []brewfather.OptionsFunc
+	if cfg.BrewfatherTiltURL != "" {
+		opts = append(opts, brewfather.SetTiltURL(cfg.BrewfatherTiltURL))
+	}
+
+	brewfather := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey, opts...)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)

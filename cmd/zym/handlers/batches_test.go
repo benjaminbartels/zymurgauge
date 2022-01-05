@@ -9,10 +9,9 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
+	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/brewfather"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +21,7 @@ func TestGetAllBatches(t *testing.T) {
 	t.Parallel()
 	t.Run("getAllBatches", getAllBatches)
 	t.Run("getAllBatchesEmpty", getAllBatchesEmpty)
-	t.Run("getAllBatchRepoError", getAllBatchRepoError)
+	t.Run("getAllServiceError", getAllServiceError)
 	t.Run("getAllBatchesRespondError", getAllBatchesRespondError)
 }
 
@@ -31,14 +30,14 @@ func getAllBatches(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	expected := []batch.Batch{
+	expected := []brewfather.Batch{
 		{ID: batchID},
 		{ID: "f4ce0e05-1ada-42b8-8fc4-fb3482525d0d"},
 	}
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetAll", ctx).Return(expected, nil)
+	serviceMock := &mocks.Service{}
+	serviceMock.On("GetAll", ctx).Return(expected, nil)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -46,7 +45,7 @@ func getAllBatches(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := []batch.Batch{}
+	result := []brewfather.Batch{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
@@ -57,11 +56,11 @@ func getAllBatchesEmpty(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	expected := []batch.Batch{}
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetAll", ctx).Return(expected, nil)
+	expected := []brewfather.Batch{}
+	serviceMock := &mocks.Service{}
+	serviceMock.On("GetAll", ctx).Return(expected, nil)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
@@ -69,21 +68,21 @@ func getAllBatchesEmpty(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := []batch.Batch{}
+	result := []brewfather.Batch{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
-func getAllBatchRepoError(t *testing.T) {
+func getAllServiceError(t *testing.T) {
 	t.Parallel()
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetAll", ctx).Return([]batch.Batch{}, errSomeError)
+	serviceMock := &mocks.Service{}
+	serviceMock.On("GetAll", ctx).Return([]brewfather.Batch{}, errSomeError)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	// TODO: Waiting on PR for ErrorContains(): https://github.com/stretchr/testify/pull/1022
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all batches from"))
@@ -95,10 +94,10 @@ func getAllBatchesRespondError(t *testing.T) {
 	w, r, _ := setupHandlerTest("", nil)
 	ctx := context.Background()
 
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("GetAll", ctx).Return([]batch.Batch{}, nil)
+	serviceMock := &mocks.Service{}
+	serviceMock.On("GetAll", ctx).Return([]brewfather.Batch{}, nil)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	// use new ctx to force error
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), respondErrMsg)
@@ -110,7 +109,7 @@ func TestGetBatch(t *testing.T) {
 	t.Run("getBatchFound", getBatchFound)
 	t.Run("getBatchNotFoundError", getBatchNotFoundError)
 	t.Run("getBatchIsNil", getBatchIsNil)
-	t.Run("getBatchRepoError", getBatchRepoError)
+	t.Run("getServiceError", getServiceError)
 	t.Run("getBatchRespondError", getBatchRespondError)
 }
 
@@ -119,11 +118,11 @@ func getBatchFound(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	expected := batch.Batch{ID: batchID}
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("Get", ctx, batchID).Return(&expected, nil)
+	expected := brewfather.Batch{ID: batchID}
+	serviceMock := &mocks.Service{}
+	serviceMock.On("Get", ctx, batchID).Return(&expected, nil)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.NoError(t, err)
 
@@ -131,7 +130,7 @@ func getBatchFound(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	batch := batch.Batch{}
+	batch := brewfather.Batch{}
 	err = json.Unmarshal(bodyBytes, &batch)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, batch)
@@ -142,12 +141,12 @@ func getBatchNotFoundError(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	var expected *batch.Batch
+	var expected *brewfather.Batch
 
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("Get", ctx, batchID).Return(expected, brewfather.ErrNotFound)
+	serviceMock := &mocks.Service{}
+	serviceMock.On("Get", ctx, batchID).Return(expected, brewfather.ErrNotFound)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "batch", batchID))
 
@@ -162,10 +161,10 @@ func getBatchIsNil(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("Get", ctx, batchID).Return(nil, nil)
+	serviceMock := &mocks.Service{}
+	serviceMock.On("Get", ctx, batchID).Return(nil, nil)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(notFoundErrorMsg, "batch", batchID))
 
@@ -175,17 +174,17 @@ func getBatchIsNil(t *testing.T) {
 	assert.Equal(t, reqErr.Status, http.StatusNotFound)
 }
 
-func getBatchRepoError(t *testing.T) {
+func getServiceError(t *testing.T) {
 	t.Parallel()
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	var expected *batch.Batch
+	var expected *brewfather.Batch
 
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("Get", ctx, batchID).Return(expected, errSomeError)
+	serviceMock := &mocks.Service{}
+	serviceMock.On("Get", ctx, batchID).Return(expected, errSomeError)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get batch from"))
 }
@@ -196,11 +195,11 @@ func getBatchRespondError(t *testing.T) {
 	w, r, _ := setupHandlerTest("", nil)
 	ctx := context.Background()
 
-	expected := batch.Batch{ID: batchID}
-	repoMock := &mocks.BatchRepo{}
-	repoMock.On("Get", ctx, batchID).Return(&expected, nil)
+	expected := brewfather.Batch{ID: batchID}
+	serviceMock := &mocks.Service{}
+	serviceMock.On("Get", ctx, batchID).Return(&expected, nil)
 
-	handler := &handlers.BatchesHandler{BatchRepo: repoMock}
+	handler := &handlers.BatchesHandler{Service: serviceMock}
 	// use new ctx to force error
 	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: batchID}})
 	assert.Contains(t, err.Error(), respondErrMsg)

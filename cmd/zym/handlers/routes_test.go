@@ -10,8 +10,9 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
+	brewfatherMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/brewfather"
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -68,9 +69,11 @@ func TestRoutes(t *testing.T) {
 					Roles: []string{"heater"},
 				},
 			},
-			CurrentBatch: &batch.Batch{
-				Fermentation: batch.Fermentation{
-					Steps: []batch.FermentationStep{{StepTemp: 22}},
+			CurrentBatch: &brewfather.Batch{
+				Recipe: brewfather.Recipe{
+					Fermentation: brewfather.Fermentation{
+						Steps: []brewfather.FermentationStep{{StepTemp: 22}},
+					},
 				},
 			},
 		}
@@ -83,7 +86,7 @@ func TestRoutes(t *testing.T) {
 		err := c.Configure(configuratorMock, l)
 		assert.NoError(t, err)
 
-		r := batch.Batch{ID: batchID}
+		r := brewfather.Batch{ID: batchID}
 
 		chambers := []*chamber.Chamber{c}
 
@@ -95,14 +98,14 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("StartFermentation", chamberID, 1).Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
-		recipeMock := &mocks.BatchRepo{}
-		recipeMock.On("GetAll", mock.Anything).Return([]batch.Batch{}, nil)
-		recipeMock.On("Get", mock.Anything, batchID).Return(&r, nil)
+		serviceMock := &brewfatherMocks.Service{}
+		serviceMock.On("GetAll", mock.Anything).Return([]brewfather.Batch{}, nil)
+		serviceMock.On("Get", mock.Anything, batchID).Return(&r, nil)
 
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
-		app := handlers.NewAPI(controllerMock, devicePath, recipeMock, shutdown, logger)
+		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()

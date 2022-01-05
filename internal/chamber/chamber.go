@@ -2,10 +2,11 @@ package chamber
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
@@ -18,24 +19,27 @@ import (
 // Chamber represents an insulated box (fridge) with internal heating/cooling elements that reacts to changes in
 // monitored temperatures, by correcting small deviations from your desired fermentation temperature.
 type Chamber struct {
-	ID                      string         `json:"id"`
-	Name                    string         `json:"name"`
-	DeviceConfigs           []DeviceConfig `json:"deviceConfigs"`
-	ChillerKp               float64        `json:"chillerKp"`
-	ChillerKi               float64        `json:"chillerKi"`
-	ChillerKd               float64        `json:"chillerKd"`
-	HeaterKp                float64        `json:"heaterKp"`
-	HeaterKi                float64        `json:"heaterKi"`
-	HeaterKd                float64        `json:"heaterKd"`
-	CurrentBatch            *batch.Batch   `json:"currentBatch,omitempty"`
-	CurrentFermentationStep int            `json:"currentFermentationStep"`
-	ModTime                 time.Time      `json:"modTime"`
+	ID                      string            `json:"id"`
+	Name                    string            `json:"name"`
+	DeviceConfigs           []DeviceConfig    `json:"deviceConfigs"`
+	ChillerKp               float64           `json:"chillerKp"`
+	ChillerKi               float64           `json:"chillerKi"`
+	ChillerKd               float64           `json:"chillerKd"`
+	HeaterKp                float64           `json:"heaterKp"`
+	HeaterKi                float64           `json:"heaterKi"`
+	HeaterKd                float64           `json:"heaterKd"`
+	CurrentBatch            *brewfather.Batch `json:"currentBatch,omitempty"`
+	CurrentFermentationStep int               `json:"currentFermentationStep"`
+	ModTime                 time.Time         `json:"modTime"`
 	logger                  *logrus.Logger
 	thermometer             device.Thermometer
 	hydrometer              device.Hydrometer
 	chiller                 device.Actuator
 	heater                  device.Actuator
 	temperatureController   device.TemperatureController
+	service                 brewfather.Service
+	statusCh                chan pid.Status
+	hasTilt                 bool
 	cancelFunc              context.CancelFunc
 	runMutex                *sync.Mutex
 }
@@ -59,9 +63,11 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 		}
 	}
 
+	c.statusCh = make(chan pid.Status, 1)
+
 	c.temperatureController = pid.NewPIDTemperatureController(
 		c.thermometer, c.chiller, c.heater, c.ChillerKp, c.ChillerKi, c.ChillerKd,
-		c.HeaterKp, c.HeaterKi, c.HeaterKd, logger)
+		c.HeaterKp, c.HeaterKi, c.HeaterKd, logger, pid.SetStatusChannel(c.statusCh))
 
 	c.runMutex = &sync.Mutex{}
 
@@ -84,6 +90,8 @@ func (c *Chamber) configureDevice(configurator Configurator, deviceConfig Device
 			return errors.Wrapf(err, "could not create new Ds18b20 %s", deviceConfig.ID)
 		}
 	case "tilt":
+		c.hasTilt = true
+
 		if createdDevice, err = configurator.CreateTilt(tilt.Color(deviceConfig.ID)); err != nil {
 			return errors.Wrapf(err, "could not create new %s Tilt", deviceConfig.ID)
 		}
@@ -130,7 +138,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 		return ErrNoCurrentBatch
 	}
 
-	if step <= 0 || step > len(c.CurrentBatch.Fermentation.Steps) {
+	if step <= 0 || step > len(c.CurrentBatch.Recipe.Fermentation.Steps) {
 		return ErrInvalidStep
 	}
 
@@ -138,9 +146,13 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 		c.cancelFunc()
 	}
 
-	temp := c.CurrentBatch.Fermentation.Steps[step-1].StepTemp
+	temp := c.CurrentBatch.Recipe.Fermentation.Steps[step-1].StepTemp
 	ctx, cancelFunc := context.WithCancel(ctx)
 	c.cancelFunc = cancelFunc
+
+	if c.hasTilt {
+		go c.monitorStatus(ctx)
+	}
 
 	go func() {
 		if err := c.temperatureController.Run(ctx, temp); err != nil {
@@ -149,6 +161,38 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 	}()
 
 	return nil
+}
+
+func (c *Chamber) monitorStatus(ctx context.Context) {
+	for {
+		select {
+		case status := <-c.statusCh:
+			temperature, err := c.thermometer.GetTemperature()
+			if err != nil {
+				c.logger.WithError(err).Error("could not read temperature")
+			}
+
+			specificGravity, err := c.hydrometer.GetSpecificGravity()
+			if err != nil {
+				c.logger.WithError(err).Error("could not get specific gravity")
+			}
+
+			log := brewfather.TiltLogEntry{
+				// Timepoint:       "43341.33025564816", TODO: is this needed?
+				Temperature:     fmt.Sprintf("%f", temperature),
+				SpecificGravity: fmt.Sprintf("%f", specificGravity),
+				Beer:            c.CurrentBatch.Name,
+				Comment:         fmt.Sprintf("%s, On = %t", status.Device, status.IsOn),
+			}
+
+			if err := c.service.LogTilt(ctx, log); err != nil {
+				c.logger.WithError(err).Error("could log tilt data")
+			}
+
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func (c *Chamber) StopFermentation() error {

@@ -13,6 +13,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+var _ device.TemperatureController = (*TemperatureController)(nil)
+
 const (
 	pidMin                     float64       = 0
 	pidMax                     float64       = 100
@@ -40,6 +42,7 @@ type TemperatureController struct {
 	heaterKp            float64
 	heaterKi            float64
 	heaterKd            float64
+	statusCh            chan Status
 	chillingCyclePeriod time.Duration
 	heatingCyclePeriod  time.Duration
 	chillingMinimum     time.Duration
@@ -48,6 +51,11 @@ type TemperatureController struct {
 	logger              *logrus.Logger
 	isRunning           bool
 	runMutex            sync.Mutex
+}
+
+type Status struct {
+	Device string
+	IsOn   bool
 }
 
 func NewPIDTemperatureController(thermometer device.Thermometer, chiller, heater device.Actuator,
@@ -61,13 +69,13 @@ func NewPIDTemperatureController(thermometer device.Thermometer, chiller, heater
 		heaterKp:            heaterKp,
 		heaterKi:            heaterKi,
 		heaterKd:            heaterKd,
-		chiller:             chiller,
 		chillingCyclePeriod: defaultChillingCyclePeriod,
 		heatingCyclePeriod:  defaultHeatingCyclePeriod,
 		chillingMinimum:     defaultChillingMinimum,
 		heatingMinimum:      defaultHeatingMinimum,
-		clock:               clock.NewRealClock(),
+		chiller:             chiller,
 		heater:              heater,
+		clock:               clock.NewRealClock(),
 		logger:              logger,
 	}
 
@@ -79,6 +87,12 @@ func NewPIDTemperatureController(thermometer device.Thermometer, chiller, heater
 }
 
 type OptionsFunc func(*TemperatureController)
+
+func SetStatusChannel(ch chan Status) OptionsFunc {
+	return func(t *TemperatureController) {
+		t.statusCh = ch
+	}
+}
 
 func SetClock(clock clock.Clock) OptionsFunc {
 	return func(t *TemperatureController) {
@@ -116,6 +130,7 @@ func SetHeatingMinimum(min time.Duration) OptionsFunc {
 	}
 }
 
+// TODO: this might should not return an error, just log.
 func (t *TemperatureController) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController,
 	actuator device.Actuator, period, minimum time.Duration) error {
 	lastUpdateTime := t.clock.Now()
@@ -154,6 +169,8 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 				return errors.Wrapf(err, "could not turn %s actuator on", name)
 			}
 
+			t.sendStatus(name, true)
+
 			t.logger.Debugf("Actuator %s acting for %v", name, dutyTime)
 
 			if didComplete := t.wait(ctx, dutyTime); !didComplete {
@@ -168,6 +185,8 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 				return errors.Wrap(err, "could not turn actuator off")
 			}
 
+			t.sendStatus(name, false)
+
 			t.logger.Debugf("Actuator %s waiting for %v", name, waitTime)
 
 			if didComplete := t.wait(ctx, waitTime); !didComplete {
@@ -175,6 +194,15 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 			}
 
 			t.logger.Debugf("Actuator %s waited for %v", name, waitTime)
+		}
+	}
+}
+
+func (t *TemperatureController) sendStatus(device string, isOn bool) {
+	if t.statusCh != nil {
+		t.statusCh <- Status{
+			Device: device,
+			IsOn:   isOn,
 		}
 	}
 }

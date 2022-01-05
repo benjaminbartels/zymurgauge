@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/julienschmidt/httprouter"
@@ -13,12 +12,12 @@ import (
 )
 
 type BatchesHandler struct {
-	BatchRepo batch.Repo
+	Service brewfather.Service
 }
 
 func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	p httprouter.Params) error {
-	batches, err := h.BatchRepo.GetAll(ctx)
+	batches, err := h.Service.GetAll(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get all batches from repository")
 	}
@@ -33,7 +32,7 @@ func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *h
 func (h *BatchesHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
-	batch, err := h.BatchRepo.Get(ctx, id)
+	batch, err := h.Service.Get(ctx, id)
 	if err != nil {
 		if errors.Is(err, brewfather.ErrNotFound) {
 			return web.NewRequestError(fmt.Sprintf("batch '%s' not found", id), http.StatusNotFound)

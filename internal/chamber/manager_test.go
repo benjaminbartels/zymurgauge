@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
 	deviceMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/device"
@@ -27,9 +27,11 @@ const (
 func createTestChambers() []*chamber.Chamber {
 	chamber1 := chamber.Chamber{
 		ID: chamberID,
-		CurrentBatch: &batch.Batch{
-			Fermentation: batch.Fermentation{
-				Steps: []batch.FermentationStep{{StepTemp: 22}, {StepTemp: 23}},
+		CurrentBatch: &brewfather.Batch{
+			Recipe: brewfather.Recipe{
+				Fermentation: brewfather.Fermentation{
+					Steps: []brewfather.FermentationStep{{StepTemp: 22}, {StepTemp: 23}},
+				},
 			},
 		},
 		DeviceConfigs: []chamber.DeviceConfig{
