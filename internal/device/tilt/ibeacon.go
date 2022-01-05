@@ -3,13 +3,9 @@ package tilt
 import (
 	"encoding/binary"
 	"encoding/hex"
-
-	"github.com/pkg/errors"
 )
 
 const minLength = 25
-
-var ErrInvalidManufacturerDataLength = errors.New("manufacurerData length is less that 25")
 
 type IBeacon struct {
 	UUID  string

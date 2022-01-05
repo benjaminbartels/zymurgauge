@@ -31,8 +31,8 @@ func TestRunAlreadyRunningError(t *testing.T) {
 	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 
-	timeout := tilt.SetTimeout(1 * time.Millisecond)
-	interval := tilt.SetInterval(1 * time.Millisecond)
+	timeout := tilt.SetTimeout(1 * time.Second)
+	interval := tilt.SetInterval(1 * time.Second)
 	monitor := tilt.NewMonitor(scannerMock, l, timeout, interval)
 
 	scannerMock.On("Scan", mock.Anything, mock.Anything, mock.Anything).Return(context.DeadlineExceeded).Run(

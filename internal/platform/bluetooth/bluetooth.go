@@ -1,3 +1,6 @@
+//go:build !linux || !arm
+// +build !linux !arm
+
 package bluetooth
 
 import (
@@ -5,17 +8,12 @@ import (
 
 	"github.com/go-ble/ble"
 	"github.com/go-ble/ble/linux"
-	"github.com/pkg/errors"
 )
 
-var _ Scanner = (*BLEScanner)(nil)
+// The program is only meant to run on linux on arm. This file only exists to prevent compilation issues on non
+// linux/arm systems.
 
-type Scanner interface {
-	NewDevice() (*linux.Device, error)
-	SetDefaultDevice(device Device)
-	WithSigHandler(ctx context.Context, cancel func()) context.Context
-	Scan(ctx context.Context, h func(a Advertisement), f func(a Advertisement) bool) error
-}
+var _ Scanner = (*StubBLEScanner)(nil)
 
 type Advertisement interface {
 	ble.Advertisement
@@ -25,41 +23,24 @@ type Device interface {
 	ble.Device
 }
 
-type BLEScanner struct{}
+type StubBLEScanner struct{}
 
-func NewBLEScanner() *BLEScanner {
-	return &BLEScanner{}
+func NewBLEScanner() *StubBLEScanner {
+	return &StubBLEScanner{}
 }
 
-func (b *BLEScanner) NewDevice() (*linux.Device, error) {
-	device, err := linux.NewDevice()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create new device")
-	}
+func (b *StubBLEScanner) NewDevice() (*linux.Device, error) {
+	device, _ := linux.NewDevice()
 
 	return device, nil
 }
 
-func (b *BLEScanner) SetDefaultDevice(device Device) {
-	ble.SetDefaultDevice(device)
+func (b *StubBLEScanner) SetDefaultDevice(device Device) {}
+
+func (b *StubBLEScanner) WithSigHandler(ctx context.Context, cancel func()) context.Context {
+	return ctx
 }
 
-func (b *BLEScanner) WithSigHandler(ctx context.Context, cancel func()) context.Context {
-	return ble.WithSigHandler(ctx, cancel)
-}
-
-func (b *BLEScanner) Scan(ctx context.Context, h func(a Advertisement), f func(a Advertisement) bool) error {
-	handler := func(adv ble.Advertisement) {
-		h(adv)
-	}
-
-	filter := func(adv ble.Advertisement) bool {
-		return f(adv)
-	}
-
-	if err := ble.Scan(ctx, false, handler, filter); err != nil {
-		return errors.Wrap(err, "could not scan")
-	}
-
+func (b *StubBLEScanner) Scan(ctx context.Context, h func(a Advertisement), f func(a Advertisement) bool) error {
 	return nil
 }

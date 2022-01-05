@@ -8,6 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var _ Configurator = (*DefaultConfigurator)(nil)
+
 type DefaultConfigurator struct {
 	TiltMonitor *tilt.Monitor
 }

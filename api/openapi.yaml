@@ -39,7 +39,7 @@ paths:
                 chambers:
                   $ref: '#/components/examples/chambers'
         '500':
-          description: Internal Server Error
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -72,6 +72,17 @@ paths:
               examples:
                 chamber:
                   $ref: '#/components/examples/chamber'
+        '400':
+          description: Bad Request with invalid configuration 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidConfigurationError:
+                  $ref: '#/components/examples/invalidConfigurationError'
+                fermentationInProgressError:
+                  $ref: '#/components/examples/invalidConfigurationError'
         '500':
           description: Internal Server Error
           content:
@@ -137,6 +148,13 @@ paths:
       responses:
         '200':
           description: OK response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Status'
+              examples:
+                chamber:
+                  $ref: '#/components/examples/success'
         '404':
           description: Not found
           content:
@@ -178,7 +196,7 @@ paths:
           example: 1
       responses:
         '200':
-          description: OK response with a chamber
+          description: OK response
           content:
             application/json:
               schema:
@@ -186,6 +204,17 @@ paths:
               examples:
                 chamber:
                   $ref: '#/components/examples/success'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidStepError:
+                  $ref: '#/components/examples/invalidStepError'
+                noCurrentBatchError:
+                  $ref: '#/components/examples/noCurrentBatchError'
         '404':
           description: Not found
           content:
@@ -219,7 +248,7 @@ paths:
           example: 96f58a65-03c0-49f3-83ca-ab751bbf3768
       responses:
         '200':
-          description: OK response with a chamber
+          description: OK response
           content:
             application/json:
               schema:
@@ -227,6 +256,15 @@ paths:
               examples:
                 chamber:
                   $ref: '#/components/examples/success'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFermentingError:
+                  $ref: '#/components/examples/notFermentingError'
         '404':
           description: Not found
           content:
@@ -311,10 +349,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: '#/components/schemas/Batch'
               examples:
                 error:
-                  $ref: '#/components/examples/success'
+                  $ref: '#/components/examples/batch'
         '404':
           description: Not found
           content:
@@ -621,6 +659,21 @@ components:
     batchNotFoundError:
       value:
         error: batch 'KBTM3F9soO5TtbAx0A5mBZTAUsNZyg' not found
+    invalidConfigurationError:
+      value:
+        error: "configuration is invalid: invalid device type 'X', invalid device role 'Y'"
+    fermentationInProgressError:
+      value:
+        error: fermentation is in progress
+    invalidStepError:
+      value:
+        error: invalid step
+    noCurrentBatchError:
+      value:
+        error: chamber does not have a current batch
+    notFermentingError:
+      value:
+        error: fermentation has not started
     internalServerError:
       value:
-        error: Internal Server Error
+        error: internal server error

@@ -82,7 +82,7 @@ func run(logger *logrus.Logger) error {
 		errCh <- monitor.Run(ctx)
 	}()
 
-	db, err := bbolt.Open("data/zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: 1 * time.Second})
+	db, err := bbolt.Open("zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return errors.Wrap(err, "could not open database")
 	}

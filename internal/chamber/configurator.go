@@ -11,6 +11,8 @@ import (
 // The program is only meant to run on linux on arm. This file only exists to prevent compilation issues on non
 // linux/arm systems.
 
+var _ Configurator = (*DefaultConfigurator)(nil)
+
 type DefaultConfigurator struct {
 	TiltMonitor *tilt.Monitor
 }

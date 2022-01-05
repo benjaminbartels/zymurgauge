@@ -9,12 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	ErrNotFound      = errors.New("chamber not found")
-	ErrFermenting    = errors.New("fermentation has started")
-	ErrInvalidConfig = errors.New("configuration is invalid")
-)
-
 var _ Controller = (*Manager)(nil)
 
 type Manager struct {
@@ -97,9 +91,7 @@ func (m *Manager) Save(chamber *Chamber) error {
 	}
 
 	if err := chamber.Configure(m.configurator, m.logger); err != nil {
-		m.logger.WithError(err).Error("Could not configure chamber")
-
-		return ErrInvalidConfig // TODO: wrap details of error
+		return errors.Wrap(err, "could not configure chamber")
 	}
 
 	if err := m.repo.Save(chamber); err != nil {
