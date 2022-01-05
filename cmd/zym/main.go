@@ -37,7 +37,7 @@ type config struct {
 	ShutdownTimeout     time.Duration `default:"20s"`
 	BrewfatherAPIUserID string        `required:"true"`
 	BrewfatherAPIKey    string        `required:"true"`
-	BrewfatherTiltURL   string        `required:"false"`
+	BrewfatherLogURL    string        `required:"false"`
 	BleScannerTimeout   time.Duration
 	Debug               bool `default:"false"`
 }
@@ -97,17 +97,18 @@ func run(logger *logrus.Logger) error {
 		TiltMonitor: monitor,
 	}
 
-	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, logger)
+	var opts []brewfather.OptionsFunc
+	if cfg.BrewfatherLogURL != "" {
+		logger.Infof("Brewfather Log URL is set to %s", cfg.BrewfatherLogURL)
+		opts = append(opts, brewfather.SetTiltURL(cfg.BrewfatherLogURL))
+	}
+
+	brewfatherService := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey, opts...)
+
+	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherService, logger)
 	if err != nil {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}
-
-	var opts []brewfather.OptionsFunc
-	if cfg.BrewfatherTiltURL != "" {
-		opts = append(opts, brewfather.SetTiltURL(cfg.BrewfatherTiltURL))
-	}
-
-	brewfather := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey, opts...)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
@@ -117,7 +118,7 @@ func run(logger *logrus.Logger) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfather, shutdown, logger),
+		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, shutdown, logger),
 	}
 
 	go func() {

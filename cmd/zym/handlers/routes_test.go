@@ -70,10 +70,8 @@ func TestRoutes(t *testing.T) {
 				},
 			},
 			CurrentBatch: &brewfather.Batch{
-				Recipe: brewfather.Recipe{
-					Fermentation: brewfather.Fermentation{
-						Steps: []brewfather.FermentationStep{{StepTemp: 22}},
-					},
+				Fermentation: brewfather.Fermentation{
+					Steps: []brewfather.FermentationStep{{StepTemp: 22}},
 				},
 			},
 		}
@@ -83,10 +81,14 @@ func TestRoutes(t *testing.T) {
 		configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 		configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-		err := c.Configure(configuratorMock, l)
-		assert.NoError(t, err)
-
 		r := brewfather.Batch{ID: batchID}
+
+		serviceMock := &brewfatherMocks.Service{}
+		serviceMock.On("GetAll", mock.Anything).Return([]brewfather.Batch{}, nil)
+		serviceMock.On("Get", mock.Anything, batchID).Return(&r, nil)
+
+		err := c.Configure(configuratorMock, serviceMock, l)
+		assert.NoError(t, err)
 
 		chambers := []*chamber.Chamber{c}
 
@@ -97,10 +99,6 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("Delete", mock.Anything).Return(nil)
 		controllerMock.On("StartFermentation", chamberID, 1).Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
-
-		serviceMock := &brewfatherMocks.Service{}
-		serviceMock.On("GetAll", mock.Anything).Return([]brewfather.Batch{}, nil)
-		serviceMock.On("Get", mock.Anything, batchID).Return(&r, nil)
 
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
@@ -114,7 +112,7 @@ func TestRoutes(t *testing.T) {
 				c, err := controllerMock.Get(chamberID)
 				assert.NoError(t, err)
 
-				err = c.StartFermentation(ctx, 1)
+				err = c.StartFermentation(ctx, "primary")
 				assert.NoError(t, err)
 			}
 

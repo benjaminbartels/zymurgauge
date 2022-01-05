@@ -1,5 +1,5 @@
 //nolint:tagliatelle
-package brewfather
+package batch
 
 type Batch struct {
 	BoilSteps                     []BoilSteps              `json:"boilSteps"`

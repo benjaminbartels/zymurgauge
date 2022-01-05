@@ -61,12 +61,12 @@ func (_m *Service) GetAll(ctx context.Context) ([]brewfather.Batch, error) {
 	return r0, r1
 }
 
-// LogTilt provides a mock function with given fields: ctx, log
-func (_m *Service) LogTilt(ctx context.Context, log brewfather.TiltLogEntry) error {
+// Log provides a mock function with given fields: ctx, log
+func (_m *Service) Log(ctx context.Context, log brewfather.LogEntry) error {
 	ret := _m.Called(ctx, log)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, brewfather.TiltLogEntry) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, brewfather.LogEntry) error); ok {
 		r0 = rf(ctx, log)
 	} else {
 		r0 = ret.Error(0)

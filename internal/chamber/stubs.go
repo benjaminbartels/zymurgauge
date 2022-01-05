@@ -5,6 +5,8 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 )
 
+// TODO: move stubs to test folder
+
 const (
 	stubTemperature     = 25
 	stubSpecificGravity = 0.950

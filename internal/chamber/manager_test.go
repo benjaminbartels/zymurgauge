@@ -11,6 +11,7 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
+	brewfatherMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/brewfather"
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
 	deviceMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/device"
 	"github.com/sirupsen/logrus"
@@ -28,10 +29,8 @@ func createTestChambers() []*chamber.Chamber {
 	chamber1 := chamber.Chamber{
 		ID: chamberID,
 		CurrentBatch: &brewfather.Batch{
-			Recipe: brewfather.Recipe{
-				Fermentation: brewfather.Fermentation{
-					Steps: []brewfather.FermentationStep{{StepTemp: 22}, {StepTemp: 23}},
-				},
+			Fermentation: brewfather.Fermentation{
+				Steps: []brewfather.FermentationStep{{StepTemp: 22}, {StepTemp: 23}},
 			},
 		},
 		DeviceConfigs: []chamber.DeviceConfig{
@@ -71,7 +70,9 @@ func newManagerGetAllError(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
+	serviceMock := &brewfatherMocks.Service{}
+
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l)
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all chambers from"))
 	assert.Nil(t, manager)
 }
@@ -94,7 +95,9 @@ func newManagerConfigureErrors(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
+	serviceMock := &brewfatherMocks.Service{}
+
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l)
 	assert.Contains(t, err.Error(), "could not configure all temperature controllers")
 	assert.NotNil(t, manager)
 }
@@ -199,7 +202,7 @@ func saveChamberFermentingError(t *testing.T) {
 	manager, repoMock := setupManagerTest(t, testChambers)
 	repoMock.On("Save", testChambers[0]).Return(nil)
 
-	err := manager.StartFermentation(chamberID, 1)
+	err := manager.StartFermentation(chamberID, "primary")
 	assert.NoError(t, err)
 
 	err = manager.Save(testChambers[0])
@@ -272,7 +275,7 @@ func deleteChamberFermentingError(t *testing.T) {
 	manager, repoMock := setupManagerTest(t, testChambers)
 	repoMock.On("Delete", chamberID).Return(nil)
 
-	err := manager.StartFermentation(chamberID, 1)
+	err := manager.StartFermentation(chamberID, "primary")
 	assert.NoError(t, err)
 
 	err = manager.Delete(chamberID)
@@ -308,7 +311,7 @@ func startFermentation(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(chamberID, 1)
+	err := manager.StartFermentation(chamberID, "primary")
 	assert.NoError(t, err)
 }
 
@@ -318,10 +321,10 @@ func startFermentationNextStep(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(chamberID, 1)
+	err := manager.StartFermentation(chamberID, "primary")
 	assert.NoError(t, err)
 
-	err = manager.StartFermentation(chamberID, 2)
+	err = manager.StartFermentation(chamberID, "secondary")
 	assert.NoError(t, err)
 }
 
@@ -331,7 +334,7 @@ func startFermentationNotFoundError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation("", 1)
+	err := manager.StartFermentation("", "primary")
 	assert.ErrorIs(t, err, chamber.ErrNotFound)
 }
 
@@ -342,7 +345,7 @@ func startFermentationNoCurrentBatchError(t *testing.T) {
 	testChambers[0].CurrentBatch = nil
 	manager, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(chamberID, 1)
+	err := manager.StartFermentation(chamberID, "primary")
 	assert.ErrorIs(t, err, chamber.ErrNoCurrentBatch)
 }
 
@@ -352,7 +355,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(chamberID, 9)
+	err := manager.StartFermentation(chamberID, "primary") // TODO: NEXT parse test no longer needed
 	assert.ErrorIs(t, err, chamber.ErrInvalidStep)
 }
 
@@ -373,7 +376,9 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(thermometerMock, nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
+	serviceMock := &brewfatherMocks.Service{}
+
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l)
 	assert.NoError(t, err)
 
 	doneCh := make(chan struct{}, 1)
@@ -390,7 +395,7 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 		}
 	}()
 
-	err = manager.StartFermentation(chamberID, 1)
+	err = manager.StartFermentation(chamberID, "primary")
 	assert.NoError(t, err)
 	select {
 	case <-doneCh:
@@ -414,7 +419,7 @@ func stopFermentation(t *testing.T) {
 
 	manager, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(chamberID, 1)
+	err := manager.StartFermentation(chamberID, "primary")
 	assert.NoError(t, err)
 
 	err = manager.StopFermentation(chamberID)
@@ -486,7 +491,9 @@ func setupManagerTest(t *testing.T,
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, l)
+	serviceMock := &brewfatherMocks.Service{}
+
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l)
 	assert.NoError(t, err)
 
 	return manager, repoMock

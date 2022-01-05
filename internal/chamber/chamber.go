@@ -29,7 +29,7 @@ type Chamber struct {
 	HeaterKi                float64           `json:"heaterKi"`
 	HeaterKd                float64           `json:"heaterKd"`
 	CurrentBatch            *brewfather.Batch `json:"currentBatch,omitempty"`
-	CurrentFermentationStep int               `json:"currentFermentationStep"`
+	CurrentFermentationStep int               `json:"currentFermentationStep"` // TODO: Is this used?
 	ModTime                 time.Time         `json:"modTime"`
 	logger                  *logrus.Logger
 	thermometer             device.Thermometer
@@ -39,7 +39,7 @@ type Chamber struct {
 	temperatureController   device.TemperatureController
 	service                 brewfather.Service
 	statusCh                chan pid.Status
-	hasTilt                 bool
+	tiltColor               string
 	cancelFunc              context.CancelFunc
 	runMutex                *sync.Mutex
 }
@@ -52,7 +52,7 @@ type DeviceConfig struct {
 
 // TODO: refactor to use generics in the future.
 
-func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) error {
+func (c *Chamber) Configure(configurator Configurator, service brewfather.Service, logger *logrus.Logger) error {
 	c.logger = logger
 
 	var errs []error
@@ -62,6 +62,8 @@ func (c *Chamber) Configure(configurator Configurator, logger *logrus.Logger) er
 			errs = append(errs, err)
 		}
 	}
+
+	c.service = service
 
 	c.statusCh = make(chan pid.Status, 1)
 
@@ -90,11 +92,10 @@ func (c *Chamber) configureDevice(configurator Configurator, deviceConfig Device
 			return errors.Wrapf(err, "could not create new Ds18b20 %s", deviceConfig.ID)
 		}
 	case "tilt":
-		c.hasTilt = true
-
 		if createdDevice, err = configurator.CreateTilt(tilt.Color(deviceConfig.ID)); err != nil {
 			return errors.Wrapf(err, "could not create new %s Tilt", deviceConfig.ID)
 		}
+		c.tiltColor = deviceConfig.ID
 	case "gpio":
 		if createdDevice, err = configurator.CreateGPIOActuator(deviceConfig.ID); err != nil {
 			return errors.Wrapf(err, "could not create new GPIO %s", deviceConfig.ID)
@@ -109,6 +110,8 @@ func (c *Chamber) configureDevice(configurator Configurator, deviceConfig Device
 
 	return nil
 }
+
+// TODO: NEXT make types match brewfather
 
 func (c *Chamber) assignDevice(d interface{}, roles []string) error {
 	// type assertions will not fail
@@ -130,7 +133,7 @@ func (c *Chamber) assignDevice(d interface{}, roles []string) error {
 	return nil
 }
 
-func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
+func (c *Chamber) StartFermentation(ctx context.Context, stepId string) error {
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
 
@@ -138,7 +141,15 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 		return ErrNoCurrentBatch
 	}
 
-	if step <= 0 || step > len(c.CurrentBatch.Recipe.Fermentation.Steps) {
+	var step *brewfather.FermentationStep
+	for _, s := range c.CurrentBatch.Fermentation.Steps {
+		if s.Type == stepId {
+			step = &s
+			break
+		}
+	}
+
+	if step == nil {
 		return ErrInvalidStep
 	}
 
@@ -146,12 +157,25 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 		c.cancelFunc()
 	}
 
-	temp := c.CurrentBatch.Recipe.Fermentation.Steps[step-1].StepTemp
+	temp := step.StepTemp
 	ctx, cancelFunc := context.WithCancel(ctx)
 	c.cancelFunc = cancelFunc
 
-	if c.hasTilt {
-		go c.monitorStatus(ctx)
+	if c.tiltColor != "" { // TODO: NEXT dont refernce tilt
+		go func() {
+			c.sendData(ctx)
+			for {
+				timer := time.NewTimer(15 * time.Minute)
+				defer timer.Stop()
+
+				select {
+				case <-timer.C:
+					c.sendData(ctx)
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
 	}
 
 	go func() {
@@ -163,35 +187,30 @@ func (c *Chamber) StartFermentation(ctx context.Context, step int) error {
 	return nil
 }
 
-func (c *Chamber) monitorStatus(ctx context.Context) {
-	for {
-		select {
-		case status := <-c.statusCh:
-			temperature, err := c.thermometer.GetTemperature()
-			if err != nil {
-				c.logger.WithError(err).Error("could not read temperature")
-			}
+func (c *Chamber) sendData(ctx context.Context) {
+	temperature, err := c.thermometer.GetTemperature()
+	if err != nil {
+		c.logger.WithError(err).Error("could not read temperature")
+	}
 
-			specificGravity, err := c.hydrometer.GetSpecificGravity()
-			if err != nil {
-				c.logger.WithError(err).Error("could not get specific gravity")
-			}
+	specificGravity, err := c.hydrometer.GetSpecificGravity()
+	if err != nil {
+		c.logger.WithError(err).Error("could not get specific gravity")
+	}
 
-			log := brewfather.TiltLogEntry{
-				// Timepoint:       "43341.33025564816", TODO: is this needed?
-				Temperature:     fmt.Sprintf("%f", temperature),
-				SpecificGravity: fmt.Sprintf("%f", specificGravity),
-				Beer:            c.CurrentBatch.Name,
-				Comment:         fmt.Sprintf("%s, On = %t", status.Device, status.IsOn),
-			}
+	log := brewfather.LogEntry{
+		DeviceName:      c.Name,
+		BeerTemperature: fmt.Sprintf("%f", temperature),
+		TemperatureUnit: "C",
+		Gravity:         fmt.Sprintf("%f", specificGravity),
+		GravityUnit:     "G",
+		Beer:            c.CurrentBatch.Name,
+	}
 
-			if err := c.service.LogTilt(ctx, log); err != nil {
-				c.logger.WithError(err).Error("could log tilt data")
-			}
-
-		case <-ctx.Done():
-			return
-		}
+	c.logger.Debugf("Sending Data to Brewfather: Beer: %s Temperature: %s SpecificGravity: %s",
+		log.Beer, log.BeerTemperature, log.Gravity)
+	if err := c.service.Log(ctx, log); err != nil {
+		c.logger.WithError(err).Error("could log tilt data")
 	}
 }
 

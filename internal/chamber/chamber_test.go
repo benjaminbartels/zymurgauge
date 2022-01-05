@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
+	brewfatherMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/brewfather"
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
 	"github.com/pkg/errors"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -47,9 +48,11 @@ func configure(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
+	serviceMock := &brewfatherMocks.Service{}
+
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, l)
+	err := c[0].Configure(configuratorMock, serviceMock, l)
 	assert.NoError(t, err)
 }
 
@@ -63,9 +66,11 @@ func configureDs18b20Error(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
+	serviceMock := &brewfatherMocks.Service{}
+
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, l) // element 0 has ds18b20
+	err := c[0].Configure(configuratorMock, serviceMock, l) // element 0 has ds18b20
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -85,7 +90,9 @@ func configureTiltError(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[1].Configure(configuratorMock, l) // element 1 has tilt
+	serviceMock := &brewfatherMocks.Service{}
+
+	err := c[1].Configure(configuratorMock, serviceMock, l) // element 1 has tilt
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -104,9 +111,11 @@ func configureGPIOError(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", gpio2).Return(nil, errors.New("configuratorMock error"))
 	configuratorMock.On("CreateGPIOActuator", gpio3).Return(nil, errors.New("configuratorMock error"))
 
+	serviceMock := &brewfatherMocks.Service{}
+
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, l)
+	err := c[0].Configure(configuratorMock, serviceMock, l)
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -124,11 +133,13 @@ func configureInvalidRoleError(t *testing.T) {
 	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
 
+	serviceMock := &brewfatherMocks.Service{}
+
 	c := createTestChambers()
 
 	c[0].DeviceConfigs[0].Roles[0] = "badRole"
 
-	err := c[0].Configure(configuratorMock, l)
+	err := c[0].Configure(configuratorMock, serviceMock, l)
 
 	var cfgErr *chamber.InvalidConfigurationError
 

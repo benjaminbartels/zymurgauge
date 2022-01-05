@@ -87,11 +87,11 @@ func (_m *Controller) Save(c *chamber.Chamber) error {
 }
 
 // StartFermentation provides a mock function with given fields: chamberID, step
-func (_m *Controller) StartFermentation(chamberID string, step int) error {
+func (_m *Controller) StartFermentation(chamberID string, step string) error {
 	ret := _m.Called(chamberID, step)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, int) error); ok {
+	if rf, ok := ret.Get(0).(func(string, string) error); ok {
 		r0 = rf(chamberID, step)
 	} else {
 		r0 = ret.Error(0)

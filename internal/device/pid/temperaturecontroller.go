@@ -169,7 +169,7 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 				return errors.Wrapf(err, "could not turn %s actuator on", name)
 			}
 
-			t.sendStatus(name, true)
+			// t.sendStatus(name, true)
 
 			t.logger.Debugf("Actuator %s acting for %v", name, dutyTime)
 
@@ -185,7 +185,7 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 				return errors.Wrap(err, "could not turn actuator off")
 			}
 
-			t.sendStatus(name, false)
+			// t.sendStatus(name, false)
 
 			t.logger.Debugf("Actuator %s waiting for %v", name, waitTime)
 
@@ -198,14 +198,14 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 	}
 }
 
-func (t *TemperatureController) sendStatus(device string, isOn bool) {
-	if t.statusCh != nil {
-		t.statusCh <- Status{
-			Device: device,
-			IsOn:   isOn,
-		}
-	}
-}
+// func (t *TemperatureController) sendStatus(device string, isOn bool) {
+// 	if t.statusCh != nil {
+// 		t.statusCh <- Status{
+// 			Device: device,
+// 			IsOn:   isOn,
+// 		}
+// 	}
+// }
 
 func (t *TemperatureController) wait(ctx context.Context, waitTime time.Duration) bool {
 	timer := t.clock.NewTimer(waitTime)

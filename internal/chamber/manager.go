@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -16,17 +17,19 @@ type Manager struct {
 	repo         Repo
 	chambers     map[string]*Chamber
 	configurator Configurator
+	service      brewfather.Service
 	logger       *logrus.Logger
 	mutex        sync.RWMutex
 }
 
-func NewManager(ctx context.Context, repo Repo, configurator Configurator,
+func NewManager(ctx context.Context, repo Repo, configurator Configurator, service brewfather.Service,
 	logger *logrus.Logger) (*Manager, error) {
 	m := &Manager{
 		ctx:          ctx,
 		repo:         repo,
 		chambers:     make(map[string]*Chamber),
 		configurator: configurator,
+		service:      service,
 		logger:       logger,
 	}
 
@@ -42,7 +45,7 @@ func NewManager(ctx context.Context, repo Repo, configurator Configurator,
 
 	for i := range chambers {
 		// TODO: Configure implementation should vary based on arch
-		if err := chambers[i].Configure(configurator, logger); err != nil {
+		if err := chambers[i].Configure(configurator, service, logger); err != nil {
 			errs = multierror.Append(errs,
 				errors.Wrapf(err, "could not configure temperature controller for chamber %s", chambers[i].Name))
 		}
@@ -90,7 +93,7 @@ func (m *Manager) Save(chamber *Chamber) error {
 		return ErrFermenting
 	}
 
-	if err := chamber.Configure(m.configurator, m.logger); err != nil {
+	if err := chamber.Configure(m.configurator, m.service, m.logger); err != nil {
 		return errors.Wrap(err, "could not configure chamber")
 	}
 
@@ -120,7 +123,7 @@ func (m *Manager) Delete(id string) error {
 	return nil
 }
 
-func (m *Manager) StartFermentation(chamberID string, step int) error {
+func (m *Manager) StartFermentation(chamberID string, step string) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 

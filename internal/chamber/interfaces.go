@@ -7,7 +7,7 @@ import (
 
 type Controller interface {
 	Repo
-	StartFermentation(chamberID string, step int) error
+	StartFermentation(chamberID string, step string) error
 	StopFermentation(chamberID string) error
 }
 
