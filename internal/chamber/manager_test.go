@@ -30,11 +30,20 @@ func createTestChambers() []*chamber.Chamber {
 		ID: chamberID,
 		CurrentBatch: &brewfather.Batch{
 			Fermentation: brewfather.Fermentation{
-				Steps: []brewfather.FermentationStep{{StepTemp: 22}, {StepTemp: 23}},
+				Steps: []brewfather.FermentationStep{
+					{
+						Type:     "Primary",
+						StepTemp: 22,
+					},
+					{
+						Type:     "Secondary",
+						StepTemp: 20,
+					},
+				},
 			},
 		},
 		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"thermometer"}},
+			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"beerThermometer"}},
 			{ID: "GPIO2", Type: "gpio", Roles: []string{"chiller"}},
 			{ID: "GPIO3", Type: "gpio", Roles: []string{"heater"}},
 		},
@@ -42,7 +51,7 @@ func createTestChambers() []*chamber.Chamber {
 	chamber2 := chamber.Chamber{
 		ID: "dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1",
 		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "orange", Type: "tilt", Roles: []string{"thermometer", "hydrometer"}},
+			{ID: "orange", Type: "tilt", Roles: []string{"beerThermometer", "hydrometer"}},
 			{ID: "GPIO5", Type: "gpio", Roles: []string{"chiller"}},
 			{ID: "GPIO6", Type: "gpio", Roles: []string{"heater"}},
 		},
@@ -202,7 +211,7 @@ func saveChamberFermentingError(t *testing.T) {
 	manager, repoMock := setupManagerTest(t, testChambers)
 	repoMock.On("Save", testChambers[0]).Return(nil)
 
-	err := manager.StartFermentation(chamberID, "primary")
+	err := manager.StartFermentation(chamberID, "Primary")
 	assert.NoError(t, err)
 
 	err = manager.Save(testChambers[0])
@@ -275,7 +284,7 @@ func deleteChamberFermentingError(t *testing.T) {
 	manager, repoMock := setupManagerTest(t, testChambers)
 	repoMock.On("Delete", chamberID).Return(nil)
 
-	err := manager.StartFermentation(chamberID, "primary")
+	err := manager.StartFermentation(chamberID, "Primary")
 	assert.NoError(t, err)
 
 	err = manager.Delete(chamberID)
@@ -311,7 +320,7 @@ func startFermentation(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(chamberID, "primary")
+	err := manager.StartFermentation(chamberID, "Primary")
 	assert.NoError(t, err)
 }
 
@@ -321,10 +330,10 @@ func startFermentationNextStep(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(chamberID, "primary")
+	err := manager.StartFermentation(chamberID, "Primary")
 	assert.NoError(t, err)
 
-	err = manager.StartFermentation(chamberID, "secondary")
+	err = manager.StartFermentation(chamberID, "Secondary")
 	assert.NoError(t, err)
 }
 
@@ -334,7 +343,7 @@ func startFermentationNotFoundError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation("", "primary")
+	err := manager.StartFermentation("", "Primary")
 	assert.ErrorIs(t, err, chamber.ErrNotFound)
 }
 
@@ -345,7 +354,7 @@ func startFermentationNoCurrentBatchError(t *testing.T) {
 	testChambers[0].CurrentBatch = nil
 	manager, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(chamberID, "primary")
+	err := manager.StartFermentation(chamberID, "Primary")
 	assert.ErrorIs(t, err, chamber.ErrNoCurrentBatch)
 }
 
@@ -355,7 +364,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(chamberID, "primary") // TODO: NEXT parse test no longer needed
+	err := manager.StartFermentation(chamberID, "BadStep")
 	assert.ErrorIs(t, err, chamber.ErrInvalidStep)
 }
 
@@ -395,7 +404,7 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 		}
 	}()
 
-	err = manager.StartFermentation(chamberID, "primary")
+	err = manager.StartFermentation(chamberID, "Primary")
 	assert.NoError(t, err)
 	select {
 	case <-doneCh:
@@ -419,7 +428,7 @@ func stopFermentation(t *testing.T) {
 
 	manager, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(chamberID, "primary")
+	err := manager.StartFermentation(chamberID, "Primary")
 	assert.NoError(t, err)
 
 	err = manager.StopFermentation(chamberID)

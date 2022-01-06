@@ -98,6 +98,7 @@ func run(logger *logrus.Logger) error {
 	}
 
 	var opts []brewfather.OptionsFunc
+
 	if cfg.BrewfatherLogURL != "" {
 		logger.Infof("Brewfather Log URL is set to %s", cfg.BrewfatherLogURL)
 		opts = append(opts, brewfather.SetTiltURL(cfg.BrewfatherLogURL))

@@ -399,7 +399,9 @@ components:
                 items:
                   type: string
                   enum:
-                    - thermometer
+                    - beerThermometer
+                    - auxiliaryThermometer
+                    - externalThermometer
                     - chiller
                     - heater
                     - hydrometer
@@ -453,7 +455,7 @@ components:
           - id: 28-000006285484
             type: "ds18b20"
             roles:
-            - "thermometer"
+            - "beerThermometer" 
           - id: GPIO22
             type: "gpio"
             roles:
@@ -496,7 +498,7 @@ components:
             - id: 28-000006285484
               type: "ds18b20"
               roles:
-              - "thermometer"
+              - "beerThermometer"
             - id: GPIO22
               type: "gpio"
               roles:
@@ -537,7 +539,7 @@ components:
             - id: orange
               type: "tilt"
               roles:
-              - "thermometer"
+              - "beerThermometer"
               - "hydrometer"
             - id: GPIO22
               type: "gpio"
@@ -561,7 +563,7 @@ components:
           - id: 28-000006285484
             type: "ds18b20"
             roles:
-            - "thermometer"
+            - "beerThermometer"
           - id: GPIO22
             type: "gpio"
             roles:
@@ -584,7 +586,7 @@ components:
           - id: 28-000006285484
             type: "ds18b20"
             roles:
-            - "thermometer"
+            - "beerThermometer"
           - id: GPIO22
             type: "gpio"
             roles:

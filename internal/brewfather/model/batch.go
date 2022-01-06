@@ -1,5 +1,5 @@
 //nolint:tagliatelle
-package batch
+package model
 
 type Batch struct {
 	BoilSteps                     []BoilSteps              `json:"boilSteps"`

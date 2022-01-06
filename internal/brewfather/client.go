@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/benjaminbartels/zymurgauge/internal/brewfather/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather/model"
 	"github.com/pkg/errors"
 )
 
@@ -23,7 +23,7 @@ var (
 	ErrTooManyRequests  = errors.New("too many request")
 )
 
-// _ batch.Repo = (*Client)(nil).
+// _ model.Repo = (*Client)(nil).
 var _ Service = (*ServiceClient)(nil)
 
 type ServiceClient struct {
@@ -73,12 +73,12 @@ func (s *ServiceClient) GetAll(ctx context.Context) ([]Batch, error) {
 		return nil, err
 	}
 
-	var batches []Batch
+	var batches []model.Batch
 	if err = json.NewDecoder(resp.Body).Decode(&batches); err != nil {
 		return nil, errors.Wrap(err, "could not decode Batches")
 	}
 
-	return batches, nil
+	return convertBatches(batches), nil
 }
 
 func (s *ServiceClient) Get(ctx context.Context, id string) (*Batch, error) {
@@ -98,12 +98,14 @@ func (s *ServiceClient) Get(ctx context.Context, id string) (*Batch, error) {
 		return nil, err
 	}
 
-	var batch Batch
+	var batch model.Batch
 	if err = json.NewDecoder(resp.Body).Decode(&batch); err != nil {
 		return nil, errors.Wrap(err, "could not decode Batch")
 	}
 
-	return &batch, nil
+	b := convertBatch(batch)
+
+	return &b, nil
 }
 
 func (s *ServiceClient) Log(ctx context.Context, log LogEntry) error {
@@ -170,7 +172,7 @@ func parseStatusCode(code int) error {
 	}
 }
 
-func convertBatchs(batches []batch.Batch) []Batch {
+func convertBatches(batches []model.Batch) []Batch {
 	s := []Batch{}
 	for i := 0; i < len(batches); i++ {
 		s = append(s, convertBatch(batches[i]))
@@ -179,7 +181,7 @@ func convertBatchs(batches []batch.Batch) []Batch {
 	return s
 }
 
-func convertBatch(b batch.Batch) Batch {
+func convertBatch(b model.Batch) Batch {
 	return Batch{
 		ID:           b.ID,
 		Name:         b.Name,
@@ -187,14 +189,14 @@ func convertBatch(b batch.Batch) Batch {
 	}
 }
 
-func convertFermentation(fermentation batch.Fermentation) Fermentation {
+func convertFermentation(fermentation model.Fermentation) Fermentation {
 	return Fermentation{
 		Name:  fermentation.Name,
 		Steps: convertFermentationSteps(fermentation.Steps),
 	}
 }
 
-func convertFermentationSteps(steps []batch.FermentationStep) []FermentationStep {
+func convertFermentationSteps(steps []model.FermentationStep) []FermentationStep {
 	s := []FermentationStep{}
 	for i := 0; i < len(steps); i++ {
 		s = append(s, convertFermentationStep(steps[i]))
@@ -203,7 +205,7 @@ func convertFermentationSteps(steps []batch.FermentationStep) []FermentationStep
 	return s
 }
 
-func convertFermentationStep(step batch.FermentationStep) FermentationStep {
+func convertFermentationStep(step model.FermentationStep) FermentationStep {
 	return FermentationStep{
 		Type:       step.Type,
 		ActualTime: step.ActualTime,

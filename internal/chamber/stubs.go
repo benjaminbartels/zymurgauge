@@ -8,8 +8,8 @@ import (
 // TODO: move stubs to test folder
 
 const (
-	stubTemperature     = 25
-	stubSpecificGravity = 0.950
+	stubTemperature = 25
+	stubGravity     = 0.950
 )
 
 var (
@@ -42,6 +42,6 @@ func (t *StubTilt) GetTemperature() (float64, error) {
 	return stubTemperature, nil
 }
 
-func (t *StubTilt) GetSpecificGravity() (float64, error) {
-	return stubSpecificGravity, nil
+func (t *StubTilt) GetGravity() (float64, error) {
+	return stubGravity, nil
 }

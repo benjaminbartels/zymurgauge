@@ -63,7 +63,7 @@ func TestGetTilt(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, temp, temperature)
 
-			sg, err := ti.GetSpecificGravity()
+			sg, err := ti.GetGravity()
 			assert.NoError(t, err)
 			assert.Equal(t, sg, specificGravity)
 
@@ -118,7 +118,7 @@ func TestGetTiltIBeaconIsNilError(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, temp, temperature)
 
-				sg, err := orangeTilt.GetSpecificGravity()
+				sg, err := orangeTilt.GetGravity()
 				assert.NoError(t, err)
 				assert.Equal(t, sg, specificGravity)
 
@@ -129,7 +129,7 @@ func TestGetTiltIBeaconIsNilError(t *testing.T) {
 				assert.Error(t, err, ErrIBeaconIsNil)
 				assert.Equal(t, temp, 0.0)
 
-				sg, err := orangeTilt.GetSpecificGravity()
+				sg, err := orangeTilt.GetGravity()
 				assert.Error(t, err, ErrIBeaconIsNil)
 				assert.Equal(t, sg, 0.0)
 

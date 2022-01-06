@@ -36,7 +36,7 @@ func TestRoutes(t *testing.T) {
 		{path: "/v1/chambers/" + chamberID, method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/chambers", method: http.MethodPost, body: &chamber.Chamber{ID: chamberID}, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodDelete, body: nil, code: http.StatusOK},
-		{path: "/v1/chambers/" + chamberID + "/start?step=1", method: http.MethodPost, body: nil, code: http.StatusOK},
+		{path: "/v1/chambers/" + chamberID + "/start?step=Primary", method: http.MethodPost, body: nil, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID + "/stop", method: http.MethodPost, body: nil, code: http.StatusOK},
 		{path: "/v1/thermometers", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/batches", method: http.MethodGet, body: nil, code: http.StatusOK},
@@ -56,7 +56,7 @@ func TestRoutes(t *testing.T) {
 				{
 					ID:    "1",
 					Type:  "ds18b20",
-					Roles: []string{"thermometer"},
+					Roles: []string{"beerThermometer"},
 				},
 				{
 					ID:    "2",
@@ -71,7 +71,16 @@ func TestRoutes(t *testing.T) {
 			},
 			CurrentBatch: &brewfather.Batch{
 				Fermentation: brewfather.Fermentation{
-					Steps: []brewfather.FermentationStep{{StepTemp: 22}},
+					Steps: []brewfather.FermentationStep{
+						{
+							Type:     "Primary",
+							StepTemp: 22,
+						},
+						{
+							Type:     "Secondary",
+							StepTemp: 20,
+						},
+					},
 				},
 			},
 		}
@@ -97,7 +106,7 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("Get", mock.Anything).Return(c, nil)
 		controllerMock.On("Save", mock.Anything).Return(nil)
 		controllerMock.On("Delete", mock.Anything).Return(nil)
-		controllerMock.On("StartFermentation", chamberID, 1).Return(nil)
+		controllerMock.On("StartFermentation", chamberID, "Primary").Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
 		shutdown := make(chan os.Signal, 1)
@@ -112,7 +121,7 @@ func TestRoutes(t *testing.T) {
 				c, err := controllerMock.Get(chamberID)
 				assert.NoError(t, err)
 
-				err = c.StartFermentation(ctx, "primary")
+				err = c.StartFermentation(ctx, "Primary")
 				assert.NoError(t, err)
 			}
 

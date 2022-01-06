@@ -9,7 +9,7 @@ type Thermometer interface {
 
 // Hydrometer represents a device that can read specific gravity.
 type Hydrometer interface {
-	GetSpecificGravity() (float64, error)
+	GetGravity() (float64, error)
 }
 
 type ThermometerAndHydrometer interface {
