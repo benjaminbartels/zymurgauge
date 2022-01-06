@@ -1,4 +1,4 @@
-package chamber
+package stubs
 
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"
@@ -19,7 +19,7 @@ var (
 )
 
 type StubThermometer struct {
-	thermometerID string
+	ThermometerID string
 }
 
 func (t *StubThermometer) GetTemperature() (float64, error) {
@@ -27,7 +27,7 @@ func (t *StubThermometer) GetTemperature() (float64, error) {
 }
 
 type StubGPIOActuator struct {
-	pin string
+	Pin string
 }
 
 func (a *StubGPIOActuator) On() error { return nil }
@@ -35,7 +35,7 @@ func (a *StubGPIOActuator) On() error { return nil }
 func (a *StubGPIOActuator) Off() error { return nil }
 
 type StubTilt struct {
-	color tilt.Color
+	Color tilt.Color
 }
 
 func (t *StubTilt) GetTemperature() (float64, error) {

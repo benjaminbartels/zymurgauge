@@ -10,14 +10,6 @@ import (
 
 var _ Scanner = (*BLEScanner)(nil)
 
-type Advertisement interface {
-	ble.Advertisement
-}
-
-type Device interface {
-	ble.Device
-}
-
 type BLEScanner struct{}
 
 func NewBLEScanner() *BLEScanner {

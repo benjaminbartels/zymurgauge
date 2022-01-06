@@ -10,6 +10,7 @@ import (
 	brewfatherMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/brewfather"
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
 	deviceMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/device"
+	"github.com/benjaminbartels/zymurgauge/internal/test/stubs"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -48,9 +49,9 @@ func configure(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
-	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.StubGPIOActuator{}, nil)
 
 	serviceMock := &brewfatherMocks.Service{}
 
@@ -67,8 +68,8 @@ func configureDs18b20Error(t *testing.T) {
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(nil, errors.New("configuratorMock error"))
-	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.StubGPIOActuator{}, nil)
 
 	serviceMock := &brewfatherMocks.Service{}
 
@@ -88,9 +89,9 @@ func configureTiltError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.StubThermometer{}, nil)
 	configuratorMock.On("CreateTilt", mock.Anything).Return(nil, errors.New("configuratorMock error"))
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.StubGPIOActuator{}, nil)
 
 	c := createTestChambers()
 
@@ -110,8 +111,8 @@ func configureGPIOError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
-	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.StubTilt{}, nil)
 	configuratorMock.On("CreateGPIOActuator", gpio2).Return(nil, errors.New("configuratorMock error"))
 	configuratorMock.On("CreateGPIOActuator", gpio3).Return(nil, errors.New("configuratorMock error"))
 
@@ -133,9 +134,9 @@ func configureInvalidRoleError(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
-	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.StubGPIOActuator{}, nil)
 
 	serviceMock := &brewfatherMocks.Service{}
 
@@ -165,9 +166,9 @@ func log(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 
 	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
-	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.StubGPIOActuator{}, nil)
 
 	doneCh := make(chan struct{}, 1)
 
@@ -205,9 +206,9 @@ func logServiceErrors(t *testing.T) {
 	l, hook := logtest.NewNullLogger()
 
 	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
-	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.StubThermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.StubTilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.StubGPIOActuator{}, nil)
 
 	doneCh := make(chan struct{}, 1)
 
@@ -245,7 +246,7 @@ func logDeviceErrors(t *testing.T) {
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(thermometerMock, nil)
 	configuratorMock.On("CreateTilt", mock.Anything).Return(tiltMock, nil)
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.StubGPIOActuator{}, nil)
 
 	doneCh := make(chan struct{}, 1)
 	ctx, stop := context.WithCancel(context.Background())
