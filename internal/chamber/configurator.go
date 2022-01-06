@@ -19,13 +19,13 @@ type DefaultConfigurator struct {
 }
 
 func (c *DefaultConfigurator) CreateDs18b20(thermometerID string) (device.Thermometer, error) {
-	return &stubs.StubThermometer{ThermometerID: thermometerID}, nil
+	return &stubs.Thermometer{ThermometerID: thermometerID}, nil
 }
 
 func (c *DefaultConfigurator) CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error) {
-	return &stubs.StubTilt{Color: color}, nil
+	return &stubs.Tilt{Color: color}, nil
 }
 
 func (c *DefaultConfigurator) CreateGPIOActuator(pin string) (device.Actuator, error) {
-	return &stubs.StubGPIOActuator{Pin: pin}, nil
+	return &stubs.Actuator{Pin: pin}, nil
 }

@@ -157,7 +157,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 	c.cancelFunc = cancelFunc
 
 	if c.logToBrewfather {
-		go func() { // TODO: NEXT unit test this.
+		go func() {
 			c.sendData(ctx)
 
 			for {

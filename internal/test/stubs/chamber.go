@@ -5,43 +5,41 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 )
 
-// TODO: move stubs to test folder
-
 const (
 	stubTemperature = 25
 	stubGravity     = 0.950
 )
 
 var (
-	_ device.Thermometer              = (*StubThermometer)(nil)
-	_ device.Actuator                 = (*StubGPIOActuator)(nil)
-	_ device.ThermometerAndHydrometer = (*StubTilt)(nil)
+	_ device.Thermometer              = (*Thermometer)(nil)
+	_ device.Actuator                 = (*Actuator)(nil)
+	_ device.ThermometerAndHydrometer = (*Tilt)(nil)
 )
 
-type StubThermometer struct {
+type Thermometer struct {
 	ThermometerID string
 }
 
-func (t *StubThermometer) GetTemperature() (float64, error) {
+func (t *Thermometer) GetTemperature() (float64, error) {
 	return stubTemperature, nil
 }
 
-type StubGPIOActuator struct {
+type Actuator struct {
 	Pin string
 }
 
-func (a *StubGPIOActuator) On() error { return nil }
+func (a *Actuator) On() error { return nil }
 
-func (a *StubGPIOActuator) Off() error { return nil }
+func (a *Actuator) Off() error { return nil }
 
-type StubTilt struct {
+type Tilt struct {
 	Color tilt.Color
 }
 
-func (t *StubTilt) GetTemperature() (float64, error) {
+func (t *Tilt) GetTemperature() (float64, error) {
 	return stubTemperature, nil
 }
 
-func (t *StubTilt) GetGravity() (float64, error) {
+func (t *Tilt) GetGravity() (float64, error) {
 	return stubGravity, nil
 }

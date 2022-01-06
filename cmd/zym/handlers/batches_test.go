@@ -11,7 +11,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 )

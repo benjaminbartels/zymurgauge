@@ -12,8 +12,8 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
-	brewfatherMocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/brewfather"
-	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
+	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
+	"github.com/benjaminbartels/zymurgauge/internal/test/stubs"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -86,13 +86,13 @@ func TestRoutes(t *testing.T) {
 		}
 
 		configuratorMock := &mocks.Configurator{}
-		configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
-		configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
-		configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+		configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
+		configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.Tilt{}, nil)
+		configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 		r := brewfather.Batch{ID: batchID}
 
-		serviceMock := &brewfatherMocks.Service{}
+		serviceMock := &mocks.Service{}
 		serviceMock.On("GetAll", mock.Anything).Return([]brewfather.Batch{}, nil)
 		serviceMock.On("Get", mock.Anything, batchID).Return(&r, nil)
 
