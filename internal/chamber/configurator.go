@@ -6,6 +6,7 @@ package chamber
 import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
+	"github.com/benjaminbartels/zymurgauge/internal/test/stubs"
 )
 
 // The program is only meant to run on linux on arm. This file only exists to prevent compilation issues on non
@@ -18,13 +19,13 @@ type DefaultConfigurator struct {
 }
 
 func (c *DefaultConfigurator) CreateDs18b20(thermometerID string) (device.Thermometer, error) {
-	return &StubThermometer{thermometerID: thermometerID}, nil
+	return &stubs.Thermometer{ThermometerID: thermometerID}, nil
 }
 
 func (c *DefaultConfigurator) CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error) {
-	return &StubTilt{color: color}, nil
+	return &stubs.Tilt{Color: color}, nil
 }
 
 func (c *DefaultConfigurator) CreateGPIOActuator(pin string) (device.Actuator, error) {
-	return &StubGPIOActuator{pin: pin}, nil
+	return &stubs.Actuator{Pin: pin}, nil
 }

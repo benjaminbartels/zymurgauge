@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -119,12 +118,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 	p httprouter.Params) error {
 	id := p.ByName("id")
 
-	stepVal := r.URL.Query().Get("step")
-
-	step, err := strconv.Atoi(stepVal)
-	if err != nil {
-		return web.NewRequestError(fmt.Sprintf("step %s is invalid", stepVal), http.StatusBadRequest)
-	}
+	step := r.URL.Query().Get("step")
 
 	if err := h.ChamberController.StartFermentation(id, step); err != nil {
 		// TODO: better error handling?
@@ -132,7 +126,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 		case errors.Is(err, chamber.ErrNotFound):
 			return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 		case errors.Is(err, chamber.ErrInvalidStep):
-			return web.NewRequestError(fmt.Sprintf("step %d is invalid for chamber '%s'", step, id), http.StatusBadRequest)
+			return web.NewRequestError(fmt.Sprintf("step '%s' is invalid for chamber '%s'", step, id), http.StatusBadRequest)
 		case errors.Is(err, chamber.ErrNoCurrentBatch):
 			return web.NewRequestError(fmt.Sprintf("chamber '%s' does not have a current batch", id), http.StatusBadRequest)
 		default:

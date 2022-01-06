@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
-	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/device"
+	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +25,7 @@ const (
 	heaterKd                float64 = 0
 	thermometerReadErrorMsg         = "could not read thermometer"
 	chillerOnErrorMsg               = "could not turn chiller actuator on"
-	actuatorOffError                = "could not turn actuator off"
+	chillerOffError                 = "could not turn chiller actuator off"
 	actuatorQuitError               = "could not turn actuator off while quiting"
 )
 
@@ -243,16 +243,18 @@ func TestLogging(t *testing.T) {
 
 	<-time.After(1 * time.Second)
 
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater current temperature is 25.0000°C"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater dutyCycle is 50.00%"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater waitTime is 50ms"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel,
+		"Actuator heater current temperature is 25.0000°C, set point is 30.0000°C"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel,
+		"Actuator heater dutyCycle is 50.00%, dutyTime is 50ms, waitTime is 50ms"))
 	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater acting for 50ms"))
 	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater acted for 50ms"))
 	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater waiting for 50ms"))
 	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater waited for 50ms"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator chiller current temperature is 25.0000°C"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator chiller dutyCycle is 0.00%"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator chiller waitTime is 30m0s"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel,
+		"Actuator chiller current temperature is 25.0000°C, set point is 30.0000°C"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel,
+		"Actuator chiller dutyCycle is 0.00%, dutyTime is 0s, waitTime is 30m0s"))
 	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator chiller waiting for 30m0s"))
 }
 
@@ -274,27 +276,62 @@ func TestRunAlreadyRunningError(t *testing.T) {
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("Off").Return(nil)
 
-	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
 	go func() {
 		// wait until first therm.Run is called
 		<-doneCh
 
-		err := therm.Run(ctx, 66)
+		err := ctrl.Run(ctx, 66)
 		assert.ErrorIs(t, err, pid.ErrAlreadyRunning)
 		stop()
 	}()
 
 	// first therm.Run is called
-	err := therm.Run(ctx, 20)
+	err := ctrl.Run(ctx, 20)
 	assert.NoError(t, err)
+}
+
+func TestThermometerIsNilError(t *testing.T) {
+	t.Parallel()
+
+	l, _ := logtest.NewNullLogger()
+
+	chillerMock := &mocks.Actuator{}
+
+	heaterMock := &mocks.Actuator{}
+
+	ctrl := pid.NewPIDTemperatureController(nil, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
+		heaterKp, heaterKi, heaterKd, l)
+
+	// first therm.Run is called
+	err := ctrl.Run(context.Background(), 20)
+	assert.ErrorIs(t, err, pid.ErrThermometerIsNil)
+}
+
+func TestActuatorIsNilError(t *testing.T) {
+	t.Parallel()
+
+	l, _ := logtest.NewNullLogger()
+
+	thermometerMock := &mocks.Thermometer{}
+	thermometerMock.On("GetTemperature").Return(20.0, nil)
+
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, nil, nil, chillerKp, chillerKi, chillerKd,
+		heaterKp, heaterKi, heaterKd, l)
+
+	// first therm.Run is called
+	err := ctrl.Run(context.Background(), 20)
+	assert.ErrorIs(t, err, pid.ErrActuatorIsNil)
 }
 
 func TestThermometerError(t *testing.T) {
 	t.Parallel()
 
-	l, _ := logtest.NewNullLogger()
+	l, hook := logtest.NewNullLogger()
+
+	doneCh := make(chan struct{}, 1)
 
 	thermometerMock := &mocks.Thermometer{}
 	thermometerMock.On("GetTemperature").Return(0.0, errDeadThermometer)
@@ -302,21 +339,41 @@ func TestThermometerError(t *testing.T) {
 	chillerMock := &mocks.Actuator{}
 	heaterMock := &mocks.Actuator{}
 
-	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
-	ctx := context.Background()
-	err := therm.Run(ctx, 15)
-	assert.Contains(t, err.Error(), thermometerReadErrorMsg)
+	go func() {
+		for {
+			if logContains(hook.AllEntries(), logrus.ErrorLevel, thermometerReadErrorMsg) {
+				doneCh <- struct{}{}
+
+				return
+			}
+
+			<-time.After(100 * time.Millisecond)
+		}
+	}()
+
+	go func() {
+		_ = ctrl.Run(context.Background(), 15)
+	}()
+
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "log should contain expected value by now")
+	}
 }
 
 func TestActuatorOnError(t *testing.T) {
 	t.Parallel()
 
-	l, _ := logtest.NewNullLogger()
+	l, hook := logtest.NewNullLogger()
 
 	thermometerMock := &mocks.Thermometer{}
 	thermometerMock.On("GetTemperature").Return(20.0, nil)
+
+	doneCh := make(chan struct{}, 1)
 
 	chillerMock := &mocks.Actuator{}
 	chillerMock.Mock.On("On").Return(errDeadActuator)
@@ -324,21 +381,41 @@ func TestActuatorOnError(t *testing.T) {
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("Off").Return(nil)
 
-	ctlr := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l)
 
-	ctx := context.Background()
-	err := ctlr.Run(ctx, 15)
-	assert.Contains(t, err.Error(), chillerOnErrorMsg)
+	go func() {
+		for {
+			if logContains(hook.AllEntries(), logrus.ErrorLevel, chillerOnErrorMsg) {
+				doneCh <- struct{}{}
+
+				return
+			}
+
+			<-time.After(100 * time.Millisecond)
+		}
+	}()
+
+	go func() {
+		_ = ctrl.Run(context.Background(), 15)
+	}()
+
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "log should contain expected value by now")
+	}
 }
 
 func TestActuatorOffErrorAfterDuty(t *testing.T) {
 	t.Parallel()
 
-	l, _ := logtest.NewNullLogger()
+	l, hook := logtest.NewNullLogger()
 
 	thermometerMock := &mocks.Thermometer{}
 	thermometerMock.On("GetTemperature").Return(20.0, nil)
+
+	doneCh := make(chan struct{}, 1)
 
 	chillerMock := &mocks.Actuator{}
 	chillerMock.Mock.On("On").Return(nil)
@@ -347,13 +424,31 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 	heaterMock := &mocks.Actuator{}
 	heaterMock.Mock.On("Off").Return(nil)
 
-	ctlr := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
 		heaterKp, heaterKi, heaterKd, l, pid.SetChillingCyclePeriod(100*time.Millisecond),
 		pid.SetChillingMinimum(10*time.Millisecond))
 
-	ctx := context.Background()
-	err := ctlr.Run(ctx, 15)
-	assert.Contains(t, err.Error(), actuatorOffError)
+	go func() {
+		for {
+			if logContains(hook.AllEntries(), logrus.ErrorLevel, chillerOffError) {
+				doneCh <- struct{}{}
+
+				return
+			}
+
+			<-time.After(100 * time.Millisecond)
+		}
+	}()
+
+	go func() {
+		_ = ctrl.Run(context.Background(), 15)
+	}()
+
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "log should contain expected value by now")
+	}
 }
 
 func TestActuatorOffErrorOnQuit(t *testing.T) {
@@ -390,7 +485,6 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 	assert.Contains(t, err.Error(), actuatorQuitError)
 }
 
-//nolint: unparam
 func logContains(logs []*logrus.Entry, level logrus.Level, substr string) bool {
 	found := false
 

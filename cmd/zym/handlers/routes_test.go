@@ -10,9 +10,10 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
-	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/chamber"
+	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
+	"github.com/benjaminbartels/zymurgauge/internal/test/stubs"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -35,7 +36,7 @@ func TestRoutes(t *testing.T) {
 		{path: "/v1/chambers/" + chamberID, method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/chambers", method: http.MethodPost, body: &chamber.Chamber{ID: chamberID}, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID, method: http.MethodDelete, body: nil, code: http.StatusOK},
-		{path: "/v1/chambers/" + chamberID + "/start?step=1", method: http.MethodPost, body: nil, code: http.StatusOK},
+		{path: "/v1/chambers/" + chamberID + "/start?step=Primary", method: http.MethodPost, body: nil, code: http.StatusOK},
 		{path: "/v1/chambers/" + chamberID + "/stop", method: http.MethodPost, body: nil, code: http.StatusOK},
 		{path: "/v1/thermometers", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/batches", method: http.MethodGet, body: nil, code: http.StatusOK},
@@ -55,7 +56,7 @@ func TestRoutes(t *testing.T) {
 				{
 					ID:    "1",
 					Type:  "ds18b20",
-					Roles: []string{"thermometer"},
+					Roles: []string{"beerThermometer"},
 				},
 				{
 					ID:    "2",
@@ -68,22 +69,35 @@ func TestRoutes(t *testing.T) {
 					Roles: []string{"heater"},
 				},
 			},
-			CurrentBatch: &batch.Batch{
-				Fermentation: batch.Fermentation{
-					Steps: []batch.FermentationStep{{StepTemp: 22}},
+			CurrentBatch: &brewfather.Batch{
+				Fermentation: brewfather.Fermentation{
+					Steps: []brewfather.FermentationStep{
+						{
+							Type:     "Primary",
+							StepTemp: 22,
+						},
+						{
+							Type:     "Secondary",
+							StepTemp: 20,
+						},
+					},
 				},
 			},
 		}
 
 		configuratorMock := &mocks.Configurator{}
-		configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
-		configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
-		configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
+		configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
+		configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.Tilt{}, nil)
+		configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
-		err := c.Configure(configuratorMock, l)
+		r := brewfather.Batch{ID: batchID}
+
+		serviceMock := &mocks.Service{}
+		serviceMock.On("GetAll", mock.Anything).Return([]brewfather.Batch{}, nil)
+		serviceMock.On("Get", mock.Anything, batchID).Return(&r, nil)
+
+		err := c.Configure(configuratorMock, serviceMock, false, l)
 		assert.NoError(t, err)
-
-		r := batch.Batch{ID: batchID}
 
 		chambers := []*chamber.Chamber{c}
 
@@ -92,17 +106,13 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("Get", mock.Anything).Return(c, nil)
 		controllerMock.On("Save", mock.Anything).Return(nil)
 		controllerMock.On("Delete", mock.Anything).Return(nil)
-		controllerMock.On("StartFermentation", chamberID, 1).Return(nil)
+		controllerMock.On("StartFermentation", chamberID, "Primary").Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
-
-		recipeMock := &mocks.BatchRepo{}
-		recipeMock.On("GetAll", mock.Anything).Return([]batch.Batch{}, nil)
-		recipeMock.On("Get", mock.Anything, batchID).Return(&r, nil)
 
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
-		app := handlers.NewAPI(controllerMock, devicePath, recipeMock, shutdown, logger)
+		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
@@ -111,7 +121,7 @@ func TestRoutes(t *testing.T) {
 				c, err := controllerMock.Get(chamberID)
 				assert.NoError(t, err)
 
-				err = c.StartFermentation(ctx, 1)
+				err = c.StartFermentation(ctx, "Primary")
 				assert.NoError(t, err)
 			}
 

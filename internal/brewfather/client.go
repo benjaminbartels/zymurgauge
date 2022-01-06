@@ -8,15 +8,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather/model"
 	"github.com/pkg/errors"
 )
 
 const (
 	APIURL      = "https://api.brewfather.app/v1"
-	LogURL      = "http://log.brewfather.net/stream"
 	batchesPath = "batches"
-	tiltPath    = "tilt"
 )
 
 var (
@@ -25,26 +23,40 @@ var (
 	ErrTooManyRequests  = errors.New("too many request")
 )
 
-var _ batch.Repo = (*Client)(nil)
+// _ model.Repo = (*Client)(nil).
+var _ Service = (*ServiceClient)(nil)
 
-type Client struct {
+type ServiceClient struct {
 	client *http.Client
+	logURL string
 }
 
-func New(userID, apiKey string) *Client {
+func New(userID, apiKey string, options ...OptionsFunc) *ServiceClient {
 	t := &transport{
 		userID: userID,
 		apiKey: apiKey,
 	}
 
-	c := &Client{
+	c := &ServiceClient{
 		client: &http.Client{Transport: t},
+	}
+
+	for _, option := range options {
+		option(c)
 	}
 
 	return c
 }
 
-func (s *Client) GetAll(ctx context.Context) ([]batch.Batch, error) {
+type OptionsFunc func(*ServiceClient)
+
+func SetTiltURL(url string) OptionsFunc {
+	return func(c *ServiceClient) {
+		c.logURL = url
+	}
+}
+
+func (s *ServiceClient) GetAll(ctx context.Context) ([]Batch, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", APIURL, batchesPath), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batches")
@@ -61,15 +73,15 @@ func (s *Client) GetAll(ctx context.Context) ([]batch.Batch, error) {
 		return nil, err
 	}
 
-	var batches []Batch
+	var batches []model.Batch
 	if err = json.NewDecoder(resp.Body).Decode(&batches); err != nil {
 		return nil, errors.Wrap(err, "could not decode Batches")
 	}
 
-	return convertBatchs(batches), nil
+	return convertBatches(batches), nil
 }
 
-func (s *Client) Get(ctx context.Context, id string) (*batch.Batch, error) {
+func (s *ServiceClient) Get(ctx context.Context, id string) (*Batch, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", APIURL, batchesPath, id), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batch")
@@ -86,7 +98,7 @@ func (s *Client) Get(ctx context.Context, id string) (*batch.Batch, error) {
 		return nil, err
 	}
 
-	var batch Batch
+	var batch model.Batch
 	if err = json.NewDecoder(resp.Body).Decode(&batch); err != nil {
 		return nil, errors.Wrap(err, "could not decode Batch")
 	}
@@ -96,14 +108,13 @@ func (s *Client) Get(ctx context.Context, id string) (*batch.Batch, error) {
 	return &b, nil
 }
 
-func (s *Client) LogTilt(ctx context.Context, id string, log TiltLogEntry) error {
+func (s *ServiceClient) Log(ctx context.Context, log LogEntry) error {
 	data, err := json.Marshal(log)
 	if err != nil {
 		return errors.Wrap(err, "could not marshal TiltLogEntry")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/%s?=%s", LogURL, tiltPath, id),
-		bytes.NewBuffer(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.logURL, bytes.NewBuffer(data))
 	if err != nil {
 		return errors.Wrap(err, "could not create POST request for TiltLogEntry")
 	}
@@ -120,15 +131,6 @@ func (s *Client) LogTilt(ctx context.Context, id string, log TiltLogEntry) error
 	}
 
 	return nil
-}
-
-func convertBatchs(batches []Batch) []batch.Batch {
-	s := []batch.Batch{}
-	for i := 0; i < len(batches); i++ {
-		s = append(s, convertBatch(batches[i]))
-	}
-
-	return s
 }
 
 type transport struct {
@@ -170,23 +172,32 @@ func parseStatusCode(code int) error {
 	}
 }
 
-func convertBatch(b Batch) batch.Batch {
-	return batch.Batch{
+func convertBatches(batches []model.Batch) []Batch {
+	s := []Batch{}
+	for i := 0; i < len(batches); i++ {
+		s = append(s, convertBatch(batches[i]))
+	}
+
+	return s
+}
+
+func convertBatch(b model.Batch) Batch {
+	return Batch{
 		ID:           b.ID,
 		Name:         b.Name,
 		Fermentation: convertFermentation(b.Recipe.Fermentation),
 	}
 }
 
-func convertFermentation(fermentation Fermentation) batch.Fermentation {
-	return batch.Fermentation{
+func convertFermentation(fermentation model.Fermentation) Fermentation {
+	return Fermentation{
 		Name:  fermentation.Name,
 		Steps: convertFermentationSteps(fermentation.Steps),
 	}
 }
 
-func convertFermentationSteps(steps []FermentationStep) []batch.FermentationStep {
-	s := []batch.FermentationStep{}
+func convertFermentationSteps(steps []model.FermentationStep) []FermentationStep {
+	s := []FermentationStep{}
 	for i := 0; i < len(steps); i++ {
 		s = append(s, convertFermentationStep(steps[i]))
 	}
@@ -194,8 +205,8 @@ func convertFermentationSteps(steps []FermentationStep) []batch.FermentationStep
 	return s
 }
 
-func convertFermentationStep(step FermentationStep) batch.FermentationStep {
-	return batch.FermentationStep{
+func convertFermentationStep(step model.FermentationStep) FermentationStep {
+	return FermentationStep{
 		Type:       step.Type,
 		ActualTime: step.ActualTime,
 		StepTemp:   step.StepTemp,

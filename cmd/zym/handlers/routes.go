@@ -7,7 +7,7 @@ import (
 	"net/http/pprof"
 	"os"
 
-	"github.com/benjaminbartels/zymurgauge/internal/batch"
+	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
@@ -23,7 +23,7 @@ const (
 
 // NewAPI return a web.App with configured routes and handlers.
 func NewAPI(chamberManager chamber.Controller, devicePath string,
-	batchRepo batch.Repo, shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
+	service brewfather.Service, shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberManager,
 		Logger:            logger,
@@ -34,7 +34,7 @@ func NewAPI(chamberManager chamber.Controller, devicePath string,
 	}
 
 	batchesHandler := &BatchesHandler{
-		BatchRepo: batchRepo,
+		Service: service,
 	}
 
 	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger))

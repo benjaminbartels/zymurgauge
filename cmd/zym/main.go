@@ -26,6 +26,7 @@ import (
 const (
 	build             = "development"
 	dbFilePermissions = 0o600
+	bboltReadTimeout  = 1 * time.Second
 )
 
 type config struct {
@@ -37,25 +38,27 @@ type config struct {
 	ShutdownTimeout     time.Duration `default:"20s"`
 	BrewfatherAPIUserID string        `required:"true"`
 	BrewfatherAPIKey    string        `required:"true"`
+	BrewfatherLogURL    string        `required:"false"`
 	BleScannerTimeout   time.Duration
 	Debug               bool `default:"false"`
 }
 
 func main() {
 	logger := logrus.New()
-	if err := run(logger); err != nil {
+
+	var cfg config
+
+	if err := envconfig.Process("zym", &cfg); err != nil {
+		logger.WithError(err).Error("could not process env vars")
+	}
+
+	if err := run(logger, cfg); err != nil {
 		logger.Error(err)
 		os.Exit(1)
 	}
 }
 
-func run(logger *logrus.Logger) error {
-	var cfg config
-
-	if err := envconfig.Process("zym", &cfg); err != nil {
-		return errors.Wrap(err, "could not process env vars")
-	}
-
+func run(logger *logrus.Logger, cfg config) error {
 	if cfg.Debug {
 		logger.SetLevel(logrus.DebugLevel)
 	}
@@ -82,7 +85,7 @@ func run(logger *logrus.Logger) error {
 		errCh <- monitor.Run(ctx)
 	}()
 
-	db, err := bbolt.Open("zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: 1 * time.Second})
+	db, err := bbolt.Open("zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: bboltReadTimeout})
 	if err != nil {
 		return errors.Wrap(err, "could not open database")
 	}
@@ -96,12 +99,22 @@ func run(logger *logrus.Logger) error {
 		TiltMonitor: monitor,
 	}
 
-	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, logger)
+	var opts []brewfather.OptionsFunc
+
+	var logToBrewfather bool
+
+	if cfg.BrewfatherLogURL != "" {
+		logger.Infof("Brewfather Log URL is set to %s", cfg.BrewfatherLogURL)
+		opts = append(opts, brewfather.SetTiltURL(cfg.BrewfatherLogURL))
+		logToBrewfather = true
+	}
+
+	brewfatherService := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey, opts...)
+
+	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherService, logToBrewfather, logger)
 	if err != nil {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}
-
-	brewfather := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
@@ -111,7 +124,7 @@ func run(logger *logrus.Logger) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfather, shutdown, logger),
+		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, shutdown, logger),
 	}
 
 	go func() {

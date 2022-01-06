@@ -19,11 +19,11 @@ func TestGetTemperatureError(t *testing.T) {
 	assert.Contains(t, err.Error(), "underlying IBeacon is nil")
 }
 
-func TestGetSpecificGravityError(t *testing.T) {
+func TestGetGravityError(t *testing.T) {
 	t.Parallel()
 
 	tilt := &tilt.Tilt{}
-	temp, err := tilt.GetSpecificGravity()
+	temp, err := tilt.GetGravity()
 
 	assert.Equal(t, 0.0, temp)
 
