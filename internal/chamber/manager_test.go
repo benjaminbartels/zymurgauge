@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -397,12 +398,25 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
+	go func() {
+		for {
+			if logContains(hook.AllEntries(), logrus.ErrorLevel, "could not run temperature controller for chamber") {
+				doneCh <- struct{}{}
+
+				return
+			}
+
+			<-time.After(100 * time.Millisecond)
+		}
+	}()
+
 	err = manager.StartFermentation(chamberID, "Primary")
 	assert.NoError(t, err)
-
-	<-doneCh
-
-	logContains(hook.AllEntries(), logrus.ErrorLevel, "could not run temperature controller for chamber")
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "log should contain expected value by now")
+	}
 }
 
 //nolint: paralleltest // False positives with r.Run not in a loop

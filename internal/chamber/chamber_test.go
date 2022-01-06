@@ -16,9 +16,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// TODO: NEXT test bad config
-// TODO: NEXT log out, don't error in cycles
-
 const (
 	ds18b20ErrMsg = "could not create new Ds18b20 %s"
 	tiltErrMsg    = "could not create new %s Tilt"
@@ -104,6 +101,9 @@ func configureTiltError(t *testing.T) {
 
 	assert.ErrorAs(t, err, &cfgErr)
 	assert.Contains(t, cfgErr.Problems()[0].Error(), fmt.Sprintf(tiltErrMsg, tiltColor))
+
+	err = c[0].StartFermentation(context.Background(), "Primary")
+	assert.NoError(t, err)
 }
 
 func configureGPIOError(t *testing.T) {

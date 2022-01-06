@@ -22,8 +22,12 @@ const (
 	defaultHeatingCyclePeriod  time.Duration = 10 * time.Minute
 	defaultChillingMinimum     time.Duration = 10 * time.Minute
 	defaultHeatingMinimum      time.Duration = 10 * time.Second
-	dutyCycleMultiplyer                      = 100
-	ErrAlreadyRunning                        = Error("pid is already running")
+	errorWaitPeriod            time.Duration = 10 * time.Second
+
+	dutyCycleMultiplyer = 100
+	ErrAlreadyRunning   = Error("pid is already running")
+	ErrThermometerIsNil = Error("thermometer is nil")
+	ErrActuatorIsNil    = Error("actuator is nil")
 )
 
 type Error string
@@ -42,7 +46,6 @@ type TemperatureController struct {
 	heaterKp            float64
 	heaterKi            float64
 	heaterKd            float64
-	statusCh            chan Status
 	chillingCyclePeriod time.Duration
 	heatingCyclePeriod  time.Duration
 	chillingMinimum     time.Duration
@@ -88,12 +91,6 @@ func NewPIDTemperatureController(thermometer device.Thermometer, chiller, heater
 
 type OptionsFunc func(*TemperatureController)
 
-func SetStatusChannel(ch chan Status) OptionsFunc {
-	return func(t *TemperatureController) {
-		t.statusCh = ch
-	}
-}
-
 func SetClock(clock clock.Clock) OptionsFunc {
 	return func(t *TemperatureController) {
 		t.clock = clock
@@ -130,15 +127,26 @@ func SetHeatingMinimum(min time.Duration) OptionsFunc {
 	}
 }
 
-// TODO: this might should not return an error, just log.
+//nolint: funlen,cyclop // TODO: refactor
 func (t *TemperatureController) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController,
 	actuator device.Actuator, period, minimum time.Duration) error {
 	lastUpdateTime := t.clock.Now()
 
+	if t.thermometer == nil {
+		return ErrThermometerIsNil
+	}
+
+	if actuator == nil {
+		return ErrActuatorIsNil
+	}
+
 	for {
 		temperature, err := t.thermometer.GetTemperature()
 		if err != nil {
-			return errors.Wrap(err, "could not read thermometer")
+			t.logger.WithError(err).Error("could not read thermometer")
+			<-time.After(errorWaitPeriod)
+
+			continue
 		}
 
 		since := t.clock.Since(lastUpdateTime)
@@ -148,16 +156,10 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 		dutyTime := time.Duration(float64(period.Nanoseconds()) * dutyCycle)
 		waitTime := period - dutyTime
 
-		t.logger.Debugf("Actuator %s set point is %.4f°C", name, pid.Get())
-		t.logger.Debugf("Actuator %s current temperature is %.4f°C", name, temperature)
-
-		p, i, d := pid.PID()
-		t.logger.Debugf("Actuator %s PID is %f, %f, %f", name, p, i, d)
-		t.logger.Debugf("Actuator %s time since last update is %s", name, since)
-		t.logger.Debugf("Actuator %s output is %f", name, output)
-		t.logger.Debugf("Actuator %s dutyCycle is %.2f%%", name, dutyCycle*dutyCycleMultiplyer)
-		t.logger.Debugf("Actuator %s dutyTime is %s", name, dutyTime)
-		t.logger.Debugf("Actuator %s waitTime is %s", name, waitTime)
+		t.logger.Debugf("Actuator %s current temperature is %.4f°C, set point is %.4f°C", name, temperature, pid.Get())
+		t.logger.Debugf("Actuator %s time since last update is %s, PID output is %f", name, since, output)
+		t.logger.Debugf("Actuator %s dutyCycle is %.2f%%, dutyTime is %s, waitTime is %s", name,
+			dutyCycle*dutyCycleMultiplyer, dutyTime, waitTime)
 
 		if dutyTime > 0 {
 			if dutyTime < minimum {
@@ -166,10 +168,11 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 			}
 
 			if err := actuator.On(); err != nil {
-				return errors.Wrapf(err, "could not turn %s actuator on", name)
-			}
+				t.logger.WithError(err).Errorf("could not turn %s actuator on", name)
+				<-time.After(errorWaitPeriod)
 
-			t.sendStatus(name, true)
+				continue
+			}
 
 			t.logger.Debugf("Actuator %s acting for %v", name, dutyTime)
 
@@ -182,10 +185,11 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 
 		if waitTime > 0 {
 			if err := actuator.Off(); err != nil {
-				return errors.Wrap(err, "could not turn actuator off")
-			}
+				t.logger.WithError(err).Errorf("could not turn %s actuator off", name)
+				<-time.After(errorWaitPeriod)
 
-			t.sendStatus(name, false)
+				continue
+			}
 
 			t.logger.Debugf("Actuator %s waiting for %v", name, waitTime)
 
@@ -194,16 +198,6 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 			}
 
 			t.logger.Debugf("Actuator %s waited for %v", name, waitTime)
-		}
-	}
-}
-
-// TODO: Implement this.
-func (t *TemperatureController) sendStatus(device string, isOn bool) {
-	if t.statusCh != nil {
-		t.statusCh <- Status{
-			Device: device,
-			IsOn:   isOn,
 		}
 	}
 }

@@ -26,6 +26,7 @@ import (
 const (
 	build             = "development"
 	dbFilePermissions = 0o600
+	bboltReadTimeout  = 1 * time.Second
 )
 
 type config struct {
@@ -44,19 +45,20 @@ type config struct {
 
 func main() {
 	logger := logrus.New()
-	if err := run(logger); err != nil {
+
+	var cfg config
+
+	if err := envconfig.Process("zym", &cfg); err != nil {
+		logger.WithError(err).Error("could not process env vars")
+	}
+
+	if err := run(logger, cfg); err != nil {
 		logger.Error(err)
 		os.Exit(1)
 	}
 }
 
-func run(logger *logrus.Logger) error {
-	var cfg config
-
-	if err := envconfig.Process("zym", &cfg); err != nil {
-		return errors.Wrap(err, "could not process env vars")
-	}
-
+func run(logger *logrus.Logger, cfg config) error {
 	if cfg.Debug {
 		logger.SetLevel(logrus.DebugLevel)
 	}
@@ -83,7 +85,7 @@ func run(logger *logrus.Logger) error {
 		errCh <- monitor.Run(ctx)
 	}()
 
-	db, err := bbolt.Open("zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: 1 * time.Second})
+	db, err := bbolt.Open("zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: bboltReadTimeout})
 	if err != nil {
 		return errors.Wrap(err, "could not open database")
 	}
@@ -98,6 +100,7 @@ func run(logger *logrus.Logger) error {
 	}
 
 	var opts []brewfather.OptionsFunc
+
 	var logToBrewfather bool
 
 	if cfg.BrewfatherLogURL != "" {

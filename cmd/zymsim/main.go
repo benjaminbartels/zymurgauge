@@ -20,10 +20,10 @@ import (
 )
 
 const (
-	graphInterval            = 9
-	graphStrokeWidth         = 1.0
-	chartFilePermissions     = 0o600
-	readIntervalMilliseconds = 100
+	graphInterval        = 9
+	graphStrokeWidth     = 1.0
+	chartFilePermissions = 0o600
+	readInterval         = 100 * time.Millisecond
 )
 
 type reading struct {
@@ -124,7 +124,7 @@ func runSimulator(ctx context.Context, simulator *simulator.Simulator, multiplie
 
 func runTemperatureReader(ctx context.Context, thermometer device.Thermometer, startTime time.Time,
 	multiplier float64, readings chan reading) {
-	tick := time.Tick(readIntervalMilliseconds * time.Millisecond)
+	tick := time.Tick(readInterval)
 
 	for {
 		select {

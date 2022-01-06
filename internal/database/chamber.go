@@ -90,7 +90,7 @@ func (r *ChamberRepo) Save(c *chamber.Chamber) error {
 		c.ID = uuid.NewString()
 	}
 
-	// TODO: Update modtime
+	c.ModTime = time.Now().UTC()
 
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
 		bu := tx.Bucket([]byte(chamberBucket))

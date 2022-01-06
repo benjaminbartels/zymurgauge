@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const brewfatherLogIntervalMinutes = 15
+const brewfatherLogInterval = 15 * time.Minute
 
 // Chamber represents an insulated box (fridge) with internal heating/cooling elements that reacts to changes in
 // monitored temperatures, by correcting small deviations from your desired fermentation temperature.
@@ -161,7 +161,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 			c.sendData(ctx)
 
 			for {
-				timer := time.NewTimer(brewfatherLogIntervalMinutes * time.Minute)
+				timer := time.NewTimer(brewfatherLogInterval)
 				defer timer.Stop()
 
 				select {
@@ -174,9 +174,13 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 		}()
 	}
 
+	// TODO: this should return an error to the called, but would require the manager to keep track of go routines
+	// The manager would keep a map of cancelFunc, that would be returned from chamber.StartFermentation() along
+	// with an error.
 	go func() {
 		if err := c.temperatureController.Run(ctx, temp); err != nil {
 			c.logger.WithError(err).Errorf("could not run temperature controller for chamber %s", c.Name)
+			c.cancelFunc = nil // TODO: test this
 		}
 	}()
 
