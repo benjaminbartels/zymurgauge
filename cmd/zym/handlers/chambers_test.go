@@ -295,6 +295,8 @@ func saveChamberParseError(t *testing.T) {
 	assert.Contains(t, err.Error(), parseErrorMsg)
 }
 
+// This test uses a real chamber Manager and not a mock due to needing to set the the configErrors field
+// in InvalidConfigurationError.
 func saveChamberInvalidConfigError(t *testing.T) {
 	t.Parallel()
 
@@ -318,7 +320,7 @@ func saveChamberInvalidConfigError(t *testing.T) {
 
 	serviceMock := &brewfatherMock.Service{}
 
-	controller, err := chamber.NewManager(ctx, repoMock, configuratorMock, serviceMock, l)
+	controller, err := chamber.NewManager(ctx, repoMock, configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
 	handler := &handlers.ChambersHandler{ChamberController: controller, Logger: l}
@@ -418,7 +420,7 @@ func deleteChamber(t *testing.T) {
 
 	serviceMock := &brewfatherMock.Service{}
 
-	err := c.Configure(configuratorMock, serviceMock, l)
+	err := c.Configure(configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, "Primary")
@@ -487,7 +489,7 @@ func deleteChamberOtherError(t *testing.T) {
 
 	serviceMock := &brewfatherMock.Service{}
 
-	err := c.Configure(configuratorMock, serviceMock, l)
+	err := c.Configure(configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
 	controllerMock := &mocks.Controller{}
@@ -537,7 +539,7 @@ func startFermentation(t *testing.T) {
 
 	serviceMock := &brewfatherMock.Service{}
 
-	err := c.Configure(configuratorMock, serviceMock, l)
+	err := c.Configure(configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
 	w, r, ctx := setupHandlerTest("step="+primaryStep, nil)
@@ -563,7 +565,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 
 	serviceMock := &brewfatherMock.Service{}
 
-	err := c.Configure(configuratorMock, serviceMock, l)
+	err := c.Configure(configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
 	step := "Secondary"
@@ -675,7 +677,7 @@ func stopFermentation(t *testing.T) {
 
 	serviceMock := &brewfatherMock.Service{}
 
-	err := c.Configure(configuratorMock, serviceMock, l)
+	err := c.Configure(configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, "Primary")
@@ -757,7 +759,7 @@ func stopFermentationRespondError(t *testing.T) {
 
 	serviceMock := &brewfatherMock.Service{}
 
-	err := c.Configure(configuratorMock, serviceMock, l)
+	err := c.Configure(configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, primaryStep)

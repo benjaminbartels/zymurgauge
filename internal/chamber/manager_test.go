@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -27,7 +26,8 @@ const (
 
 func createTestChambers() []*chamber.Chamber {
 	chamber1 := chamber.Chamber{
-		ID: chamberID,
+		ID:   chamberID,
+		Name: "Chamber1",
 		CurrentBatch: &brewfather.Batch{
 			Fermentation: brewfather.Fermentation{
 				Steps: []brewfather.FermentationStep{
@@ -43,15 +43,18 @@ func createTestChambers() []*chamber.Chamber {
 			},
 		},
 		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"beerThermometer"}},
+			{ID: "orange", Type: "tilt", Roles: []string{"beerThermometer", "hydrometer"}},
+			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"auxiliaryThermometer"}},
+			{ID: "28-000007158912", Type: "ds18b20", Roles: []string{"externalThermometer"}},
 			{ID: "GPIO2", Type: "gpio", Roles: []string{"chiller"}},
 			{ID: "GPIO3", Type: "gpio", Roles: []string{"heater"}},
 		},
 	}
 	chamber2 := chamber.Chamber{
-		ID: "dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1",
+		ID:   "dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1",
+		Name: "Chamber2",
 		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "orange", Type: "tilt", Roles: []string{"beerThermometer", "hydrometer"}},
+			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"beerThermometer"}},
 			{ID: "GPIO5", Type: "gpio", Roles: []string{"chiller"}},
 			{ID: "GPIO6", Type: "gpio", Roles: []string{"heater"}},
 		},
@@ -81,7 +84,7 @@ func newManagerGetAllError(t *testing.T) {
 
 	serviceMock := &brewfatherMocks.Service{}
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all chambers from"))
 	assert.Nil(t, manager)
 }
@@ -106,7 +109,7 @@ func newManagerConfigureErrors(t *testing.T) {
 
 	serviceMock := &brewfatherMocks.Service{}
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
 	assert.Contains(t, err.Error(), "could not configure all temperature controllers")
 	assert.NotNil(t, manager)
 }
@@ -377,40 +380,30 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("GetAll").Return(testChambers, nil)
 
-	thermometerMock := &deviceMocks.Thermometer{}
-	thermometerMock.On("GetTemperature").Return(0.0, errors.New("thermometerMock error"))
+	doneCh := make(chan struct{}, 1)
+
+	thermometerMock := &deviceMocks.ThermometerAndHydrometer{}
+	thermometerMock.On("GetTemperature").Return(0.0, errors.New("thermometerMock error")).Run(
+		func(args mock.Arguments) {
+			doneCh <- struct{}{}
+		})
 
 	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateTilt", mock.Anything).Return(&chamber.StubTilt{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(thermometerMock, nil)
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&chamber.StubGPIOActuator{}, nil)
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(thermometerMock, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&chamber.StubThermometer{}, nil)
 
 	serviceMock := &brewfatherMocks.Service{}
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
-
-	doneCh := make(chan struct{}, 1)
-
-	go func() {
-		for {
-			if logContains(hook.AllEntries(), logrus.ErrorLevel, "could not run temperature controller for chamber") {
-				doneCh <- struct{}{}
-
-				return
-			}
-
-			<-time.After(100 * time.Millisecond)
-		}
-	}()
 
 	err = manager.StartFermentation(chamberID, "Primary")
 	assert.NoError(t, err)
-	select {
-	case <-doneCh:
-	case <-time.After(5 * time.Second):
-		assert.Fail(t, "log should contain expected value by now")
-	}
+
+	<-doneCh
+
+	logContains(hook.AllEntries(), logrus.ErrorLevel, "could not run temperature controller for chamber")
 }
 
 //nolint: paralleltest // False positives with r.Run not in a loop
@@ -502,7 +495,7 @@ func setupManagerTest(t *testing.T,
 
 	serviceMock := &brewfatherMocks.Service{}
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
 	assert.NoError(t, err)
 
 	return manager, repoMock

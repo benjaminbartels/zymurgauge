@@ -96,7 +96,7 @@ func TestRoutes(t *testing.T) {
 		serviceMock.On("GetAll", mock.Anything).Return([]brewfather.Batch{}, nil)
 		serviceMock.On("Get", mock.Anything, batchID).Return(&r, nil)
 
-		err := c.Configure(configuratorMock, serviceMock, l)
+		err := c.Configure(configuratorMock, serviceMock, false, l)
 		assert.NoError(t, err)
 
 		chambers := []*chamber.Chamber{c}

@@ -98,15 +98,17 @@ func run(logger *logrus.Logger) error {
 	}
 
 	var opts []brewfather.OptionsFunc
+	var logToBrewfather bool
 
 	if cfg.BrewfatherLogURL != "" {
 		logger.Infof("Brewfather Log URL is set to %s", cfg.BrewfatherLogURL)
 		opts = append(opts, brewfather.SetTiltURL(cfg.BrewfatherLogURL))
+		logToBrewfather = true
 	}
 
 	brewfatherService := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey, opts...)
 
-	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherService, logger)
+	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherService, logToBrewfather, logger)
 	if err != nil {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}

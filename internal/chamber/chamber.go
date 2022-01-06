@@ -30,7 +30,6 @@ type Chamber struct {
 	HeaterKd                float64           `json:"heaterKd"`
 	CurrentBatch            *brewfather.Batch `json:"currentBatch,omitempty"`
 	CurrentFermentationStep int               `json:"currentFermentationStep"` // TODO: Is this used?
-	LogToBrewfather         bool              `json:"ogToBrewfather"`
 	ModTime                 time.Time         `json:"modTime"`
 	logger                  *logrus.Logger
 	beerThermometer         device.Thermometer
@@ -41,6 +40,7 @@ type Chamber struct {
 	heater                  device.Actuator
 	temperatureController   device.TemperatureController
 	service                 brewfather.Service
+	logToBrewfather         bool
 	cancelFunc              context.CancelFunc
 	runMutex                *sync.Mutex
 }
@@ -53,7 +53,8 @@ type DeviceConfig struct {
 
 // TODO: refactor to use generics in the future.
 
-func (c *Chamber) Configure(configurator Configurator, service brewfather.Service, logger *logrus.Logger) error {
+func (c *Chamber) Configure(configurator Configurator, service brewfather.Service, logToBrewfather bool,
+	logger *logrus.Logger) error {
 	c.logger = logger
 
 	var errs []error
@@ -65,6 +66,7 @@ func (c *Chamber) Configure(configurator Configurator, service brewfather.Servic
 	}
 
 	c.service = service
+	c.logToBrewfather = logToBrewfather
 
 	c.temperatureController = pid.NewPIDTemperatureController(
 		c.beerThermometer, c.chiller, c.heater, c.ChillerKp, c.ChillerKi, c.ChillerKd,
@@ -154,7 +156,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 	ctx, cancelFunc := context.WithCancel(ctx)
 	c.cancelFunc = cancelFunc
 
-	if c.LogToBrewfather {
+	if c.logToBrewfather {
 		go func() { // TODO: NEXT unit test this.
 			c.sendData(ctx)
 
@@ -204,10 +206,19 @@ func (c *Chamber) sendData(ctx context.Context) {
 		err                  error
 	)
 
+	log := brewfather.LogEntry{
+		DeviceName:      c.Name,
+		Beer:            c.CurrentBatch.Name,
+		TemperatureUnit: "C",
+		GravityUnit:     "G",
+	}
+
 	if c.beerThermometer != nil {
 		beerTemperature, err = c.beerThermometer.GetTemperature()
 		if err != nil {
 			c.logger.WithError(err).Error("could not read beer temperature")
+		} else {
+			log.BeerTemperature = fmt.Sprintf("%f", beerTemperature)
 		}
 	}
 
@@ -215,6 +226,8 @@ func (c *Chamber) sendData(ctx context.Context) {
 		auxiliaryTemperature, err = c.beerThermometer.GetTemperature()
 		if err != nil {
 			c.logger.WithError(err).Error("could not read beer temperature")
+		} else {
+			log.AuxiliaryTemperature = fmt.Sprintf("%f", auxiliaryTemperature)
 		}
 	}
 
@@ -222,6 +235,8 @@ func (c *Chamber) sendData(ctx context.Context) {
 		externalTemperature, err = c.externalThermometer.GetTemperature()
 		if err != nil {
 			c.logger.WithError(err).Error("could not read beer temperature")
+		} else {
+			log.ExternalTemperature = fmt.Sprintf("%f", externalTemperature)
 		}
 	}
 
@@ -229,25 +244,16 @@ func (c *Chamber) sendData(ctx context.Context) {
 		gravity, err = c.hydrometer.GetGravity()
 		if err != nil {
 			c.logger.WithError(err).Error("could not get specific gravity")
+		} else {
+			log.Gravity = fmt.Sprintf("%f", gravity)
 		}
-	}
-
-	log := brewfather.LogEntry{
-		DeviceName:           c.Name,
-		BeerTemperature:      fmt.Sprintf("%f", beerTemperature),
-		AuxiliaryTemperature: fmt.Sprintf("%f", auxiliaryTemperature),
-		ExternalTemperature:  fmt.Sprintf("%f", externalTemperature),
-		TemperatureUnit:      "C",
-		Gravity:              fmt.Sprintf("%f", gravity),
-		GravityUnit:          "G",
-		Beer:                 c.CurrentBatch.Name,
 	}
 
 	c.logger.Debugf("Sending Data to Brewfather: Beer: %s Temperature: %s Gravity: %s",
 		log.Beer, log.BeerTemperature, log.Gravity)
 
 	if err := c.service.Log(ctx, log); err != nil {
-		c.logger.WithError(err).Error("could log tilt data")
+		c.logger.WithError(err).Error("could not log tilt data")
 	}
 }
 
