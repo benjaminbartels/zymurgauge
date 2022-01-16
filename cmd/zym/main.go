@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,6 +29,9 @@ const (
 	dbFilePermissions = 0o600
 	bboltReadTimeout  = 1 * time.Second
 )
+
+//go:embed web/build
+var uiFiles embed.FS
 
 type config struct {
 	Host                string        `default:":8080"`
@@ -124,7 +128,8 @@ func run(logger *logrus.Logger, cfg config) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, shutdown, logger),
+		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, uiFiles,
+			shutdown, logger),
 	}
 
 	go func() {

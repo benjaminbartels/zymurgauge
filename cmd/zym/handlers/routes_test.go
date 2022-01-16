@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -42,6 +43,7 @@ func TestRoutes(t *testing.T) {
 		{path: "/v1/batches", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/batches/" + batchID, method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/bad_path/" + batchID, method: http.MethodGet, body: nil, code: http.StatusNotFound},
+		{path: "/index.html", method: http.MethodGet, body: nil, code: http.StatusNotFound},
 	}
 
 	for _, tc := range testCases {
@@ -112,7 +114,9 @@ func TestRoutes(t *testing.T) {
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
-		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, shutdown, logger)
+		f := embed.FS{}
+
+		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, f, shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
