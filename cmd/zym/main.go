@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"embed"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,6 +16,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
+	"github.com/benjaminbartels/zymurgauge/web"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -29,9 +29,6 @@ const (
 	dbFilePermissions = 0o600
 	bboltReadTimeout  = 1 * time.Second
 )
-
-//go:embed web/build
-var uiFiles embed.FS
 
 type config struct {
 	Host                string        `default:":8080"`
@@ -128,7 +125,7 @@ func run(logger *logrus.Logger, cfg config) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, uiFiles,
+		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, web.FS,
 			shutdown, logger),
 	}
 

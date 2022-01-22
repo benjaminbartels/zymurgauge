@@ -1,23 +1,17 @@
 package handlers
 
 import (
-	"context"
-	"embed"
 	"expvar"
 	"fmt"
-	"mime"
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
-	"github.com/julienschmidt/httprouter"
-	"github.com/pkg/errors"
+	uiweb "github.com/benjaminbartels/zymurgauge/web"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,7 +25,7 @@ const (
 )
 
 // NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfather.Service, uiFiles embed.FS,
+func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfather.Service, uiFiles uiweb.FileReader,
 	shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberManager,
@@ -47,7 +41,7 @@ func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfa
 	}
 
 	uiHander := &UIHandler{
-		UIFiles: uiFiles,
+		FileReader: uiFiles,
 	}
 
 	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger))
@@ -64,38 +58,9 @@ func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfa
 	app.Register(http.MethodGet, version, batchesPath, batchesHandler.GetAll)
 	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", batchesPath), batchesHandler.Get)
 
-	app.Register(http.MethodGet, "ui", "/*filepath", uiHander.handle)
+	app.Register(http.MethodGet, "ui", "/*filepath", uiHander.Get)
 
 	return app
-}
-
-type UIHandler struct {
-	UIFiles embed.FS
-}
-
-func (h *UIHandler) handle(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	var filePath string
-
-	if strings.HasPrefix(r.URL.Path, base+"/static") {
-		filePath = uiDir + strings.TrimPrefix(r.URL.Path, base)
-	} else {
-		filePath = uiDir + "/index.html"
-	}
-
-	b, err := h.UIFiles.ReadFile(filePath)
-	if err != nil {
-		return errors.Wrap(err, "could not read file")
-	}
-
-	if contentType := mime.TypeByExtension(filepath.Ext(r.URL.Path)); len(contentType) > 0 {
-		w.Header().Add("Content-Type", contentType)
-	}
-
-	if _, err := w.Write(b); err != nil {
-		return errors.Wrap(err, "could not write response")
-	}
-
-	return nil
 }
 
 func DebugMux() *http.ServeMux {
