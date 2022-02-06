@@ -92,6 +92,9 @@ func (r *ChamberRepo) Save(c *chamber.Chamber) error {
 
 	c.ModTime = time.Now().UTC()
 
+	c.Readings = nil
+	c.CurrentFermentationStep = nil
+
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
 		bu := tx.Bucket([]byte(chamberBucket))
 		c.ModTime = time.Now()
