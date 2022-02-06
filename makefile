@@ -26,10 +26,10 @@ build: build-react build-go  ## Build both React UI and Go binary
 
 build-go: ## Build the default go package and put the output binary in out/bin/
 	mkdir -p out/bin
-	
 	GOOS=linux GOARCH=arm CGO_ENABLED=0 $(GOCMD) build -a -ldflags="-w -s -extldflags '-static'" -o out/bin/$(BINARY_NAME) ./$(MAIN_DIR)
 
 build-react: ## Build the React UI
+	yarn --cwd "web" install
 	yarn --cwd "web" build
 
 clean: ## Remove build and coverage related file
@@ -87,8 +87,9 @@ lint: lint-go lint-yaml  ## Run all linters
 # endif
 
 lint-go: ## Lint go files
+# TODO: Fix this
 	$(eval OUTPUT_OPTIONS = $(shell [ "${EXPORT_RESULT}" == "true" ] && echo "--out-format checkstyle ./... | tee /dev/tty > checkstyle-report.xml" || echo "" ))
-	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:latest-alpine golangci-lint run --deadline=65s $(OUTPUT_OPTIONS)
+	docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:latest-alpine golangci-lint run --deadline=65s $(OUTPUT_OPTIONS) 
 
 lint-yaml: ## Lint yaml files
 ifeq ($(EXPORT_RESULT),true)
