@@ -56,7 +56,7 @@ func NewManager(ctx context.Context, repo Repo, configurator Configurator, servi
 	}
 
 	if errs != nil {
-		return m, errors.Wrap(errs, "could not configure all temperature controllers")
+		return m, errors.Wrap(errs, "could not configure temperature controllers")
 	}
 
 	return m, nil

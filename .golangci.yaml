@@ -110,7 +110,8 @@ linters-settings:
       - error
       - empty
       - stdlib
-      - device.Thermometer,
+      - device.Thermometer
+      - device.Hydrometer
       - device.ThermometerAndHydrometer
       - device.Actuator
   wrapcheck:
