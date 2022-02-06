@@ -69,16 +69,16 @@ func TestRoutes(t *testing.T) {
 					Roles: []string{"heater"},
 				},
 			},
-			CurrentBatch: &brewfather.Batch{
+			CurrentBatch: &brewfather.BatchDetail{
 				Fermentation: brewfather.Fermentation{
 					Steps: []brewfather.FermentationStep{
 						{
-							Type:     "Primary",
-							StepTemp: 22,
+							Type:            "Primary",
+							StepTemperature: 22,
 						},
 						{
-							Type:     "Secondary",
-							StepTemp: 20,
+							Type:            "Secondary",
+							StepTemperature: 20,
 						},
 					},
 				},
@@ -90,11 +90,11 @@ func TestRoutes(t *testing.T) {
 		configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.Tilt{}, nil)
 		configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
-		r := brewfather.Batch{ID: batchID}
+		r := brewfather.BatchDetail{ID: batchID}
 
 		serviceMock := &mocks.Service{}
-		serviceMock.On("GetAll", mock.Anything).Return([]brewfather.Batch{}, nil)
-		serviceMock.On("Get", mock.Anything, batchID).Return(&r, nil)
+		serviceMock.On("GetAllSummaries", mock.Anything).Return([]brewfather.BatchSummary{}, nil)
+		serviceMock.On("GetDetail", mock.Anything, batchID).Return(&r, nil)
 
 		err := c.Configure(configuratorMock, serviceMock, false, l)
 		assert.NoError(t, err)
