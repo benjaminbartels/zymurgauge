@@ -28,16 +28,16 @@ func createTestChambers() []*chamber.Chamber {
 	chamber1 := chamber.Chamber{
 		ID:   chamberID,
 		Name: "Chamber1",
-		CurrentBatch: &brewfather.Batch{
+		CurrentBatch: &brewfather.BatchDetail{
 			Fermentation: brewfather.Fermentation{
 				Steps: []brewfather.FermentationStep{
 					{
-						Type:     "Primary",
-						StepTemp: 22,
+						Type:            "Primary",
+						StepTemperature: 22,
 					},
 					{
-						Type:     "Secondary",
-						StepTemp: 20,
+						Type:            "Secondary",
+						StepTemperature: 20,
 					},
 				},
 			},
