@@ -47,12 +47,12 @@ func getTestChamber() chamber.Chamber {
 				Roles: []string{"heater"},
 			},
 		},
-		CurrentBatch: &brewfather.Batch{
+		CurrentBatch: &brewfather.BatchDetail{
 			Fermentation: brewfather.Fermentation{
 				Steps: []brewfather.FermentationStep{
 					{
-						Type:     primaryStep,
-						StepTemp: 22,
+						Type:            primaryStep,
+						StepTemperature: 22,
 					},
 				},
 			},

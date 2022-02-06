@@ -1,7 +1,21 @@
 //nolint:tagliatelle
 package model
 
-type Batch struct {
+type BatchSummary struct {
+	ID       string        `json:"_id"`
+	Name     string        `json:"name"`
+	BatchNo  int           `json:"batchNo"`
+	Status   string        `json:"status"`
+	Brewer   interface{}   `json:"brewer"`
+	BrewDate int64         `json:"brewDate"`
+	Recipe   RecipeSummary `json:"recipe"`
+}
+
+type RecipeSummary struct {
+	Name string `json:"name"`
+}
+
+type BatchDetail struct {
 	BoilSteps                     []BoilSteps              `json:"boilSteps"`
 	MeasuredConversionEfficiency  interface{}              `json:"measuredConversionEfficiency"`
 	Brewer                        interface{}              `json:"brewer"`

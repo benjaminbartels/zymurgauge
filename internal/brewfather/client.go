@@ -56,7 +56,7 @@ func SetTiltURL(url string) OptionsFunc {
 	}
 }
 
-func (s *ServiceClient) GetAll(ctx context.Context) ([]Batch, error) {
+func (s *ServiceClient) GetAllSummaries(ctx context.Context) ([]BatchSummary, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", APIURL, batchesPath), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batches")
@@ -73,15 +73,15 @@ func (s *ServiceClient) GetAll(ctx context.Context) ([]Batch, error) {
 		return nil, err
 	}
 
-	var batches []model.Batch
+	var batches []model.BatchSummary
 	if err = json.NewDecoder(resp.Body).Decode(&batches); err != nil {
 		return nil, errors.Wrap(err, "could not decode Batches")
 	}
 
-	return convertBatches(batches), nil
+	return convertBatchSummaries(batches), nil
 }
 
-func (s *ServiceClient) Get(ctx context.Context, id string) (*Batch, error) {
+func (s *ServiceClient) GetDetail(ctx context.Context, id string) (*BatchDetail, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", APIURL, batchesPath, id), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batch")
@@ -98,12 +98,12 @@ func (s *ServiceClient) Get(ctx context.Context, id string) (*Batch, error) {
 		return nil, err
 	}
 
-	var batch model.Batch
+	var batch model.BatchDetail
 	if err = json.NewDecoder(resp.Body).Decode(&batch); err != nil {
 		return nil, errors.Wrap(err, "could not decode Batch")
 	}
 
-	b := convertBatch(batch)
+	b := convertBatchDetail(batch)
 
 	return &b, nil
 }
@@ -172,19 +172,30 @@ func parseStatusCode(code int) error {
 	}
 }
 
-func convertBatches(batches []model.Batch) []Batch {
-	s := []Batch{}
+func convertBatchSummaries(batches []model.BatchSummary) []BatchSummary {
+	s := []BatchSummary{}
 	for i := 0; i < len(batches); i++ {
-		s = append(s, convertBatch(batches[i]))
+		s = append(s, convertBatchSummary(batches[i]))
 	}
 
 	return s
 }
 
-func convertBatch(b model.Batch) Batch {
-	return Batch{
+func convertBatchSummary(b model.BatchSummary) BatchSummary {
+	return BatchSummary{
+		ID:         b.ID,
+		Name:       b.Name,
+		Number:     b.BatchNo,
+		RecipeName: b.Recipe.Name,
+	}
+}
+
+func convertBatchDetail(b model.BatchDetail) BatchDetail {
+	return BatchDetail{
 		ID:           b.ID,
 		Name:         b.Name,
+		Number:       b.BatchNo,
+		RecipeName:   b.Recipe.Name,
 		Fermentation: convertFermentation(b.Recipe.Fermentation),
 	}
 }
@@ -207,9 +218,9 @@ func convertFermentationSteps(steps []model.FermentationStep) []FermentationStep
 
 func convertFermentationStep(step model.FermentationStep) FermentationStep {
 	return FermentationStep{
-		Type:       step.Type,
-		ActualTime: step.ActualTime,
-		StepTemp:   step.StepTemp,
-		StepTime:   step.StepTime,
+		Type:            step.Type,
+		ActualTime:      step.ActualTime,
+		StepTemperature: step.StepTemp,
+		StepTime:        step.StepTime,
 	}
 }

@@ -30,7 +30,7 @@ func getAllBatches(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	expected := []brewfather.Batch{
+	expected := []brewfather.BatchSummary{
 		{ID: batchID},
 		{ID: "f4ce0e05-1ada-42b8-8fc4-fb3482525d0d"},
 	}
@@ -45,7 +45,7 @@ func getAllBatches(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := []brewfather.Batch{}
+	result := []brewfather.BatchSummary{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
@@ -56,7 +56,7 @@ func getAllBatchesEmpty(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	expected := []brewfather.Batch{}
+	expected := []brewfather.BatchSummary{}
 	serviceMock := &mocks.Service{}
 	serviceMock.On("GetAll", ctx).Return(expected, nil)
 
@@ -68,7 +68,7 @@ func getAllBatchesEmpty(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	result := []brewfather.Batch{}
+	result := []brewfather.BatchSummary{}
 	err = json.Unmarshal(bodyBytes, &result)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
@@ -80,7 +80,7 @@ func getAllServiceError(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", nil)
 
 	serviceMock := &mocks.Service{}
-	serviceMock.On("GetAll", ctx).Return([]brewfather.Batch{}, errSomeError)
+	serviceMock.On("GetAll", ctx).Return([]brewfather.BatchSummary{}, errSomeError)
 
 	handler := &handlers.BatchesHandler{Service: serviceMock}
 	err := handler.GetAll(ctx, w, r, httprouter.Params{})
@@ -95,7 +95,7 @@ func getAllBatchesRespondError(t *testing.T) {
 	ctx := context.Background()
 
 	serviceMock := &mocks.Service{}
-	serviceMock.On("GetAll", ctx).Return([]brewfather.Batch{}, nil)
+	serviceMock.On("GetAll", ctx).Return([]brewfather.BatchSummary{}, nil)
 
 	handler := &handlers.BatchesHandler{Service: serviceMock}
 	// use new ctx to force error
@@ -118,7 +118,7 @@ func getBatchFound(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	expected := brewfather.Batch{ID: batchID}
+	expected := brewfather.BatchDetail{ID: batchID}
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Get", ctx, batchID).Return(&expected, nil)
 
@@ -130,7 +130,7 @@ func getBatchFound(t *testing.T) {
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
-	batch := brewfather.Batch{}
+	batch := brewfather.BatchDetail{}
 	err = json.Unmarshal(bodyBytes, &batch)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, batch)
@@ -141,7 +141,7 @@ func getBatchNotFoundError(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	var expected *brewfather.Batch
+	var expected *brewfather.BatchDetail
 
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Get", ctx, batchID).Return(expected, brewfather.ErrNotFound)
@@ -179,7 +179,7 @@ func getServiceError(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 
-	var expected *brewfather.Batch
+	var expected *brewfather.BatchDetail
 
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Get", ctx, batchID).Return(expected, errSomeError)
@@ -195,7 +195,7 @@ func getBatchRespondError(t *testing.T) {
 	w, r, _ := setupHandlerTest("", nil)
 	ctx := context.Background()
 
-	expected := brewfather.Batch{ID: batchID}
+	expected := brewfather.BatchDetail{ID: batchID}
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Get", ctx, batchID).Return(&expected, nil)
 

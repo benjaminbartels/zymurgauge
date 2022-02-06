@@ -16,15 +16,15 @@ type Service struct {
 }
 
 // Get provides a mock function with given fields: ctx, id
-func (_m *Service) Get(ctx context.Context, id string) (*brewfather.Batch, error) {
+func (_m *Service) GetDetail(ctx context.Context, id string) (*brewfather.BatchDetail, error) {
 	ret := _m.Called(ctx, id)
 
-	var r0 *brewfather.Batch
-	if rf, ok := ret.Get(0).(func(context.Context, string) *brewfather.Batch); ok {
+	var r0 *brewfather.BatchDetail
+	if rf, ok := ret.Get(0).(func(context.Context, string) *brewfather.BatchDetail); ok {
 		r0 = rf(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*brewfather.Batch)
+			r0 = ret.Get(0).(*brewfather.BatchDetail)
 		}
 	}
 
@@ -39,15 +39,15 @@ func (_m *Service) Get(ctx context.Context, id string) (*brewfather.Batch, error
 }
 
 // GetAll provides a mock function with given fields: ctx
-func (_m *Service) GetAll(ctx context.Context) ([]brewfather.Batch, error) {
+func (_m *Service) GetAllSummaries(ctx context.Context) ([]brewfather.BatchSummary, error) {
 	ret := _m.Called(ctx)
 
-	var r0 []brewfather.Batch
-	if rf, ok := ret.Get(0).(func(context.Context) []brewfather.Batch); ok {
+	var r0 []brewfather.BatchSummary
+	if rf, ok := ret.Get(0).(func(context.Context) []brewfather.BatchSummary); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]brewfather.Batch)
+			r0 = ret.Get(0).([]brewfather.BatchSummary)
 		}
 	}
 
