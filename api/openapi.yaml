@@ -423,6 +423,23 @@ components:
         heaterKd:
           type: number
           format: double
+        readings:
+          type: object
+          properties:
+            beerTemperature:
+              type: number
+              format: double
+            auxiliaryTemperature:
+              type: number
+              format: double
+            externalTemperature:
+              type: number
+              format: double
+            hydrometerGravity:
+              type: number
+              format: double
+        currentFermentationStep: Primary          
+          type: string
         modTime:
           type: string
           format: date-time
@@ -483,12 +500,17 @@ components:
               - type: Secondary
                 actualTime: 1635919200000
                 stepTime: 10
-                stepTemp: 19.
+                stepTemp: 19.0
               - type: Conditioning
                 actualTime: 1636786800000
                 stepTime: 30
                 stepTemp: 18.3
-        currentFermentationStep: 2
+        currentFermentationStep: Primary
+        readings:
+          beerTemperature: 20
+          auxiliaryTemperature: 22.1
+          externalTemperature: 23.1
+          hydrometerGravity: 1.002
         modTime: "2021-10-28T09:54:07.155132Z"
     chambers:
       value:
@@ -531,7 +553,12 @@ components:
                   actualTime: 1636786800000
                   stepTime: 30
                   stepTemp: 18.3
-          currentFermentationStep: 2
+          currentFermentationStep: Primary
+          readings:
+            beerTemperature: 20
+            auxiliaryTemperature: 22.1
+            externalTemperature: 23.1
+            hydrometerGravity: 1.002
           modTime: "2021-10-28T09:54:07.155132Z"
         - id: dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1
           name: My Fermentation Chamber

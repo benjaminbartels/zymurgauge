@@ -68,6 +68,7 @@ func (m *Manager) GetAll() ([]*Chamber, error) {
 
 	chambers := make([]*Chamber, 0, len(m.chambers))
 	for _, chamber := range m.chambers {
+		chamber.UpdateReadings()
 		chambers = append(chambers, chamber)
 	}
 
@@ -80,10 +81,11 @@ func (m *Manager) Get(id string) (*Chamber, error) {
 	defer m.mutex.RUnlock()
 
 	chamber, ok := m.chambers[id]
-	if !ok {
-		return chamber, nil
+	if ok {
+		chamber.UpdateReadings()
 	}
 
+	// It is not possible for Get() to return an error
 	return chamber, nil
 }
 
@@ -139,6 +141,10 @@ func (m *Manager) StartFermentation(chamberID string, step string) error {
 		return errors.Wrap(err, "could not start fermentation")
 	}
 
+	chamber.CurrentFermentationStep = &step
+
+	m.chambers[chamber.ID] = chamber
+
 	return nil
 }
 
@@ -155,6 +161,10 @@ func (m *Manager) StopFermentation(chamberID string) error {
 	if err != nil {
 		return errors.Wrap(err, "could not stop fermentation")
 	}
+
+	chamber.CurrentFermentationStep = nil
+
+	m.chambers[chamber.ID] = chamber
 
 	return nil
 }
