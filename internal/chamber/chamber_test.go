@@ -20,7 +20,6 @@ const (
 	ds18b20ErrMsg = "could not create new Ds18b20 %s"
 	tiltErrMsg    = "could not create new %s Tilt"
 	gpioErrMsg    = "could not create new GPIO %s"
-	roleErrMsg    = "invalid device role '%s'"
 )
 
 //nolint: paralleltest // False positives with r.Run not in a loop
@@ -30,7 +29,6 @@ func TestConfigure(t *testing.T) {
 	t.Run("configureDs18b20Error", configureDs18b20Error)
 	t.Run("configureTiltError", configureTiltError)
 	t.Run("configureGPIOError", configureGPIOError)
-	t.Run("configureInvalidRoleError", configureInvalidRoleError)
 }
 
 const (
@@ -38,7 +36,6 @@ const (
 	tiltColor = "orange"
 	gpio2     = "GPIO2"
 	gpio3     = "GPIO3"
-	badRole   = "badRole"
 )
 
 func configure(t *testing.T) {
@@ -127,30 +124,6 @@ func configureGPIOError(t *testing.T) {
 
 	assert.ErrorAs(t, err, &cfgErr)
 	assert.Contains(t, cfgErr.Problems()[0].Error(), fmt.Sprintf(gpioErrMsg, gpio2))
-}
-
-func configureInvalidRoleError(t *testing.T) {
-	t.Parallel()
-
-	l, _ := logtest.NewNullLogger()
-
-	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
-	configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.Tilt{}, nil)
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
-
-	serviceMock := &mocks.Service{}
-
-	c := createTestChambers()
-
-	c[0].DeviceConfigs[0].Roles[0] = "badRole"
-
-	err := c[0].Configure(configuratorMock, serviceMock, false, l)
-
-	var cfgErr *chamber.InvalidConfigurationError
-
-	assert.ErrorAs(t, err, &cfgErr)
-	assert.Contains(t, cfgErr.Problems()[0].Error(), fmt.Sprintf(roleErrMsg, badRole))
 }
 
 //nolint: paralleltest // False positives with r.Run not in a loop

@@ -25,7 +25,7 @@ const (
 	notFermentingErrorMsg     = "chamber '%s' is not fermenting"
 	startFermentationErrorMsg = "could not start fermentation for chamber %s"
 	stopFermentationErrorMsg  = "could not stop fermentation for chamber %s"
-	invalidConfigErrorMsg     = "configuration is invalid: could not create new Ds18b20 1: some error"
+	invalidConfigErrorMsg     = "configuration is invalid: %s: some error"
 )
 
 var errSomeError = errors.New("some error")

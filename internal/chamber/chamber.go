@@ -21,7 +21,7 @@ const brewfatherLogInterval = 15 * time.Minute
 type Chamber struct {
 	ID                      string                  `json:"id"` // TODO: omit empty?
 	Name                    string                  `json:"name"`
-	DeviceConfigs           []DeviceConfig          `json:"deviceConfigs"` // TODO: make is a struct and not a list
+	DeviceConfig            DeviceConfig            `json:"deviceConfigs"` // TODO: make is a struct and not a list
 	ChillerKp               float64                 `json:"chillerKp"`
 	ChillerKi               float64                 `json:"chillerKi"`
 	ChillerKd               float64                 `json:"chillerKd"`
@@ -47,9 +47,16 @@ type Chamber struct {
 }
 
 type DeviceConfig struct {
-	ID    string   `json:"id"`
-	Type  string   `json:"type"`
-	Roles []string `json:"roles"`
+	ChillerGPIO               string `json:"chillerGpio"`
+	HeaterGPIO                string `json:"heaterGpio"`
+	BeerThermometerType       string `json:"beerThermometerType"`
+	BeerThermometerID         string `json:"beerThermometerId"`
+	AuxiliaryThermometerType  string `json:"auxiliaryThermometerType"`
+	AuxiliaryThermometerID    string `json:"auxiliaryThermometerId"`
+	ExternalThermometerType   string `json:"externalThermometerType"`
+	ExternalThermometerID     string `json:"externalThermometerId"`
+	HydrometerThermometerType string `json:"hydrometerThermometerType"`
+	HydrometerThermometerID   string `json:"hydrometerThermometerId"`
 }
 
 type Readings struct {
@@ -65,16 +72,10 @@ func (c *Chamber) Configure(configurator Configurator, service brewfather.Servic
 	logger *logrus.Logger) error {
 	c.logger = logger
 
-	var errs []error
-
-	for _, deviceConfig := range c.DeviceConfigs {
-		if err := c.configureDevice(configurator, deviceConfig); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
 	c.service = service
 	c.logToBrewfather = logToBrewfather
+
+	errs := c.configureDevices(configurator, c.DeviceConfig)
 
 	c.temperatureController = pid.NewPIDTemperatureController(
 		c.beerThermometer, c.chiller, c.heater, c.ChillerKp, c.ChillerKi, c.ChillerKd,
@@ -89,58 +90,127 @@ func (c *Chamber) Configure(configurator Configurator, service brewfather.Servic
 	return nil
 }
 
-func (c *Chamber) configureDevice(configurator Configurator, deviceConfig DeviceConfig) error {
-	var (
-		createdDevice interface{}
-		err           error
-	)
+func (c *Chamber) configureDevices(configurator Configurator, config DeviceConfig) []error {
+	var errs []error
 
-	switch deviceConfig.Type {
-	case "ds18b20":
-		if createdDevice, err = configurator.CreateDs18b20(deviceConfig.ID); err != nil {
-			return errors.Wrapf(err, "could not create new Ds18b20 %s", deviceConfig.ID)
+	errs = append(errs, c.configureActuators(configurator, config)...)
+
+	errs = append(errs, c.configureThermometers(configurator, config)...)
+
+	if config.HydrometerThermometerType != "" {
+		h, err := getHydrometer(configurator, config.HydrometerThermometerType,
+			config.HydrometerThermometerID)
+		if err != nil {
+			errs = append(errs, errors.Wrap(err, "could not configure hydrometer"))
 		}
-	case "tilt":
-		if createdDevice, err = configurator.CreateTilt(tilt.Color(deviceConfig.ID)); err != nil {
-			return errors.Wrapf(err, "could not create new %s Tilt", deviceConfig.ID)
-		}
-	case "gpio":
-		if createdDevice, err = configurator.CreateGPIOActuator(deviceConfig.ID); err != nil {
-			return errors.Wrapf(err, "could not create new GPIO %s", deviceConfig.ID)
-		}
-	default:
-		return errors.Errorf("invalid device type '%s'", deviceConfig.Type)
+
+		c.hydrometer = h
 	}
 
-	if err := c.assignDevice(createdDevice, deviceConfig.Roles); err != nil {
-		return err
+	if len(errs) == 0 {
+		return nil
 	}
 
-	return nil
+	return errs
 }
 
-func (c *Chamber) assignDevice(d interface{}, roles []string) error {
-	// type assertions will not fail
-	for _, role := range roles {
-		switch role {
-		case "beerThermometer":
-			c.beerThermometer, _ = d.(device.Thermometer)
-		case "auxiliaryThermometer":
-			c.auxiliaryThermometer, _ = d.(device.Thermometer)
-		case "externalThermometer":
-			c.externalThermometer, _ = d.(device.Thermometer)
-		case "hydrometer":
-			c.hydrometer, _ = d.(device.Hydrometer)
-		case "chiller":
-			c.chiller, _ = d.(device.Actuator)
-		case "heater":
-			c.heater, _ = d.(device.Actuator)
-		default:
-			return errors.Errorf("invalid device role '%s'", role)
-		}
+func (c *Chamber) configureActuators(configurator Configurator, config DeviceConfig) []error {
+	var errs []error
+
+	a, err := configurator.CreateGPIOActuator(config.ChillerGPIO)
+	if err != nil {
+		errs = append(errs, errors.Wrapf(err, "could not create new GPIO %s for chiller", config.ChillerGPIO))
 	}
 
-	return nil
+	c.chiller = a
+
+	a, err = configurator.CreateGPIOActuator(config.HeaterGPIO)
+	if err != nil {
+		errs = append(errs, errors.Wrapf(err, "could not create new GPIO %s for heater", config.HeaterGPIO))
+	}
+
+	c.heater = a
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return errs
+}
+
+func (c *Chamber) configureThermometers(configurator Configurator, config DeviceConfig) []error {
+	var errs []error
+
+	if config.BeerThermometerType != "" {
+		t, err := getThermometer(configurator, config.BeerThermometerType,
+			config.BeerThermometerID)
+		if err != nil {
+			errs = append(errs, errors.Wrap(err, "could not configure beer thermometer"))
+		}
+
+		c.beerThermometer = t
+	}
+
+	if config.AuxiliaryThermometerType != "" {
+		t, err := getThermometer(configurator, config.AuxiliaryThermometerType,
+			config.AuxiliaryThermometerID)
+		if err != nil {
+			errs = append(errs, errors.Wrap(err, "could not configure auxiliary thermometer"))
+		}
+
+		c.auxiliaryThermometer = t
+	}
+
+	if config.ExternalThermometerType != "" {
+		t, err := getThermometer(configurator, config.ExternalThermometerType,
+			config.ExternalThermometerID)
+		if err != nil {
+			errs = append(errs, errors.Wrap(err, "could not configure external thermometer"))
+		}
+
+		c.externalThermometer = t
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+
+	return errs
+}
+
+func getThermometer(configurator Configurator, thermometerType, id string) (device.Thermometer, error) {
+	switch thermometerType {
+	case "ds18b20": // TODO: make enum
+		createdDevice, err := configurator.CreateDs18b20(id)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not create new Ds18b20 %s", id)
+		}
+
+		return createdDevice, nil
+	case "tilt":
+		createdDevice, err := configurator.CreateTilt(tilt.Color(id))
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not create new %s Tilt", id)
+		}
+
+		return createdDevice, nil
+	default:
+		return nil, errors.Errorf("invalid thermometer type '%s'", thermometerType)
+	}
+}
+
+func getHydrometer(configurator Configurator, hydrometerType, id string) (device.Hydrometer, error) {
+	switch hydrometerType {
+	case "tilt":
+		createdDevice, err := configurator.CreateTilt(tilt.Color(id))
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not create new %s Tilt", id)
+		}
+
+		return createdDevice, nil
+	default:
+		return nil, errors.Errorf("invalid hydrometer type '%s'", hydrometerType)
+	}
 }
 
 func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
