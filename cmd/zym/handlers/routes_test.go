@@ -53,22 +53,11 @@ func TestRoutes(t *testing.T) {
 
 		c := &chamber.Chamber{
 			ID: chamberID,
-			DeviceConfigs: []chamber.DeviceConfig{
-				{
-					ID:    "1",
-					Type:  "ds18b20",
-					Roles: []string{"beerThermometer"},
-				},
-				{
-					ID:    "2",
-					Type:  "gpio",
-					Roles: []string{"chiller"},
-				},
-				{
-					ID:    "3",
-					Type:  "gpio",
-					Roles: []string{"heater"},
-				},
+			DeviceConfig: chamber.DeviceConfig{
+				ChillerGPIO:         "2",
+				HeaterGPIO:          "3",
+				BeerThermometerType: "ds18b20",
+				BeerThermometerID:   "1",
 			},
 			CurrentBatch: &brewfather.BatchDetail{
 				Fermentation: brewfather.Fermentation{

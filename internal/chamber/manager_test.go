@@ -42,21 +42,27 @@ func createTestChambers() []*chamber.Chamber {
 				},
 			},
 		},
-		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "orange", Type: "tilt", Roles: []string{"beerThermometer", "hydrometer"}},
-			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"auxiliaryThermometer"}},
-			{ID: "28-000007158912", Type: "ds18b20", Roles: []string{"externalThermometer"}},
-			{ID: "GPIO2", Type: "gpio", Roles: []string{"chiller"}},
-			{ID: "GPIO3", Type: "gpio", Roles: []string{"heater"}},
+		DeviceConfig: chamber.DeviceConfig{
+			ChillerGPIO:               "GPIO2",
+			HeaterGPIO:                "GPIO3",
+			BeerThermometerType:       "tilt",
+			BeerThermometerID:         "orange",
+			AuxiliaryThermometerType:  "ds18b20",
+			AuxiliaryThermometerID:    "28-0000071cbc72",
+			ExternalThermometerType:   "ds18b20",
+			ExternalThermometerID:     "28-000007158912",
+			HydrometerThermometerType: "tilt",
+			HydrometerThermometerID:   "orange",
 		},
 	}
 	chamber2 := chamber.Chamber{
 		ID:   "dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1",
 		Name: "Chamber2",
-		DeviceConfigs: []chamber.DeviceConfig{
-			{ID: "28-0000071cbc72", Type: "ds18b20", Roles: []string{"beerThermometer"}},
-			{ID: "GPIO5", Type: "gpio", Roles: []string{"chiller"}},
-			{ID: "GPIO6", Type: "gpio", Roles: []string{"heater"}},
+		DeviceConfig: chamber.DeviceConfig{
+			ChillerGPIO:         "GPIO5",
+			HeaterGPIO:          "GPIO6",
+			BeerThermometerType: "ds18b20",
+			BeerThermometerID:   "28-0000071cbc72",
 		},
 	}
 
@@ -94,8 +100,8 @@ func newManagerConfigureErrors(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	testChambers[0].DeviceConfigs = []chamber.DeviceConfig{
-		{ID: "1", Type: "badType", Roles: []string{}},
+	testChambers[0].DeviceConfig = chamber.DeviceConfig{
+		BeerThermometerType: "badType",
 	}
 
 	l, _ := logtest.NewNullLogger()
@@ -110,7 +116,7 @@ func newManagerConfigureErrors(t *testing.T) {
 	serviceMock := &mocks.Service{}
 
 	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
-	assert.Contains(t, err.Error(), "could not configure all temperature controllers")
+	assert.Contains(t, err.Error(), "could not configure temperature controllers")
 	assert.NotNil(t, manager)
 }
 
@@ -244,8 +250,8 @@ func saveChamberConfigureError(t *testing.T) {
 	c, err := manager.Get(chamberID)
 	assert.NoError(t, err)
 
-	c.DeviceConfigs = []chamber.DeviceConfig{
-		{ID: "1", Type: "badType", Roles: []string{}},
+	c.DeviceConfig = chamber.DeviceConfig{
+		BeerThermometerType: "badType",
 	}
 
 	err = manager.Save(c)
