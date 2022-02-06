@@ -238,7 +238,7 @@ func (c *Chamber) sendData(ctx context.Context) {
 	if t, err := c.getHydrometerGravity(); err != nil {
 		c.logger.WithError(err).Error("could not get external temperature")
 	} else {
-		log.ExternalTemperature = fmt.Sprintf("%f", t)
+		log.Gravity = fmt.Sprintf("%f", t)
 	}
 
 	c.logger.Debugf("Sending Data to Brewfather: Beer: %s Temperature: %s Gravity: %s",
