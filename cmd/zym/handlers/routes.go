@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"expvar"
 	"fmt"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	uiweb "github.com/benjaminbartels/zymurgauge/web"
-	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,14 +20,14 @@ const (
 	thermometersPath = "/thermometers"
 	batchesPath      = "/batches"
 	version          = "v1"
-	uiDir            = "web/build"
+	uiDir            = "build"
 	base             = "/ui"
 )
 
 // NewAPI return a web.App with configured routes and handlers.
 func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfather.Service, uiFiles uiweb.FileReader,
 	shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
-	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger))
+	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger), middleware.Cors())
 
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberManager,
@@ -62,8 +60,6 @@ func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfa
 
 	app.Register(http.MethodGet, "ui", "/*filepath", uiHander.Get)
 
-	app.Register(http.MethodOptions, "", "/", optionsHandler)
-
 	return app
 }
 
@@ -77,14 +73,4 @@ func DebugMux() *http.ServeMux {
 	debugMux.Handle("/debug/vars", expvar.Handler())
 
 	return debugMux
-}
-
-// TODO: re-visit this an cors.
-func optionsHandler(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	w.Header().Set("Access-Control-Allow-Headers",
-		"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-
-	return nil
 }
