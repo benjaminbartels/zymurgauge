@@ -24,8 +24,9 @@ jobs:
         with:
           node-version: ^17.0.1
       - name: Build React
-        run: yarn --cwd "web" install
-        run: yarn --cwd "web" build
+        run: |
+          yarn --cwd "web" install
+          yarn --cwd "web" build
       - name: Get dependencies
         run: |
           go get -v -t -d ./...
