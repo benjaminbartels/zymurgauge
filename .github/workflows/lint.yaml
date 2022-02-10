@@ -1,6 +1,6 @@
 ---
 
-name: Lint
+name: Lint Go
 on:
   push:
     tags:
@@ -8,9 +8,10 @@ on:
     branches:
       - master
   pull_request:
+needs: [Build React]
 jobs:
   golangci:
-    name: Lint
+    name: Lint Go
     runs-on: ubuntu-latest
     steps:
       - name: Download UI artifacts

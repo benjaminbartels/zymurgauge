@@ -1,6 +1,6 @@
 ---
 
-name: Test
+name: Test Go
 on:
   push:
     tags:
@@ -8,9 +8,10 @@ on:
     branches:
       - master
   pull_request:
+needs: [Build React]
 jobs:
   codecov:
-    name: Test
+    name: Test Go
     runs-on: ubuntu-latest
     steps:
       - name: Download UI artifacts

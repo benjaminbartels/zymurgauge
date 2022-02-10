@@ -1,6 +1,6 @@
 ---
 
-name: Build
+name: Build React 
 on:
   push:
     tags:
@@ -10,7 +10,7 @@ on:
   pull_request:
 jobs:
   build:
-    name: Build
+    name: Build React
     runs-on: ubuntu-latest
     steps:
       - name: Set Node.js 17.0.1
