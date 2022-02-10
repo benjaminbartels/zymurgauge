@@ -2,11 +2,10 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import App from "./App";
+import ChamberFormView from "./components/ChamberFormView";
 import ChambersView from "./components/ChambersView";
 import ChamberView from "./components/ChamberView";
 import Dashboard from "./components/DashboardView";
-import EditChamberView from "./components/EditChamberView";
-import NewChamberView from "./components/NewChamberView";
 import SettingsView from "./components/SettingsView";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
@@ -21,9 +20,9 @@ ReactDOM.render(
             <Route index element={<ChambersView />} />
             <Route path=":chamberId">
               <Route index element={<ChamberView />} />
-              <Route path="edit" element={<EditChamberView />} />
+              <Route path="edit" element={<ChamberFormView />} />
             </Route>
-            <Route path="new" element={<NewChamberView />} />
+            <Route path="new" element={<ChamberFormView />} />
           </Route>
           <Route path="settings" element={<SettingsView />} />
         </Route>
