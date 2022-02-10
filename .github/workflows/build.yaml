@@ -43,11 +43,11 @@ jobs:
           go-version: ^1.17    
       - name: Build Go
         run: |
-          - pwd
-          - ls -la 
-          - ls -la /home/runner/work/zymurgauge
-          - ls -la /home/runner/work/zymurgauge/zymurgauge
-          - make build-go
+          pwd
+          ls -la 
+          ls -la /home/runner/work/zymurgauge
+          ls -la /home/runner/work/zymurgauge/zymurgauge
+          make build-go
   test:
     name: Test Go
     needs: build-ui
