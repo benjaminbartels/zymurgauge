@@ -26,7 +26,6 @@ func NewApp(shutdown chan os.Signal, middlewares ...Middleware) *App {
 	router := httprouter.New()
 
 	router.GlobalOPTIONS = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		if r.Header.Get("Access-Control-Request-Method") != "" {
 			// Set CORS headers
 			// TODO: re-visit this an cors.

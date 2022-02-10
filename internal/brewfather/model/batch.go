@@ -80,10 +80,12 @@ type BatchDetail struct {
 	Timestamp                     Timestamp                `json:"_timestamp"`
 	HideBatchEvents               bool                     `json:"hideBatchEvents"`
 }
+
 type BoilSteps struct {
 	Time int    `json:"time"`
 	Name string `json:"name"`
 }
+
 type BatchFermentablesLocal struct {
 	PotentialPercentage interface{} `json:"potentialPercentage"`
 	Use                 string      `json:"use"`
@@ -106,14 +108,17 @@ type BatchFermentablesLocal struct {
 	ID                  string      `json:"_id"`
 	Lovibond            float64     `json:"lovibond,omitempty"`
 }
+
 type Timestamp struct {
 	Seconds     int `json:"_seconds"`
 	Nanoseconds int `json:"_nanoseconds"`
 }
+
 type Created struct {
 	Seconds     int `json:"_seconds"`
 	Nanoseconds int `json:"_nanoseconds"`
 }
+
 type BatchFermentables struct {
 	PotentialPercentage float64     `json:"potentialPercentage"`
 	Name                string      `json:"name"`
@@ -152,6 +157,7 @@ type BatchFermentables struct {
 	GrainCategory       string      `json:"grainCategory,omitempty"`
 	UserNotes           string      `json:"userNotes,omitempty"`
 }
+
 type BatchYeasts struct {
 	ID            string  `json:"_id"`
 	NotInRecipe   bool    `json:"notInRecipe"`
@@ -173,6 +179,7 @@ type BatchYeasts struct {
 	Amount        int     `json:"amount"`
 	Inventory     float64 `json:"inventory"`
 }
+
 type BatchHops struct {
 	Origin        string  `json:"origin"`
 	NotInRecipe   bool    `json:"notInRecipe"`
@@ -187,6 +194,7 @@ type BatchHops struct {
 	Name          string  `json:"name"`
 	DisplayAmount float64 `json:"displayAmount"`
 }
+
 type Miscs struct {
 	Timestamp         Timestamp   `json:"_timestamp"`
 	Created           Created     `json:"_created"`
@@ -212,6 +220,7 @@ type Miscs struct {
 	Notes             string      `json:"notes"`
 	Type              string      `json:"type"`
 }
+
 type Defaults struct {
 	Weight      string `json:"weight"`
 	Color       string `json:"color"`
@@ -228,6 +237,7 @@ type Defaults struct {
 	Ibu         string `json:"ibu"`
 	Pressure    string `json:"pressure"`
 }
+
 type SpargeTargetDiff struct {
 	Sulfate                    float64 `json:"sulfate"`
 	IonBalanceOff              bool    `json:"ionBalanceOff"`
@@ -246,6 +256,7 @@ type SpargeTargetDiff struct {
 	Bicarbonate                int     `json:"bicarbonate"`
 	Cations                    float64 `json:"cations"`
 }
+
 type WaterMash struct {
 	Created                    Created   `json:"_created"`
 	IonBalance                 int       `json:"ionBalance"`
@@ -274,6 +285,7 @@ type WaterMash struct {
 	BicarbonateMeqL            float64   `json:"bicarbonateMeqL"`
 	Sodium                     int       `json:"sodium"`
 }
+
 type MashTargetDiff struct {
 	ResidualAlkalinityMeqLCalc float64 `json:"residualAlkalinityMeqLCalc"`
 	Sodium                     int     `json:"sodium"`
@@ -292,6 +304,7 @@ type MashTargetDiff struct {
 	Anions                     float64 `json:"anions"`
 	Bicarbonate                int     `json:"bicarbonate"`
 }
+
 type TotalTargetDiff struct {
 	ResidualAlkalinity         float64 `json:"residualAlkalinity"`
 	Anions                     float64 `json:"anions"`
@@ -310,6 +323,7 @@ type TotalTargetDiff struct {
 	BicarbonateMeqL            float64 `json:"bicarbonateMeqL"`
 	Sulfate                    float64 `json:"sulfate"`
 }
+
 type Source struct {
 	Magnesium                  int       `json:"magnesium"`
 	Created                    Created   `json:"_created"`
@@ -338,11 +352,13 @@ type Source struct {
 	Timestamp                  Timestamp `json:"_timestamp"`
 	ResidualAlkalinity         float64   `json:"residualAlkalinity"`
 }
+
 type SpargeAdjustmentsAcids struct {
 	Amount        int    `json:"amount"`
 	Type          string `json:"type"`
 	Concentration int    `json:"concentration"`
 }
+
 type SpargeAdjustments struct {
 	Acids                  []SpargeAdjustmentsAcids `json:"acids"`
 	Calcium                float64                  `json:"calcium"`
@@ -365,9 +381,11 @@ type SpargeAdjustments struct {
 	Magnesium              float64                  `json:"magnesium"`
 	Sulfate                float64                  `json:"sulfate"`
 }
+
 type WaterMeta struct {
 	EqualSourceTotal bool `json:"equalSourceTotal"`
 }
+
 type Total struct {
 	Cations                    float64   `json:"cations"`
 	Alkalinity                 float64   `json:"alkalinity"`
@@ -396,12 +414,14 @@ type Total struct {
 	TimestampMs                int64     `json:"_timestamp_ms"`
 	Timestamp                  Timestamp `json:"_timestamp"`
 }
+
 type MashAdjustmentsAcids struct {
 	Type           string `json:"type"`
 	AlkalinityMeqL int    `json:"alkalinityMeqL"`
 	Concentration  int    `json:"concentration"`
 	Amount         int    `json:"amount"`
 }
+
 type MashAdjustments struct {
 	SodiumMetabisulfite    int                    `json:"sodiumMetabisulfite"`
 	MagnesiumChloride      int                    `json:"magnesiumChloride"`
@@ -424,6 +444,7 @@ type MashAdjustments struct {
 	LtAMS                  int                    `json:"ltAMS"`
 	Calcium                float64                `json:"calcium"`
 }
+
 type Target struct {
 	Type                       string  `json:"type"`
 	Bicarbonate                int     `json:"bicarbonate"`
@@ -445,32 +466,38 @@ type Target struct {
 	ResidualAlkalinityMeqLCalc float64 `json:"residualAlkalinityMeqLCalc"`
 	Hardness                   int     `json:"hardness"`
 }
+
 type CalciumChloride struct {
 	Sparge bool   `json:"sparge"`
 	Auto   bool   `json:"auto"`
 	Form   string `json:"form"`
 	Mash   bool   `json:"mash"`
 }
+
 type CalciumHydroxide struct {
 	Mash   bool `json:"mash"`
 	Auto   bool `json:"auto"`
 	Sparge bool `json:"sparge"`
 }
+
 type SodiumBicarbonate struct {
 	Mash   bool `json:"mash"`
 	Sparge bool `json:"sparge"`
 	Auto   bool `json:"auto"`
 }
+
 type MagnesiumSulfate struct {
 	Sparge bool `json:"sparge"`
 	Auto   bool `json:"auto"`
 	Mash   bool `json:"mash"`
 }
+
 type CalciumSulfate struct {
 	Sparge bool `json:"sparge"`
 	Mash   bool `json:"mash"`
 	Auto   bool `json:"auto"`
 }
+
 type Settings struct {
 	AdjustSparge      bool              `json:"adjustSparge"`
 	CalciumChloride   CalciumChloride   `json:"calciumChloride"`
@@ -479,6 +506,7 @@ type Settings struct {
 	MagnesiumSulfate  MagnesiumSulfate  `json:"magnesiumSulfate"`
 	CalciumSulfate    CalciumSulfate    `json:"calciumSulfate"`
 }
+
 type TotalAdjustments struct {
 	Calcium                float64 `json:"calcium"`
 	Sulfate                float64 `json:"sulfate"`
@@ -500,6 +528,7 @@ type TotalAdjustments struct {
 	Volume                 float64 `json:"volume"`
 	Magnesium              float64 `json:"magnesium"`
 }
+
 type SourceTargetDiff struct {
 	IonBalance                 int     `json:"ionBalance"`
 	Alkalinity                 float64 `json:"alkalinity"`
@@ -518,6 +547,7 @@ type SourceTargetDiff struct {
 	ResidualAlkalinity         float64 `json:"residualAlkalinity"`
 	Calcium                    int     `json:"calcium"`
 }
+
 type Sparge struct {
 	Bicarbonate                int       `json:"bicarbonate"`
 	Hardness                   int       `json:"hardness"`
@@ -546,6 +576,7 @@ type Sparge struct {
 	Timestamp                  Timestamp `json:"_timestamp"`
 	SoClRatio                  float64   `json:"soClRatio"`
 }
+
 type Water struct {
 	SpargeTargetDiff        SpargeTargetDiff  `json:"spargeTargetDiff"`
 	Mash                    WaterMash         `json:"mash"`
@@ -573,10 +604,12 @@ type Water struct {
 	SourceTargetDiff        SourceTargetDiff  `json:"sourceTargetDiff"`
 	Sparge                  Sparge            `json:"sparge"`
 }
+
 type EquipmentMeta struct {
 	MashEfficiencyIsCalculated bool `json:"mashEfficiencyIsCalculated"`
 	EfficiencyIsCalculated     bool `json:"efficiencyIsCalculated"`
 }
+
 type Equipment struct {
 	EfficiencyType              string        `json:"efficiencyType"`
 	AromaHopUtilization         float64       `json:"aromaHopUtilization"`
@@ -628,6 +661,7 @@ type Equipment struct {
 	TrubChillerLoss             float64       `json:"trubChillerLoss"`
 	BoilSize                    float64       `json:"boilSize"`
 }
+
 type Yeasts struct {
 	Starter            bool        `json:"starter"`
 	MaxTemp            float64     `json:"maxTemp"`
@@ -653,6 +687,7 @@ type Yeasts struct {
 	StarterSize        interface{} `json:"starterSize"`
 	MaxAttenuation     interface{} `json:"maxAttenuation"`
 }
+
 type Hops struct {
 	Type              string      `json:"type"`
 	Time              int         `json:"time"`
@@ -681,6 +716,7 @@ type Hops struct {
 	ID                string      `json:"_id"`
 	Cohumulone        interface{} `json:"cohumulone"`
 }
+
 type YeastSteps struct {
 	HarvestRatio             int     `json:"harvestRatio"`
 	StarterNewCellCount      float64 `json:"starterNewCellCount"`
@@ -695,6 +731,7 @@ type YeastSteps struct {
 	StartVol                 float64 `json:"startVol"`
 	InoculationRate          float64 `json:"inoculationRate"`
 }
+
 type Yeast struct {
 	InitCells         int          `json:"initCells"`
 	Mode              string       `json:"mode"`
@@ -724,6 +761,7 @@ type Yeast struct {
 	Rate              int          `json:"rate"`
 	Steps             []YeastSteps `json:"steps"`
 }
+
 type Style struct {
 	RbrMax           float64 `json:"rbrMax"`
 	CarbonationStyle string  `json:"carbonationStyle"`
@@ -750,6 +788,7 @@ type Style struct {
 	BuGuMax          float64 `json:"buGuMax"`
 	OgMin            float64 `json:"ogMin"`
 }
+
 type OtherFermentables struct {
 	Cgdb                interface{} `json:"cgdb"`
 	UserNotes           string      `json:"userNotes"`
@@ -784,6 +823,7 @@ type OtherFermentables struct {
 	IbuPerAmount        interface{} `json:"ibuPerAmount"`
 	BestBeforeDate      interface{} `json:"bestBeforeDate"`
 }
+
 type MashFermentables struct {
 	Color               float64     `json:"color"`
 	Supplier            string      `json:"supplier"`
@@ -826,6 +866,7 @@ type MashFermentables struct {
 	MaxInBatch          int         `json:"maxInBatch,omitempty"`
 	Substitutes         string      `json:"substitutes,omitempty"`
 }
+
 type Data struct {
 	MashFermentablesAmount  float64             `json:"mashFermentablesAmount"`
 	MashVolumeSurplus       int                 `json:"mashVolumeSurplus"`
@@ -847,19 +888,23 @@ type Data struct {
 	BatchSpargeWaterAmount2 interface{}         `json:"batchSpargeWaterAmount2"`
 	TotalDiastaticPower     int                 `json:"totalDiastaticPower"`
 }
+
 type Calories struct {
 	Total   float64 `json:"total"`
 	Carbs   float64 `json:"carbs"`
 	KJ      float64 `json:"kJ"`
 	Alcohol float64 `json:"alcohol"`
 }
+
 type Carbs struct {
 	Total float64 `json:"total"`
 }
+
 type Nutrition struct {
 	Calories Calories `json:"calories"`
 	Carbs    Carbs    `json:"carbs"`
 }
+
 type MashSteps struct {
 	DisplayStepTemp float64     `json:"displayStepTemp"`
 	StepTime        int         `json:"stepTime"`
@@ -868,11 +913,13 @@ type MashSteps struct {
 	Name            string      `json:"name"`
 	Type            string      `json:"type"`
 }
+
 type RecipeMash struct {
 	Name  string      `json:"name"`
 	Steps []MashSteps `json:"steps"`
 	ID    string      `json:"_id"`
 }
+
 type FermentationSteps struct {
 	StepTime        int         `json:"stepTime"`
 	Type            string      `json:"type"`
@@ -883,11 +930,13 @@ type FermentationSteps struct {
 	DisplayPressure interface{} `json:"displayPressure"`
 	StepTemp        float64     `json:"stepTemp"`
 }
+
 type Fermentation struct {
 	ID    string              `json:"_id"`
 	Steps []FermentationSteps `json:"steps"`
 	Name  string              `json:"name"`
 }
+
 type Fermentables struct {
 	Attenuation         interface{} `json:"attenuation"`
 	GrainCategory       string      `json:"grainCategory"`
@@ -930,12 +979,14 @@ type Fermentables struct {
 	Version             string      `json:"_version,omitempty"`
 	Hidden              bool        `json:"hidden,omitempty"`
 }
+
 type CarbonationStyle struct {
 	CarbMax float64 `json:"carbMax"`
 	CarbMin float64 `json:"carbMin"`
 	ID      string  `json:"_id"`
 	Name    string  `json:"name"`
 }
+
 type Recipe struct {
 	ExtraGravity            int           `json:"extraGravity"`
 	Version                 string        `json:"_version"`
@@ -1011,6 +1062,7 @@ type Recipe struct {
 	YeastToleranceExceededBy interface{}      `json:"yeastToleranceExceededBy"`
 	Efficiency               float64          `json:"efficiency"`
 }
+
 type BatchMiscs struct {
 	TotalCost            int         `json:"totalCost"`
 	Type                 string      `json:"type"`
@@ -1043,6 +1095,7 @@ type BatchMiscs struct {
 	Checked              bool        `json:"checked,omitempty"`
 	RemovedFromInventory bool        `json:"removedFromInventory,omitempty"`
 }
+
 type Events struct {
 	Active          bool   `json:"active"`
 	NotifyTime      int64  `json:"notifyTime,omitempty"`
@@ -1054,6 +1107,7 @@ type Events struct {
 	Description     string `json:"description"`
 	Time            int64  `json:"time"`
 }
+
 type Cost struct {
 	PerBottlingLiter  int `json:"perBottlingLiter"`
 	Hops              int `json:"hops"`
@@ -1066,16 +1120,19 @@ type Cost struct {
 	Miscs             int `json:"miscs"`
 	Yeasts            int `json:"yeasts"`
 }
+
 type Notes struct {
 	Status    string `json:"status"`
 	Timestamp int64  `json:"timestamp"`
 	Type      string `json:"type,omitempty"`
 	Note      string `json:"note"`
 }
+
 type MyBrewbot struct {
 	Items   []interface{} `json:"items"`
 	Enabled bool          `json:"enabled"`
 }
+
 type LastData struct {
 	Type      string  `json:"type"`
 	Timepoint int64   `json:"timepoint"`
@@ -1086,6 +1143,7 @@ type LastData struct {
 	Sg        float64 `json:"sg"`
 	Comment   string  `json:"comment"`
 }
+
 type Items struct {
 	Key      string      `json:"key"`
 	BatchID  interface{} `json:"batchId"`
@@ -1098,6 +1156,7 @@ type Items struct {
 	Series   interface{} `json:"series"`
 	Hidden   bool        `json:"hidden"`
 }
+
 type Tilt struct {
 	Temp    bool    `json:"temp"`
 	Mode    string  `json:"mode"`
@@ -1105,44 +1164,54 @@ type Tilt struct {
 	Enabled bool    `json:"enabled"`
 	Items   []Items `json:"items"`
 }
+
 type SmartPid struct {
 	Enabled      bool          `json:"enabled"`
 	Items        []interface{} `json:"items"`
 	BrewDeviceID interface{}   `json:"brewDeviceId"`
 }
+
 type FloatHydrometer struct {
 	Enabled bool          `json:"enabled"`
 	Items   []interface{} `json:"items"`
 }
+
 type ISpindel struct {
 	Items   []interface{} `json:"items"`
 	Enabled bool          `json:"enabled"`
 }
+
 type PlaatoKeg struct {
 	Enabled bool          `json:"enabled"`
 	Items   []interface{} `json:"items"`
 }
+
 type PlaatoAirlock struct {
 	Items   []interface{} `json:"items"`
 	Enabled bool          `json:"enabled"`
 }
+
 type Stream struct {
 	Enabled bool          `json:"enabled"`
 	Items   []interface{} `json:"items"`
 }
+
 type Gfcc struct {
 	Items        []interface{} `json:"items"`
 	Enabled      bool          `json:"enabled"`
 	BrewDeviceID interface{}   `json:"brewDeviceId"`
 }
+
 type FloatyHydrometer struct {
 	Enabled bool          `json:"enabled"`
 	Items   []interface{} `json:"items"`
 }
+
 type BrewPiLess struct {
 	Enabled bool          `json:"enabled"`
 	Items   []interface{} `json:"items"`
 }
+
 type Devices struct {
 	MyBrewbot        MyBrewbot        `json:"myBrewbot"`
 	Tilt             Tilt             `json:"tilt"`
