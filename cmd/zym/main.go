@@ -16,6 +16,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
+	"github.com/benjaminbartels/zymurgauge/web"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -119,12 +120,15 @@ func run(logger *logrus.Logger, cfg config) error {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
+	// TODO: Rename DefaultDevicePath and make configurable based on OS
+
 	httpServer := &http.Server{
 		Addr:         cfg.Host,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, shutdown, logger),
+		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, web.FS,
+			shutdown, logger),
 	}
 
 	go func() {

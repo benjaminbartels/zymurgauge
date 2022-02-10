@@ -9,18 +9,79 @@ on:
       - master
   pull_request:
 jobs:
-  build:
-    name: Build
+  build-ui:
+    name: Build React
     runs-on: ubuntu-latest
     steps:
+      - name: Set Node.js 17.0.1
+        uses: actions/setup-node@v1
+        with:
+          node-version: ^17.0.1          
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: Build React
+        run: make build-react
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ui
+          path: web/build
+  build-service:
+    name: Build Go
+    needs: build-ui
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ui
+          path: web/build
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.17    
+      - name: Build Go
+        run: make build-go
+  test:
+    name: Test Go
+    needs: build-ui
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ui
+          path: web/build
       - name: Set up Go 1.17
         uses: actions/setup-go@v2
         with:
           go-version: ^1.17
-      - name: Check out code into the Go module directory
+      - name: Generate coverage report
+        run: make test
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v2.1.0
+        with:
+          token: ddd9c571-814f-48d7-ad54-2bac7319737e
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+  lint:
+    name: Lint Go
+    needs: build-ui
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
         uses: actions/checkout@v2
-      - name: Get dependencies
-        run: |
-          go get -v -t -d ./...
-      - name: Build
-        run: go build -v ./...
+      - name: Download UI artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ui
+          path: web/build
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.43
+

@@ -25,6 +25,21 @@ type App struct {
 func NewApp(shutdown chan os.Signal, middlewares ...Middleware) *App {
 	router := httprouter.New()
 
+	router.GlobalOPTIONS = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Access-Control-Request-Method") != "" {
+			// Set CORS headers
+			// TODO: re-visit this an cors.
+			header := w.Header()
+			header.Set("Access-Control-Allow-Origin", "*")
+			header.Set("Access-Control-Allow-Methods", header.Get("Allow"))
+			header.Set("Access-Control-Allow-Headers",
+				"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+		}
+
+		// Adjust status code to 204
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	return &App{
 		router:      router,
 		shutdown:    shutdown,

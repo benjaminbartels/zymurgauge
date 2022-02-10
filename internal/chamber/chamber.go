@@ -21,7 +21,7 @@ const brewfatherLogInterval = 15 * time.Minute
 type Chamber struct {
 	ID                      string                  `json:"id"` // TODO: omit empty?
 	Name                    string                  `json:"name"`
-	DeviceConfig            DeviceConfig            `json:"deviceConfigs"` // TODO: make is a struct and not a list
+	DeviceConfig            DeviceConfig            `json:"deviceConfig"` // TODO: make is a struct and not a list
 	ChillerKp               float64                 `json:"chillerKp"`
 	ChillerKi               float64                 `json:"chillerKi"`
 	ChillerKd               float64                 `json:"chillerKd"`
@@ -47,16 +47,16 @@ type Chamber struct {
 }
 
 type DeviceConfig struct {
-	ChillerGPIO               string `json:"chillerGpio"`
-	HeaterGPIO                string `json:"heaterGpio"`
-	BeerThermometerType       string `json:"beerThermometerType"`
-	BeerThermometerID         string `json:"beerThermometerId"`
-	AuxiliaryThermometerType  string `json:"auxiliaryThermometerType"`
-	AuxiliaryThermometerID    string `json:"auxiliaryThermometerId"`
-	ExternalThermometerType   string `json:"externalThermometerType"`
-	ExternalThermometerID     string `json:"externalThermometerId"`
-	HydrometerThermometerType string `json:"hydrometerThermometerType"`
-	HydrometerThermometerID   string `json:"hydrometerThermometerId"`
+	ChillerGPIO              string `json:"chillerGpio"`
+	HeaterGPIO               string `json:"heaterGpio"`
+	BeerThermometerType      string `json:"beerThermometerType"`
+	BeerThermometerID        string `json:"beerThermometerId"`
+	AuxiliaryThermometerType string `json:"auxiliaryThermometerType"`
+	AuxiliaryThermometerID   string `json:"auxiliaryThermometerId"`
+	ExternalThermometerType  string `json:"externalThermometerType"`
+	ExternalThermometerID    string `json:"externalThermometerId"`
+	HydrometerType           string `json:"hydrometerType"`
+	HydrometerID             string `json:"hydrometerId"`
 }
 
 type Readings struct {
@@ -97,9 +97,9 @@ func (c *Chamber) configureDevices(configurator Configurator, config DeviceConfi
 
 	errs = append(errs, c.configureThermometers(configurator, config)...)
 
-	if config.HydrometerThermometerType != "" {
-		h, err := getHydrometer(configurator, config.HydrometerThermometerType,
-			config.HydrometerThermometerID)
+	if config.HydrometerType != "" {
+		h, err := getHydrometer(configurator, config.HydrometerType,
+			config.HydrometerID)
 		if err != nil {
 			errs = append(errs, errors.Wrap(err, "could not configure hydrometer"))
 		}

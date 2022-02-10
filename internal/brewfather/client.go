@@ -207,7 +207,7 @@ func convertFermentation(fermentation model.Fermentation) Fermentation {
 	}
 }
 
-func convertFermentationSteps(steps []model.FermentationStep) []FermentationStep {
+func convertFermentationSteps(steps []model.FermentationSteps) []FermentationStep {
 	s := []FermentationStep{}
 	for i := 0; i < len(steps); i++ {
 		s = append(s, convertFermentationStep(steps[i]))
@@ -216,7 +216,7 @@ func convertFermentationSteps(steps []model.FermentationStep) []FermentationStep
 	return s
 }
 
-func convertFermentationStep(step model.FermentationStep) FermentationStep {
+func convertFermentationStep(step model.FermentationSteps) FermentationStep {
 	return FermentationStep{
 		Type:            step.Type,
 		ActualTime:      step.ActualTime,

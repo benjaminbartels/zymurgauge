@@ -42,6 +42,7 @@ func TestRoutes(t *testing.T) {
 		{path: "/v1/batches", method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/batches/" + batchID, method: http.MethodGet, body: nil, code: http.StatusOK},
 		{path: "/v1/bad_path/" + batchID, method: http.MethodGet, body: nil, code: http.StatusNotFound},
+		{path: "/ui/index.html", method: http.MethodGet, body: nil, code: http.StatusOK},
 	}
 
 	for _, tc := range testCases {
@@ -101,7 +102,10 @@ func TestRoutes(t *testing.T) {
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
-		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, shutdown, logger)
+		fsMock := &mocks.FileReader{}
+		fsMock.On("ReadFile", "build/index.html").Return([]byte(""), nil)
+
+		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, fsMock, shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()

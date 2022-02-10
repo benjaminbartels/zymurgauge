@@ -11,6 +11,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	uiweb "github.com/benjaminbartels/zymurgauge/web"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,25 +20,19 @@ const (
 	thermometersPath = "/thermometers"
 	batchesPath      = "/batches"
 	version          = "v1"
+	uiDir            = "build"
+	base             = "/ui"
 )
 
 // NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberManager chamber.Controller, devicePath string,
-	service brewfather.Service, shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
+func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfather.Service, uiFiles uiweb.FileReader,
+	shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
+	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger), middleware.Cors())
+
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberManager,
 		Logger:            logger,
 	}
-
-	thermometersHandler := &ThermometersHandler{
-		DevicePath: devicePath,
-	}
-
-	batchesHandler := &BatchesHandler{
-		Service: service,
-	}
-
-	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger))
 
 	app.Register(http.MethodGet, version, chambersPath, chambersHandler.GetAll)
 	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Get)
@@ -46,10 +41,24 @@ func NewAPI(chamberManager chamber.Controller, devicePath string,
 	app.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/start", chambersPath), chambersHandler.Start)
 	app.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/stop", chambersPath), chambersHandler.Stop)
 
-	app.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
+	batchesHandler := &BatchesHandler{
+		Service: service,
+	}
 
 	app.Register(http.MethodGet, version, batchesPath, batchesHandler.GetAll)
 	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", batchesPath), batchesHandler.Get)
+
+	thermometersHandler := &ThermometersHandler{
+		DevicePath: devicePath,
+	}
+
+	app.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
+
+	uiHander := &UIHandler{
+		FileReader: uiFiles,
+	}
+
+	app.Register(http.MethodGet, "ui", "/*filepath", uiHander.Get)
 
 	return app
 }
