@@ -2,6 +2,7 @@ package chamber
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
@@ -71,6 +72,10 @@ func (m *Manager) GetAll() ([]*Chamber, error) {
 		chamber.UpdateReadings()
 		chambers = append(chambers, chamber)
 	}
+
+	sort.Slice(chambers, func(i, j int) bool {
+		return chambers[i].Name < chambers[j].Name
+	})
 
 	// It is not possible for GetAll() to return an error
 	return chambers, nil
