@@ -34,7 +34,7 @@ func getIndex(t *testing.T) {
 	r.URL.Path = "/ui/somepath"
 
 	fsMock := &mocks.FileReader{}
-	fsMock.On("ReadFile", "web/build/index.html").Return(b, nil)
+	fsMock.On("ReadFile", "build/index.html").Return(b, nil)
 
 	handler := &handlers.UIHandler{FileReader: fsMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{})
@@ -59,7 +59,7 @@ func getStatic(t *testing.T) {
 	r.URL.Path = "/ui/static/js/somefile.js"
 
 	fsMock := &mocks.FileReader{}
-	fsMock.On("ReadFile", "web/build/static/js/somefile.js").Return(b, nil)
+	fsMock.On("ReadFile", "build/static/js/somefile.js").Return(b, nil)
 
 	handler := &handlers.UIHandler{FileReader: fsMock}
 	err := handler.Get(ctx, w, r, httprouter.Params{})

@@ -103,7 +103,7 @@ func TestRoutes(t *testing.T) {
 		logger, _ := logtest.NewNullLogger()
 
 		fsMock := &mocks.FileReader{}
-		fsMock.On("ReadFile", "web/build/index.html").Return([]byte(""), nil)
+		fsMock.On("ReadFile", "build/index.html").Return([]byte(""), nil)
 
 		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, fsMock, shutdown, logger)
 
