@@ -8,10 +8,10 @@ on:
     branches:
       - master
   pull_request:
-needs: [Build React]
 jobs:
   build:
     name: Build Go
+    needs: [Build React]
     runs-on: ubuntu-latest
     steps:
       - name: Download UI artifacts
