@@ -120,6 +120,8 @@ func run(logger *logrus.Logger, cfg config) error {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
+	// TODO: Rename DefaultDevicePath and make configurable based on OS
+
 	httpServer := &http.Server{
 		Addr:         cfg.Host,
 		ReadTimeout:  cfg.ReadTimeout,
