@@ -90,14 +90,12 @@ func (r *ChamberRepo) Save(c *chamber.Chamber) error {
 		c.ID = uuid.NewString()
 	}
 
-	c.ModTime = time.Now().UTC()
-
 	c.Readings = nil
 	c.CurrentFermentationStep = nil
+	c.ModTime = time.Now()
 
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
 		bu := tx.Bucket([]byte(chamberBucket))
-		c.ModTime = time.Now()
 		if v, err := json.Marshal(c); err != nil {
 			return errors.Wrapf(err, "could not marshal Chamber %s", c.ID)
 		} else if err := bu.Put([]byte(c.ID), v); err != nil {
