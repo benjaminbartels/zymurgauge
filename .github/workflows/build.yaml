@@ -42,11 +42,7 @@ jobs:
         with:
           go-version: ^1.17    
       - name: Build Go
-        run: |
-          pwd
-          ls -la 
-          ls -la ./web
-          make build-go
+        run: make build-go
   test:
     name: Test Go
     needs: build-ui
