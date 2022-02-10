@@ -1,6 +1,6 @@
 ---
 
-name: Lint
+name: Build
 on:
   push:
     tags:
@@ -9,8 +9,8 @@ on:
       - master
   pull_request:
 jobs:
-  golangci:
-    name: Lint
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Download UI artifacts
@@ -19,7 +19,9 @@ jobs:
           name: web
       - name: Check out code
         uses: actions/checkout@v2
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v2
         with:
-          version: v1.43
+          go-version: ^1.17    
+      - name: Build Go
+        run: make build-go
