@@ -45,6 +45,7 @@ jobs:
         run: make build-go
   test:
     name: Test Go
+    needs: build-ui
     runs-on: ubuntu-latest
     steps:
       - name: Download UI artifacts
@@ -68,6 +69,7 @@ jobs:
           name: codecov-umbrella
   lint:
     name: Lint Go
+    needs: build-ui
     runs-on: ubuntu-latest
     steps:
       - name: Download UI artifacts
