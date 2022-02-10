@@ -30,13 +30,12 @@ jobs:
     needs: build-ui
     runs-on: ubuntu-latest
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2
       - name: Download UI artifacts
         uses: actions/download-artifact@v2
         with:
           name: ui
-          path: web/build
-      - name: Check out code
-        uses: actions/checkout@v2
       - name: Set up Go 1.17
         uses: actions/setup-go@v2
         with:
@@ -45,21 +44,19 @@ jobs:
         run: |
           pwd
           ls -la 
-          ls -la /home/runner/work/zymurgauge
-          ls -la /home/runner/work/zymurgauge/zymurgauge
+          ls -la ./web
           make build-go
   test:
     name: Test Go
     needs: build-ui
     runs-on: ubuntu-latest
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2
       - name: Download UI artifacts
         uses: actions/download-artifact@v2
         with:
           name: ui
-          path: web/build
-      - name: Check out code
-        uses: actions/checkout@v2
       - name: Set up Go 1.17
         uses: actions/setup-go@v2
         with:
@@ -78,13 +75,12 @@ jobs:
     needs: build-ui
     runs-on: ubuntu-latest
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2
       - name: Download UI artifacts
         uses: actions/download-artifact@v2
         with:
           name: ui
-          path: web/build
-      - name: Check out code
-        uses: actions/checkout@v2
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
