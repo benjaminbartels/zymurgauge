@@ -21,9 +21,9 @@ import {
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import BatchService from "../services/BatchService";
-import ChamberService from "../services/ChamberService";
-import ThermometerService from "../services/ThermometerService";
+import BatchService from "../services/batch-service";
+import ChamberService from "../services/chamber-service";
+import ThermometerService from "../services/thermometer-service";
 import { BatchDetail, BatchSummary } from "../types/Batch";
 import { Chamber } from "../types/Chamber";
 

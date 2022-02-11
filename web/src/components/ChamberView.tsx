@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import React, { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import ChamberService from "../services/ChamberService";
+import ChamberService from "../services/chamber-service";
 import { Chamber } from "../types/Chamber";
 
 export default function ChamberView() {
