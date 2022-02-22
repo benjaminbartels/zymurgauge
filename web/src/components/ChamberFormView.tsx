@@ -42,7 +42,6 @@ export default function ChamberFormView() {
   // Load Batches on load
   React.useEffect(() => {
     BatchService.getAllSummaries()
-
       .then((response: any) => {
         console.debug("batches: ", response.data);
         setBatchSummaries(response.data);
@@ -99,9 +98,6 @@ export default function ChamberFormView() {
   }, [params.chamberId, thermometers, batchSummaries]);
 
   const onSubmit = (data: any) => {
-    if (currentBatchId != null) {
-    }
-
     let chamber: Chamber = {
       id: params.chamberId,
       name: data.name,
