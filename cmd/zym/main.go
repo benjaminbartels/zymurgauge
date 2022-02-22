@@ -56,6 +56,7 @@ func main() {
 	}
 }
 
+//nolint:funlen,cyclop // TODO: Revisit later
 func run(logger *logrus.Logger, cfg config) error {
 	if cfg.Debug {
 		logger.SetLevel(logrus.DebugLevel)
@@ -76,8 +77,7 @@ func run(logger *logrus.Logger, cfg config) error {
 		}
 	}()
 
-	scanner := bluetooth.NewBLEScanner()
-	monitor := tilt.NewMonitor(scanner, logger)
+	monitor := tilt.NewMonitor(bluetooth.NewBLEScanner(), logger)
 
 	go func() {
 		errCh <- monitor.Run(ctx)
@@ -133,7 +133,7 @@ func run(logger *logrus.Logger, cfg config) error {
 			update := <-settingsCh
 			brewfatherClient.UpdateSettings(update.BrewfatherAPIUserID, update.BrewfatherAPIKey, update.BrewfatherLogURL)
 
-			var logToBrewfather bool
+			var logToBrewfather bool // TODO: get rid of logToBrewfather
 
 			if update.BrewfatherLogURL != "" {
 				logToBrewfather = true

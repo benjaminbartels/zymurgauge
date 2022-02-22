@@ -2,7 +2,6 @@ package database
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/settings"
@@ -25,7 +24,6 @@ type SettingsRepo struct {
 // NewSettingsRepo returns a new Settings repository using the given bbolt database. It also creates the Settings
 // bucket if it is not yet created on disk.
 func NewSettingsRepo(db *bbolt.DB) (*SettingsRepo, error) {
-	fmt.Println("NewSettingsRepo")
 	tx, err := db.Begin(true)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not begin transaction")
@@ -49,7 +47,6 @@ func NewSettingsRepo(db *bbolt.DB) (*SettingsRepo, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get settings")
 	}
-	fmt.Println("after get")
 
 	if s == nil {
 		s := &settings.Settings{
@@ -63,7 +60,6 @@ func NewSettingsRepo(db *bbolt.DB) (*SettingsRepo, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "could not save settings")
 		}
-		fmt.Println("after save")
 	}
 
 	return r, nil
