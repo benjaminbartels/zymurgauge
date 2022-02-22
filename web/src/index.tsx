@@ -6,7 +6,7 @@ import ChamberFormView from "./components/ChamberFormView";
 import ChambersView from "./components/ChambersView";
 import ChamberView from "./components/ChamberView";
 import Dashboard from "./components/DashboardView";
-import SettingsView from "./components/SettingsView";
+import SettingsFormView from "./components/SettingsFormView";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
 
@@ -24,7 +24,7 @@ ReactDOM.render(
             </Route>
             <Route path="new" element={<ChamberFormView />} />
           </Route>
-          <Route path="settings" element={<SettingsView />} />
+          <Route path="settings" element={<SettingsFormView />} />
         </Route>
       </Routes>
     </BrowserRouter>

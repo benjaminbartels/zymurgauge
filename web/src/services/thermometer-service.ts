@@ -1,4 +1,4 @@
-import { HTTP } from "../http-common";
+import { HTTP } from "./http-common";
 
 class ThermometerService {
   getAll() {

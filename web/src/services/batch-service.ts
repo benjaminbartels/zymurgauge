@@ -1,5 +1,5 @@
-import { HTTP } from "../http-common";
 import { BatchDetail, BatchSummary } from "../types/Batch";
+import { HTTP } from "./http-common";
 
 class BatchService {
   getAllSummaries() {

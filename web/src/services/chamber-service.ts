@@ -1,5 +1,5 @@
-import { HTTP } from "../http-common";
 import { Chamber } from "../types/Chamber";
+import { HTTP } from "./http-common";
 
 class ChamberService {
   getAll() {

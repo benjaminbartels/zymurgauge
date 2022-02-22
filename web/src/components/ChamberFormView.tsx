@@ -21,9 +21,9 @@ import {
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import BatchService from "../services/BatchService";
-import ChamberService from "../services/ChamberService";
-import ThermometerService from "../services/ThermometerService";
+import BatchService from "../services/batch-service";
+import ChamberService from "../services/chamber-service";
+import ThermometerService from "../services/thermometer-service";
 import { BatchDetail, BatchSummary } from "../types/Batch";
 import { Chamber } from "../types/Chamber";
 
@@ -42,7 +42,6 @@ export default function ChamberFormView() {
   // Load Batches on load
   React.useEffect(() => {
     BatchService.getAllSummaries()
-
       .then((response: any) => {
         console.debug("batches: ", response.data);
         setBatchSummaries(response.data);
@@ -99,9 +98,6 @@ export default function ChamberFormView() {
   }, [params.chamberId, thermometers, batchSummaries]);
 
   const onSubmit = (data: any) => {
-    if (currentBatchId != null) {
-    }
-
     let chamber: Chamber = {
       id: params.chamberId,
       name: data.name,

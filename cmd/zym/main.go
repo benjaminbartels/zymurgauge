@@ -16,6 +16,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
 	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
+	"github.com/benjaminbartels/zymurgauge/internal/settings"
 	"github.com/benjaminbartels/zymurgauge/web"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -31,17 +32,13 @@ const (
 )
 
 type config struct {
-	Host                string        `default:":8080"`
-	DebugHost           string        `default:":4000"`
-	ReadTimeout         time.Duration `default:"5s"`
-	WriteTimeout        time.Duration `default:"10s"`
-	IdleTimeout         time.Duration `default:"120s"`
-	ShutdownTimeout     time.Duration `default:"20s"`
-	BrewfatherAPIUserID string        `required:"true"`
-	BrewfatherAPIKey    string        `required:"true"`
-	BrewfatherLogURL    string        `required:"false"`
-	BleScannerTimeout   time.Duration
-	Debug               bool `default:"false"`
+	Host            string        `default:":8080"`
+	DebugHost       string        `default:":4000"`
+	ReadTimeout     time.Duration `default:"5s"`
+	WriteTimeout    time.Duration `default:"10s"`
+	IdleTimeout     time.Duration `default:"120s"`
+	ShutdownTimeout time.Duration `default:"20s"`
+	Debug           bool          `default:"false"`
 }
 
 func main() {
@@ -59,6 +56,7 @@ func main() {
 	}
 }
 
+//nolint:funlen,cyclop // TODO: Revisit later
 func run(logger *logrus.Logger, cfg config) error {
 	if cfg.Debug {
 		logger.SetLevel(logrus.DebugLevel)
@@ -79,8 +77,7 @@ func run(logger *logrus.Logger, cfg config) error {
 		}
 	}()
 
-	scanner := bluetooth.NewBLEScanner()
-	monitor := tilt.NewMonitor(scanner, logger)
+	monitor := tilt.NewMonitor(bluetooth.NewBLEScanner(), logger)
 
 	go func() {
 		errCh <- monitor.Run(ctx)
@@ -96,23 +93,30 @@ func run(logger *logrus.Logger, cfg config) error {
 		return errors.Wrap(err, "could not create chamber repo")
 	}
 
+	settingsRepo, err := database.NewSettingsRepo(db)
+	if err != nil {
+		return errors.Wrap(err, "could not create settings repo")
+	}
+
 	configurator := &chamber.DefaultConfigurator{
 		TiltMonitor: monitor,
 	}
 
-	var opts []brewfather.OptionsFunc
-
 	var logToBrewfather bool
 
-	if cfg.BrewfatherLogURL != "" {
-		logger.Infof("Brewfather Log URL is set to %s", cfg.BrewfatherLogURL)
-		opts = append(opts, brewfather.SetTiltURL(cfg.BrewfatherLogURL))
+	// TODO: Handle settings update without restart
+	s, err := settingsRepo.Get()
+	if err != nil {
+		logger.WithError(err).Warn("could not get settings")
+	}
+
+	brewfatherClient := brewfather.New(s.BrewfatherAPIUserID, s.BrewfatherAPIKey, s.BrewfatherLogURL)
+
+	if s.BrewfatherLogURL != "" {
 		logToBrewfather = true
 	}
 
-	brewfatherService := brewfather.New(cfg.BrewfatherAPIUserID, cfg.BrewfatherAPIKey, opts...)
-
-	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherService, logToBrewfather, logger)
+	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherClient, logToBrewfather, logger)
 	if err != nil {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}
@@ -122,13 +126,30 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	// TODO: Rename DefaultDevicePath and make configurable based on OS
 
+	settingsCh := make(chan settings.Settings)
+
+	go func() {
+		for {
+			update := <-settingsCh
+			brewfatherClient.UpdateSettings(update.BrewfatherAPIUserID, update.BrewfatherAPIKey, update.BrewfatherLogURL)
+
+			var logToBrewfather bool // TODO: get rid of logToBrewfather
+
+			if update.BrewfatherLogURL != "" {
+				logToBrewfather = true
+			}
+
+			chamberManager.SetLogToBrewfather(logToBrewfather)
+		}
+	}()
+
 	httpServer := &http.Server{
 		Addr:         cfg.Host,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherService, web.FS,
-			shutdown, logger),
+		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherClient, web.FS,
+			settingsRepo, settingsCh, shutdown, logger),
 	}
 
 	go func() {

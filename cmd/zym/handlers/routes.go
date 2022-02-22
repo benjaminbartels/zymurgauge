@@ -11,6 +11,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
+	"github.com/benjaminbartels/zymurgauge/internal/settings"
 	uiweb "github.com/benjaminbartels/zymurgauge/web"
 	"github.com/sirupsen/logrus"
 )
@@ -19,6 +20,7 @@ const (
 	chambersPath     = "/chambers"
 	thermometersPath = "/thermometers"
 	batchesPath      = "/batches"
+	settingsPath     = "/settings"
 	version          = "v1"
 	uiDir            = "build"
 	base             = "/ui"
@@ -26,7 +28,8 @@ const (
 
 // NewAPI return a web.App with configured routes and handlers.
 func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfather.Service, uiFiles uiweb.FileReader,
-	shutdown chan os.Signal, logger *logrus.Logger) http.Handler {
+	settingsRepo settings.Repo, updateChan chan settings.Settings, shutdown chan os.Signal,
+	logger *logrus.Logger) http.Handler {
 	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger), middleware.Cors())
 
 	chambersHandler := &ChambersHandler{
@@ -53,6 +56,14 @@ func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfa
 	}
 
 	app.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
+
+	settingsHandler := &SettingsHandler{
+		SettingsRepo: settingsRepo,
+		UpdateChan:   updateChan,
+	}
+
+	app.Register(http.MethodGet, version, settingsPath, settingsHandler.Get)
+	app.Register(http.MethodPost, version, settingsPath, settingsHandler.Save)
 
 	uiHander := &UIHandler{
 		FileReader: uiFiles,
