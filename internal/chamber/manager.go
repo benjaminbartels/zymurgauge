@@ -173,3 +173,7 @@ func (m *Manager) StopFermentation(chamberID string) error {
 
 	return nil
 }
+
+func (m *Manager) SetLogToBrewfather(value bool) {
+	m.logToBrewfather = value
+}

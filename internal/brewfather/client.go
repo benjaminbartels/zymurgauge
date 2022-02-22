@@ -28,32 +28,26 @@ var _ Service = (*ServiceClient)(nil)
 
 type ServiceClient struct {
 	client *http.Client
+	userID string
+	apiKey string
 	logURL string
 }
 
-func New(userID, apiKey string, options ...OptionsFunc) *ServiceClient {
-	t := &transport{
-		userID: userID,
-		apiKey: apiKey,
-	}
-
+func New(userID, apiKey, tiltURL string) *ServiceClient {
 	c := &ServiceClient{
-		client: &http.Client{Transport: t},
-	}
-
-	for _, option := range options {
-		option(c)
+		client: createHTTPClient(userID, apiKey),
 	}
 
 	return c
 }
 
-type OptionsFunc func(*ServiceClient)
-
-func SetTiltURL(url string) OptionsFunc {
-	return func(c *ServiceClient) {
-		c.logURL = url
+func createHTTPClient(userID, apiKey string) *http.Client {
+	t := &transport{
+		userID: userID,
+		apiKey: apiKey,
 	}
+
+	return &http.Client{Transport: t}
 }
 
 func (s *ServiceClient) GetAllSummaries(ctx context.Context) ([]BatchSummary, error) {
@@ -131,6 +125,14 @@ func (s *ServiceClient) Log(ctx context.Context, log LogEntry) error {
 	}
 
 	return nil
+}
+
+func (s *ServiceClient) UpdateSettings(userID, apiKey, tiltURL string) {
+	if userID != s.userID || apiKey != s.apiKey {
+		s.client = createHTTPClient(userID, apiKey)
+	}
+
+	s.logURL = tiltURL
 }
 
 type transport struct {

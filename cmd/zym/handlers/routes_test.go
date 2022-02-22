@@ -99,13 +99,15 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("StartFermentation", chamberID, "Primary").Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
+		settingsMock := &mocks.SettingsRepo{}
+
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
 
 		fsMock := &mocks.FileReader{}
 		fsMock.On("ReadFile", "build/index.html").Return([]byte(""), nil)
 
-		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, fsMock, shutdown, logger)
+		app := handlers.NewAPI(controllerMock, devicePath, serviceMock, fsMock, settingsMock, nil, shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
