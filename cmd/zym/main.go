@@ -34,6 +34,7 @@ const (
 type config struct {
 	Host            string        `default:":8080"`
 	DebugHost       string        `default:":4000"`
+	DBPath          string        `default:"zymurgaugedb"`
 	ReadTimeout     time.Duration `default:"5s"`
 	WriteTimeout    time.Duration `default:"10s"`
 	IdleTimeout     time.Duration `default:"120s"`
@@ -83,7 +84,7 @@ func run(logger *logrus.Logger, cfg config) error {
 		errCh <- monitor.Run(ctx)
 	}()
 
-	db, err := bbolt.Open("zymurgaugedb", dbFilePermissions, &bbolt.Options{Timeout: bboltReadTimeout})
+	db, err := bbolt.Open(cfg.DBPath, dbFilePermissions, &bbolt.Options{Timeout: bboltReadTimeout})
 	if err != nil {
 		return errors.Wrap(err, "could not open database")
 	}
