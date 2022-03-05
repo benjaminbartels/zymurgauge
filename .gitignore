@@ -39,6 +39,3 @@ out/bin
 /cmd/zym/tmp
 profile.cov
 coverage.xml
-checkstyle-report.xml
-yamllint-checkstyle.xml
-/data

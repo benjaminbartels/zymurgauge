@@ -19,7 +19,7 @@ func NewBLEScanner() *BLEScanner {
 func (b *BLEScanner) NewDevice() (*linux.Device, error) {
 	device, err := linux.NewDevice()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create new device")
+		return nil, errors.Wrap(err, "could not create new ble device")
 	}
 
 	return device, nil
