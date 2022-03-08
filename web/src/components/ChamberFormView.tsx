@@ -543,7 +543,7 @@ export default function ChamberFormView() {
                       <Grid item xs={12}>
                         <Typography align="center" noWrap variant="h6">
                           Fermentation Profile:{" "}
-                          {batchDetail?.fermentation?.name}
+                          {batchDetail?.recipe?.fermentation?.name}
                         </Typography>
                       </Grid>
                       <Grid item xs={12}>
@@ -565,7 +565,7 @@ export default function ChamberFormView() {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {batchDetail?.fermentation?.steps?.map(
+                              {batchDetail?.recipe?.fermentation?.steps?.map(
                                 (step, index) => (
                                   <TableRow
                                     key={index}

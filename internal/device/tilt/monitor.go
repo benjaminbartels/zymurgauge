@@ -55,7 +55,7 @@ func NewMonitor(scanner bluetooth.Scanner, logger *logrus.Logger, options ...Opt
 	}
 
 	for _, color := range m.colors {
-		m.tilts[color] = &Tilt{}
+		m.tilts[color] = &Tilt{color: color}
 	}
 
 	return m

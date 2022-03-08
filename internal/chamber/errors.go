@@ -6,6 +6,7 @@ const (
 	ErrInvalidStep    = Error("invalid step")
 	ErrNotFermenting  = Error("fermentation has not started")
 	ErrFermenting     = Error("fermentation has started")
+	ErrDeviceIsNil    = Error("device is nil")
 )
 
 type Error string

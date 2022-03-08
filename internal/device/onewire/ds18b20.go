@@ -50,6 +50,10 @@ func NewDs18b20(id string, options ...OptionsFunc) (*Ds18b20, error) {
 	return d, nil
 }
 
+func (d *Ds18b20) GetID() string {
+	return d.ID
+}
+
 // ReadTemperature read the current temperature of the Thermometer.
 func (d *Ds18b20) GetTemperature() (float64, error) {
 	file, err := os.Open(path.Join(d.path, d.ID, slave))

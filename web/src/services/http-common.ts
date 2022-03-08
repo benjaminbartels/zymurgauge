@@ -2,7 +2,7 @@ import axios from "axios";
 // require('promise.prototype.finally').shim()
 
 export const HTTP = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+  baseURL: process.env.REACT_APP_ZYMURGAUGE_API_URL,
 });
 
 HTTP.interceptors.request.use((request) => {

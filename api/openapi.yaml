@@ -73,7 +73,7 @@ paths:
                 chamber:
                   $ref: '#/components/examples/chamber'
         '400':
-          description: Bad Request with invalid configuration 
+          description: Bad Request with invalid configuration
           content:
             application/json:
               schema:
@@ -438,7 +438,7 @@ components:
             hydrometerGravity:
               type: number
               format: double
-        currentFermentationStep: Primary          
+        currentFermentationStep:
           type: string
         modTime:
           type: string
@@ -472,15 +472,15 @@ components:
           - id: 28-000006285484
             type: "ds18b20"
             roles:
-            - "beerThermometer" 
+              - "beerThermometer"
           - id: GPIO22
             type: "gpio"
             roles:
-            - "chiller"
+              - "chiller"
           - id: GPIO17
             type: "gpio"
             roles:
-            - "heater"
+              - "heater"
         chillerKp: -1.0
         chillerKi: -1.0
         chillerKd: -1.0
@@ -520,15 +520,15 @@ components:
             - id: 28-000006285484
               type: "ds18b20"
               roles:
-              - "beerThermometer"
+                - "beerThermometer"
             - id: GPIO22
               type: "gpio"
               roles:
-              - "chiller"
+                - "chiller"
             - id: GPIO17
               type: "gpio"
               roles:
-              - "heater"
+                - "heater"
           chillerKp: -1.0
           chillerKi: -1.0
           chillerKd: -1.0
@@ -566,16 +566,16 @@ components:
             - id: orange
               type: "tilt"
               roles:
-              - "beerThermometer"
-              - "hydrometer"
+                - "beerThermometer"
+                - "hydrometer"
             - id: GPIO22
               type: "gpio"
               roles:
-              - "chiller"
+                - "chiller"
             - id: GPIO17
               type: "gpio"
               roles:
-              - "heater"
+                - "heater"
           chillerKp: -1.0
           chillerKi: -1.0
           chillerKd: -1.0
@@ -590,15 +590,15 @@ components:
           - id: 28-000006285484
             type: "ds18b20"
             roles:
-            - "beerThermometer"
+              - "beerThermometer"
           - id: GPIO22
             type: "gpio"
             roles:
-            - "chiller"
+              - "chiller"
           - id: GPIO17
             type: "gpio"
             roles:
-            - "heater"
+              - "heater"
         chillerKp: -1.0
         chillerKi: -1.0
         chillerKd: -1.0
@@ -613,15 +613,15 @@ components:
           - id: 28-000006285484
             type: "ds18b20"
             roles:
-            - "beerThermometer"
+              - "beerThermometer"
           - id: GPIO22
             type: "gpio"
             roles:
-            - "chiller"
+              - "chiller"
           - id: GPIO17
             type: "gpio"
             roles:
-            - "heater"
+              - "heater"
         chillerKp: -1.0
         chillerKi: -1.0
         chillerKd: -1.0

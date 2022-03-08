@@ -9,8 +9,14 @@ export interface BatchDetail {
   id: string;
   name: string;
   number: number;
-  recipeName: string;
+  recipe: Recipe;
+}
+
+export interface Recipe {
+  name: string;
   fermentation: Fermentation;
+  og: number;
+  fg: number;
 }
 
 export interface Fermentation {

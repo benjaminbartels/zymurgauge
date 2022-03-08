@@ -37,8 +37,8 @@ export default function Chambers() {
                     <b>{chamber.name}</b>
                   </Typography>
                   <Typography gutterBottom>
-                    {chamber?.currentBatch?.recipeName !== undefined
-                      ? chamber?.currentBatch?.recipeName
+                    {chamber?.currentBatch?.recipe.name !== undefined
+                      ? chamber?.currentBatch?.recipe.name
                       : "No Recipe"}
                   </Typography>
                   <Grid container>

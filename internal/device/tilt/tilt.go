@@ -11,9 +11,14 @@ var _ device.ThermometerAndHydrometer = (*Tilt)(nil)
 
 type Tilt struct {
 	ibeacon *IBeacon
+	color   Color
 }
 
 var ErrIBeaconIsNil = errors.New("underlying IBeacon is nil")
+
+func (t *Tilt) GetID() string {
+	return string(t.color)
+}
 
 func (t *Tilt) GetTemperature() (float64, error) {
 	if t.ibeacon == nil {

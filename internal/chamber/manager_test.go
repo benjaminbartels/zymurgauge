@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	chamberID  = "96f58a65-03c0-49f3-83ca-ab751bbf3768"
-	repoErrMsg = "could not %s repository"
+	chamberID       = "96f58a65-03c0-49f3-83ca-ab751bbf3768"
+	repoErrMsg      = "could not %s repository"
+	metricsInterval = 1 * time.Minute
 )
 
 func createTestChambers() []*chamber.Chamber {
@@ -29,15 +30,17 @@ func createTestChambers() []*chamber.Chamber {
 		ID:   chamberID,
 		Name: "Chamber1",
 		CurrentBatch: &brewfather.BatchDetail{
-			Fermentation: brewfather.Fermentation{
-				Steps: []brewfather.FermentationStep{
-					{
-						Type:            "Primary",
-						StepTemperature: 22,
-					},
-					{
-						Type:            "Secondary",
-						StepTemperature: 20,
+			Recipe: brewfather.Recipe{
+				Fermentation: brewfather.Fermentation{
+					Steps: []brewfather.FermentationStep{
+						{
+							Type:            "Primary",
+							StepTemperature: 22,
+						},
+						{
+							Type:            "Secondary",
+							StepTemperature: 20,
+						},
 					},
 				},
 			},
@@ -80,6 +83,9 @@ func newManagerGetAllError(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
+
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("GetAll").Return(nil, errors.New("repoMock error"))
 
@@ -89,8 +95,10 @@ func newManagerGetAllError(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
+		metricsInterval)
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all chambers from"))
 	assert.Nil(t, manager)
 }
@@ -105,6 +113,9 @@ func newManagerConfigureErrors(t *testing.T) {
 	}
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
+
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("GetAll").Return(testChambers, nil)
 
@@ -114,8 +125,10 @@ func newManagerConfigureErrors(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
+		metricsInterval)
 	assert.Contains(t, err.Error(), "could not configure temperature controllers")
 	assert.NotNil(t, manager)
 }
@@ -383,12 +396,17 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	l, hook := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
+
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("GetAll").Return(testChambers, nil)
 
 	doneCh := make(chan struct{}, 1)
 
 	thermometerMock := &mocks.ThermometerAndHydrometer{}
+	thermometerMock.On("GetGravity").Return(0.0, nil)
+	thermometerMock.On("GetID").Return("")
 	thermometerMock.On("GetTemperature").Return(0.0, errors.New("thermometerMock error")).Run(
 		func(args mock.Arguments) {
 			doneCh <- struct{}{}
@@ -400,8 +418,10 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
+		metricsInterval)
 	assert.NoError(t, err)
 
 	go func() {
@@ -504,6 +524,9 @@ func setupManagerTest(t *testing.T,
 	t.Helper()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
+
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("GetAll").Return(chambers, nil)
 
@@ -513,8 +536,10 @@ func setupManagerTest(t *testing.T,
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, false, l)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
+		metricsInterval)
 	assert.NoError(t, err)
 
 	return manager, repoMock

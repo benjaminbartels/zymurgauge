@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import App from "./App";
 import ChamberFormView from "./components/ChamberFormView";
 import ChambersView from "./components/ChambersView";
 import ChamberView from "./components/ChamberView";
-import Dashboard from "./components/DashboardView";
+// import Dashboard from "./components/DashboardView";
 import SettingsFormView from "./components/SettingsFormView";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
@@ -15,7 +15,9 @@ ReactDOM.render(
     <BrowserRouter basename="/ui">
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<Dashboard />} />
+          {/* <Route index element={<Dashboard />} /> */}
+          <Route index element={<Navigate replace to="/chambers" />} />
+          <Route index element={<ChambersView />} />
           <Route path="chambers">
             <Route index element={<ChambersView />} />
             <Route path=":chamberId">
