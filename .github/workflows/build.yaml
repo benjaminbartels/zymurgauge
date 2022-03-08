@@ -64,7 +64,7 @@ jobs:
         uses: codecov/codecov-action@v2.1.0
         with:
           token: ddd9c571-814f-48d7-ad54-2bac7319737e
-          file: ./coverage.cov
+          file: ./profile.cov
           flags: unittests
           name: codecov-umbrella
   lint:
