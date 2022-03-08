@@ -67,7 +67,7 @@ test: ## Run the tests of the project
 
 coverage: ## Generate code coverge report
 	$(GOTEST) -v -covermode=atomic -coverpkg=./... -coverprofile=profile.cov  ./...
-	$(GOCMD) tool cover -func profile.cov/
+	$(GOCMD) tool cover -func profile.cov
 ifeq ($(EXPORT_RESULT), true)
 	go install github.com/AlekSi/gocov-xml@latest
 	go install github.com/axw/gocov/gocov@latest
