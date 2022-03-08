@@ -142,8 +142,8 @@ func configureGPIOError(t *testing.T) {
 func TestLogging(t *testing.T) {
 	t.Parallel()
 	t.Run("log", log)
-	// t.Run("logServiceErrors", logServiceErrors)
-	// t.Run("logDeviceErrors", logDeviceErrors)
+	t.Run("logServiceErrors", logServiceErrors)
+	t.Run("logDeviceErrors", logDeviceErrors)
 }
 
 func log(t *testing.T) {
