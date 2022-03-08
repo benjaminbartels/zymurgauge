@@ -18,7 +18,7 @@ const (
 	controllerErrMsg          = "could not %s controller"
 	respondErrMsg             = "problem responding to client"
 	notFoundErrorMsg          = "%s '%s' not found"
-	parseErrorMsg             = "could not parse chamber"
+	parseErrorMsg             = "could not parse"
 	fermentationInProgressMsg = "fermentation is in progress"
 	invalidStepErrorMsg       = "step '%s' is invalid for chamber '%s'"
 	noCurrentBatchErrorMsg    = "chamber '%s' does not have a current batch"
@@ -26,6 +26,7 @@ const (
 	startFermentationErrorMsg = "could not start fermentation for chamber %s"
 	stopFermentationErrorMsg  = "could not stop fermentation for chamber %s"
 	invalidConfigErrorMsg     = "configuration is invalid: %s: some error"
+	settingsNotFound          = "settings not found"
 )
 
 var errSomeError = errors.New("some error")

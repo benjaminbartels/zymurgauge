@@ -17,16 +17,16 @@ type SettingsHandler struct {
 }
 
 func (h *SettingsHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	c, err := h.SettingsRepo.Get()
+	s, err := h.SettingsRepo.Get()
 	if err != nil {
-		return errors.Wrap(err, "could not get settings from controller")
+		return errors.Wrap(err, "could not get settings from repository")
 	}
 
-	if c == nil {
+	if s == nil {
 		return web.NewRequestError("settings not found", http.StatusNotFound)
 	}
 
-	if err := web.Respond(ctx, w, c, http.StatusOK); err != nil {
+	if err := web.Respond(ctx, w, s, http.StatusOK); err != nil {
 		return errors.Wrap(err, "problem responding to client")
 	}
 
@@ -40,7 +40,7 @@ func (h *SettingsHandler) Save(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 
 	if err := h.SettingsRepo.Save(&s); err != nil {
-		return errors.Wrap(err, "could not save settings to controller")
+		return errors.Wrap(err, "could not save settings to repository")
 	}
 
 	if err := web.Respond(ctx, w, s, http.StatusOK); err != nil {
