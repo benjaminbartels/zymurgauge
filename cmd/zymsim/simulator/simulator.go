@@ -53,7 +53,12 @@ func (a *Actuator) Off() error {
 }
 
 type Thermometer struct {
+	id          string
 	currentTemp float64
+}
+
+func (t *Thermometer) GetID() string {
+	return t.id
 }
 
 func (t *Thermometer) GetTemperature() (float64, error) {
@@ -67,7 +72,7 @@ func New(initialBeerTemp float64) *Simulator {
 		airTemp:         initialAirTemp,
 		heaterTemp:      initialHeaterTemp,
 		environmentTemp: initialEnvironmentTemp,
-		Thermometer:     &Thermometer{currentTemp: initialBeerTemp},
+		Thermometer:     &Thermometer{id: "sim_therm", currentTemp: initialBeerTemp},
 		Chiller:         &Actuator{},
 		Heater:          &Actuator{},
 	}

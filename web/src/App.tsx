@@ -1,4 +1,4 @@
-import DashboardIcon from "@mui/icons-material/Dashboard";
+// import DashboardIcon from "@mui/icons-material/Dashboard";
 import KitchenIcon from "@mui/icons-material/Kitchen";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AppBar from "@mui/material/AppBar";
@@ -23,7 +23,8 @@ const getDisplayName = (pathname: string) => {
     case "settings":
       return "Settings";
     default:
-      return "Dashboard";
+      return "Chambers";
+    // return "Dashboard";
   }
 };
 
@@ -61,13 +62,14 @@ function NavigationDrawer() {
       }}
     >
       <List>
-        <ListItem button component={Link} to="/">
+        {/* <ListItem button component={Link} to="/">
           <ListItemIcon>
             <DashboardIcon />
           </ListItemIcon>
           <ListItemText primary="Dashboard" />
-        </ListItem>
-        <ListItem button component={Link} to="chambers">
+        </ListItem> */}
+        {/* <ListItem button component={Link} to="chambers"> */}
+        <ListItem button component={Link} to="/">
           <ListItemIcon>
             <KitchenIcon />
           </ListItemIcon>

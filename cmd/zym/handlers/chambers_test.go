@@ -37,11 +37,13 @@ func getTestChamber() chamber.Chamber {
 			BeerThermometerID:   "1",
 		},
 		CurrentBatch: &brewfather.BatchDetail{
-			Fermentation: brewfather.Fermentation{
-				Steps: []brewfather.FermentationStep{
-					{
-						Type:            primaryStep,
-						StepTemperature: 22,
+			Recipe: brewfather.Recipe{
+				Fermentation: brewfather.Fermentation{
+					Steps: []brewfather.FermentationStep{
+						{
+							Type:            primaryStep,
+							StepTemperature: 22,
+						},
 					},
 				},
 			},
@@ -294,6 +296,8 @@ func saveChamberInvalidConfigError(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	chambers := []*chamber.Chamber{
 		{ID: chamberID},
@@ -308,8 +312,9 @@ func saveChamberInvalidConfigError(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(nil, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	controller, err := chamber.NewManager(ctx, repoMock, configuratorMock, serviceMock, false, l)
+	controller, err := chamber.NewManager(ctx, repoMock, configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	handler := &handlers.ChambersHandler{ChamberController: controller, Logger: l}
@@ -402,6 +407,8 @@ func deleteChamber(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, hook := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -409,8 +416,9 @@ func deleteChamber(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, false, l)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, "Primary")
@@ -471,6 +479,8 @@ func deleteChamberOtherError(t *testing.T) {
 	c := &chamber.Chamber{ID: chamberID}
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -478,8 +488,9 @@ func deleteChamberOtherError(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, false, l)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	controllerMock := &mocks.Controller{}
@@ -520,6 +531,9 @@ func startFermentation(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
+
 	c := getTestChamber()
 
 	configuratorMock := &mocks.Configurator{}
@@ -528,8 +542,9 @@ func startFermentation(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, false, l)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	w, r, ctx := setupHandlerTest("step="+primaryStep, nil)
@@ -546,6 +561,9 @@ func startFermentationInvalidStepError(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
+
 	c := getTestChamber()
 
 	configuratorMock := &mocks.Configurator{}
@@ -554,8 +572,9 @@ func startFermentationInvalidStepError(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, false, l)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	step := "Secondary"
@@ -659,6 +678,8 @@ func stopFermentation(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -666,8 +687,9 @@ func stopFermentation(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, false, l)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, "Primary")
@@ -722,15 +744,30 @@ func stopFermentationNotFermentingError(t *testing.T) {
 func stopFermentationOtherError(t *testing.T) {
 	t.Parallel()
 
+	c := getTestChamber()
+
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
+
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
+	configuratorMock.On("CreateTilt", mock.Anything).Return(&stubs.Tilt{}, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	controllerMock := &mocks.Controller{}
 	controllerMock.On("StopFermentation", chamberID).Return(errors.New("controllerMock error"))
 
+	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
+
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
+	assert.NoError(t, err)
+
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
 
-	err := handler.Stop(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
+	err = handler.Stop(ctx, w, r, httprouter.Params{httprouter.Param{Key: "id", Value: chamberID}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(stopFermentationErrorMsg, chamberID))
 }
 
@@ -741,6 +778,8 @@ func stopFermentationRespondError(t *testing.T) {
 
 	w, r, ctx := setupHandlerTest("", nil)
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -748,8 +787,9 @@ func stopFermentationRespondError(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, false, l)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, primaryStep)

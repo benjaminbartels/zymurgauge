@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
@@ -19,7 +20,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-const devicePath = "/"
+const (
+	devicePath            = "/"
+	readingUpdateInterval = 100 * time.Millisecond
+)
 
 func TestRoutes(t *testing.T) {
 	t.Parallel()
@@ -50,6 +54,8 @@ func TestRoutes(t *testing.T) {
 
 		ctx := context.Background()
 		l, _ := logtest.NewNullLogger()
+		m := &mocks.Metrics{}
+		m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 		c := &chamber.Chamber{
 			ID: chamberID,
@@ -60,15 +66,17 @@ func TestRoutes(t *testing.T) {
 				BeerThermometerID:   "1",
 			},
 			CurrentBatch: &brewfather.BatchDetail{
-				Fermentation: brewfather.Fermentation{
-					Steps: []brewfather.FermentationStep{
-						{
-							Type:            "Primary",
-							StepTemperature: 22,
-						},
-						{
-							Type:            "Secondary",
-							StepTemperature: 20,
+				Recipe: brewfather.Recipe{
+					Fermentation: brewfather.Fermentation{
+						Steps: []brewfather.FermentationStep{
+							{
+								Type:            "Primary",
+								StepTemperature: 22,
+							},
+							{
+								Type:            "Secondary",
+								StepTemperature: 20,
+							},
 						},
 					},
 				},
@@ -85,8 +93,9 @@ func TestRoutes(t *testing.T) {
 		serviceMock := &mocks.Service{}
 		serviceMock.On("GetAllSummaries", mock.Anything).Return([]brewfather.BatchSummary{}, nil)
 		serviceMock.On("GetDetail", mock.Anything, batchID).Return(&r, nil)
+		serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-		err := c.Configure(configuratorMock, serviceMock, false, l)
+		err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 		assert.NoError(t, err)
 
 		chambers := []*chamber.Chamber{c}

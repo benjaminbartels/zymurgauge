@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/alexcesaro/statsd"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
@@ -32,14 +33,16 @@ const (
 )
 
 type config struct {
-	Host            string        `default:":8080"`
-	DebugHost       string        `default:":4000"`
-	DBPath          string        `default:"zymurgaugedb"`
-	ReadTimeout     time.Duration `default:"5s"`
-	WriteTimeout    time.Duration `default:"10s"`
-	IdleTimeout     time.Duration `default:"120s"`
-	ShutdownTimeout time.Duration `default:"20s"`
-	Debug           bool          `default:"false"`
+	Host                   string        `default:":8080"`
+	DebugHost              string        `default:":4000"`
+	DBPath                 string        `default:"zymurgaugedb"`
+	StatsDAddress          string        `default:":8125"`
+	ReadTimeout            time.Duration `default:"5s"`
+	WriteTimeout           time.Duration `default:"10s"`
+	IdleTimeout            time.Duration `default:"120s"`
+	ShutdownTimeout        time.Duration `default:"20s"`
+	ReadingsUpdateInterval time.Duration `default:"1m"`
+	Debug                  bool          `default:"false"`
 }
 
 func main() {
@@ -103,7 +106,10 @@ func run(logger *logrus.Logger, cfg config) error {
 		TiltMonitor: monitor,
 	}
 
-	var logToBrewfather bool
+	statsd, err := statsd.New(statsd.Address(cfg.StatsDAddress))
+	if err != nil {
+		return errors.Wrap(err, "could not create statsd client")
+	}
 
 	// TODO: Handle settings update without restart
 	s, err := settingsRepo.Get()
@@ -113,11 +119,8 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	brewfatherClient := brewfather.New(s.BrewfatherAPIUserID, s.BrewfatherAPIKey, s.BrewfatherLogURL)
 
-	if s.BrewfatherLogURL != "" {
-		logToBrewfather = true
-	}
-
-	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherClient, logToBrewfather, logger)
+	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherClient, logger, statsd,
+		cfg.ReadingsUpdateInterval)
 	if err != nil {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}
@@ -133,14 +136,6 @@ func run(logger *logrus.Logger, cfg config) error {
 		for {
 			update := <-settingsCh
 			brewfatherClient.UpdateSettings(update.BrewfatherAPIUserID, update.BrewfatherAPIKey, update.BrewfatherLogURL)
-
-			var logToBrewfather bool // TODO: get rid of logToBrewfather
-
-			if update.BrewfatherLogURL != "" {
-				logToBrewfather = true
-			}
-
-			chamberManager.SetLogToBrewfather(logToBrewfather)
 		}
 	}()
 
@@ -149,8 +144,8 @@ func run(logger *logrus.Logger, cfg config) error {
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherClient, web.FS,
-			settingsRepo, settingsCh, shutdown, logger),
+		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherClient, web.FS, settingsRepo,
+			settingsCh, shutdown, logger),
 	}
 
 	go func() {

@@ -11,8 +11,9 @@ import (
 
 // TestClient is a wrapper around the bbolt.Client.
 type testDB struct {
-	db          *bbolt.DB
-	chamberRepo *database.ChamberRepo
+	db           *bbolt.DB
+	chamberRepo  *database.ChamberRepo
+	settingsRepo *database.SettingsRepo
 }
 
 func createTestDB() *testDB {
@@ -38,9 +39,15 @@ func createTestDB() *testDB {
 		panic(err)
 	}
 
+	settingsRepo, err := database.NewSettingsRepo(db)
+	if err != nil {
+		panic(err)
+	}
+
 	t := &testDB{
-		db:          db,
-		chamberRepo: chamberRepo,
+		db:           db,
+		chamberRepo:  chamberRepo,
+		settingsRepo: settingsRepo,
 	}
 
 	return t

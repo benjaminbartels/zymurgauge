@@ -18,8 +18,8 @@ type DefaultConfigurator struct {
 	TiltMonitor *tilt.Monitor
 }
 
-func (c *DefaultConfigurator) CreateDs18b20(thermometerID string) (device.Thermometer, error) {
-	return &stubs.Thermometer{ThermometerID: thermometerID}, nil
+func (c *DefaultConfigurator) CreateDs18b20(id string) (device.Thermometer, error) {
+	return &stubs.Thermometer{ID: id}, nil
 }
 
 func (c *DefaultConfigurator) CreateTilt(color tilt.Color) (device.ThermometerAndHydrometer, error) {

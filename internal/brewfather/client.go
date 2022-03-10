@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather/model"
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 const (
 	APIURL      = "https://api.brewfather.app/v1"
 	batchesPath = "batches"
+	logInterval = 15 * time.Minute
 )
 
 var (
@@ -27,15 +29,18 @@ var (
 var _ Service = (*ServiceClient)(nil)
 
 type ServiceClient struct {
-	client *http.Client
-	userID string
-	apiKey string
-	logURL string
+	client       *http.Client
+	userID       string
+	apiKey       string
+	logURL       string
+	nextSendTime time.Time
 }
 
-func New(userID, apiKey, tiltURL string) *ServiceClient {
+func New(userID, apiKey, logURL string) *ServiceClient {
 	c := &ServiceClient{
-		client: createHTTPClient(userID, apiKey),
+		client:       createHTTPClient(userID, apiKey),
+		logURL:       logURL,
+		nextSendTime: time.Now(),
 	}
 
 	return c
@@ -103,25 +108,29 @@ func (s *ServiceClient) GetDetail(ctx context.Context, id string) (*BatchDetail,
 }
 
 func (s *ServiceClient) Log(ctx context.Context, log LogEntry) error {
-	data, err := json.Marshal(log)
-	if err != nil {
-		return errors.Wrap(err, "could not marshal TiltLogEntry")
-	}
+	if time.Now().After(s.nextSendTime) {
+		data, err := json.Marshal(log)
+		if err != nil {
+			return errors.Wrap(err, "could not marshal Tilt log entry")
+		}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.logURL, bytes.NewBuffer(data))
-	if err != nil {
-		return errors.Wrap(err, "could not create POST request for TiltLogEntry")
-	}
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.logURL, bytes.NewBuffer(data))
+		if err != nil {
+			return errors.Wrap(err, "could not create POST request for Tilt log entry")
+		}
 
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "could not POST TiltLogEntry")
-	}
+		resp, err := s.client.Do(req)
+		if err != nil {
+			return errors.Wrap(err, "could not POST Tilt log entry")
+		}
 
-	defer resp.Body.Close()
+		defer resp.Body.Close()
 
-	if err := parseStatusCode(resp.StatusCode); err != nil {
-		return err
+		if err := parseStatusCode(resp.StatusCode); err != nil {
+			return err
+		}
+
+		s.nextSendTime = time.Now().Add(logInterval)
 	}
 
 	return nil
@@ -194,11 +203,19 @@ func convertBatchSummary(b model.BatchSummary) BatchSummary {
 
 func convertBatchDetail(b model.BatchDetail) BatchDetail {
 	return BatchDetail{
-		ID:           b.ID,
-		Name:         b.Name,
-		Number:       b.BatchNo,
-		RecipeName:   b.Recipe.Name,
-		Fermentation: convertFermentation(b.Recipe.Fermentation),
+		ID:     b.ID,
+		Name:   b.Name,
+		Number: b.BatchNo,
+		Recipe: convertRecipe(b.Recipe),
+	}
+}
+
+func convertRecipe(recipe model.Recipe) Recipe {
+	return Recipe{
+		Name:         recipe.Name,
+		Fermentation: convertFermentation(recipe.Fermentation),
+		OG:           recipe.Og,
+		FG:           recipe.Fg,
 	}
 }
 

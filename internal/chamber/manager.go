@@ -4,8 +4,10 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/metrics"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -14,26 +16,28 @@ import (
 var _ Controller = (*Manager)(nil)
 
 type Manager struct {
-	ctx             context.Context
-	repo            Repo
-	chambers        map[string]*Chamber
-	configurator    Configurator
-	service         brewfather.Service
-	logToBrewfather bool
-	logger          *logrus.Logger
-	mutex           sync.RWMutex
+	ctx                    context.Context
+	repo                   Repo
+	chambers               map[string]*Chamber
+	configurator           Configurator
+	service                brewfather.Service
+	logger                 *logrus.Logger
+	metrics                metrics.Metrics
+	readingsUpdateInterval time.Duration
+	mutex                  sync.RWMutex
 }
 
 func NewManager(ctx context.Context, repo Repo, configurator Configurator, service brewfather.Service,
-	logToBrewfather bool, logger *logrus.Logger) (*Manager, error) {
+	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration) (*Manager, error) {
 	m := &Manager{
-		ctx:             ctx,
-		repo:            repo,
-		chambers:        make(map[string]*Chamber),
-		configurator:    configurator,
-		service:         service,
-		logToBrewfather: logToBrewfather,
-		logger:          logger,
+		ctx:                    ctx,
+		repo:                   repo,
+		chambers:               make(map[string]*Chamber),
+		configurator:           configurator,
+		service:                service,
+		logger:                 logger,
+		metrics:                metrics,
+		readingsUpdateInterval: readingsUpdateInterval,
 	}
 
 	chambers, err := m.repo.GetAll()
@@ -48,7 +52,7 @@ func NewManager(ctx context.Context, repo Repo, configurator Configurator, servi
 
 	for i := range chambers {
 		// TODO: Configure implementation should vary based on arch
-		if err := chambers[i].Configure(configurator, service, logToBrewfather, logger); err != nil {
+		if err := chambers[i].Configure(configurator, service, logger, metrics, readingsUpdateInterval); err != nil {
 			errs = multierror.Append(errs,
 				errors.Wrapf(err, "could not configure temperature controller for chamber %s", chambers[i].Name))
 		}
@@ -69,7 +73,6 @@ func (m *Manager) GetAll() ([]*Chamber, error) {
 
 	chambers := make([]*Chamber, 0, len(m.chambers))
 	for _, chamber := range m.chambers {
-		chamber.UpdateReadings()
 		chambers = append(chambers, chamber)
 	}
 
@@ -85,10 +88,7 @@ func (m *Manager) Get(id string) (*Chamber, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
-	chamber, ok := m.chambers[id]
-	if ok {
-		chamber.UpdateReadings()
-	}
+	chamber := m.chambers[id]
 
 	// It is not possible for Get() to return an error
 	return chamber, nil
@@ -102,7 +102,7 @@ func (m *Manager) Save(chamber *Chamber) error {
 		return ErrFermenting
 	}
 
-	if err := chamber.Configure(m.configurator, m.service, m.logToBrewfather, m.logger); err != nil {
+	if err := chamber.Configure(m.configurator, m.service, m.logger, m.metrics, m.readingsUpdateInterval); err != nil {
 		return errors.Wrap(err, "could not configure chamber")
 	}
 
@@ -172,8 +172,4 @@ func (m *Manager) StopFermentation(chamberID string) error {
 	m.chambers[chamber.ID] = chamber
 
 	return nil
-}
-
-func (m *Manager) SetLogToBrewfather(value bool) {
-	m.logToBrewfather = value
 }

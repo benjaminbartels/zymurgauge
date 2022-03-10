@@ -17,11 +17,17 @@ type BatchSummary struct {
 }
 
 type BatchDetail struct {
-	ID           string       `json:"id"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Number int    `json:"number"`
+	Recipe Recipe `json:"recipe"`
+}
+
+type Recipe struct {
 	Name         string       `json:"name"`
-	Number       int          `json:"number"`
-	RecipeName   string       `json:"recipeName"`
 	Fermentation Fermentation `json:"fermentation"`
+	OG           float64      `json:"og"`
+	FG           float64      `json:"fg"`
 }
 
 type Fermentation struct {

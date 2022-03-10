@@ -17,7 +17,11 @@ var (
 )
 
 type Thermometer struct {
-	ThermometerID string
+	ID string
+}
+
+func (t *Thermometer) GetID() string {
+	return t.ID
 }
 
 func (t *Thermometer) GetTemperature() (float64, error) {
@@ -34,6 +38,10 @@ func (a *Actuator) Off() error { return nil }
 
 type Tilt struct {
 	Color tilt.Color
+}
+
+func (t *Tilt) GetID() string {
+	return string(t.Color)
 }
 
 func (t *Tilt) GetTemperature() (float64, error) {

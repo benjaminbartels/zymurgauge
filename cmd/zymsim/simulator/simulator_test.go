@@ -30,6 +30,11 @@ func TestChill(t *testing.T) {
 	if expected != temp {
 		t.Errorf("Unexpected temp. Want: '%f', Got: '%f'", expected, temp)
 	}
+
+	id := sim.Thermometer.GetID()
+	if id != "sim_therm" {
+		t.Errorf("Unexpected id. Want: '%s', Got: '%s'", "sim_therm", id)
+	}
 }
 
 func TestHeat(t *testing.T) {

@@ -10,11 +10,10 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/metrics"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-const brewfatherLogInterval = 15 * time.Minute
 
 // Chamber represents an insulated box (fridge) with internal heating/cooling elements that reacts to changes in
 // monitored temperatures, by correcting small deviations from your desired fermentation temperature.
@@ -33,6 +32,7 @@ type Chamber struct {
 	CurrentFermentationStep *string                 `json:"currentFermentationStep,omitempty"`
 	Readings                *Readings               `json:"readings,omitempty"`
 	logger                  *logrus.Logger
+	metrics                 metrics.Metrics
 	beerThermometer         device.Thermometer
 	auxiliaryThermometer    device.Thermometer
 	externalThermometer     device.Thermometer
@@ -41,9 +41,10 @@ type Chamber struct {
 	heater                  device.Actuator
 	temperatureController   device.TemperatureController
 	service                 brewfather.Service
-	logToBrewfather         bool
 	cancelFunc              context.CancelFunc
-	runMutex                *sync.Mutex
+	readingsUpdateInterval  time.Duration
+	runMutex                *sync.RWMutex
+	readingsMutex           *sync.Mutex
 }
 
 type DeviceConfig struct {
@@ -60,20 +61,20 @@ type DeviceConfig struct {
 }
 
 type Readings struct {
-	BeerTemperature      float64 `json:"beerTemperature"`
-	AuxiliaryTemperature float64 `json:"auxiliaryTemperature"`
-	ExternalTemperature  float64 `json:"externalTemperature"`
-	HydrometerGravity    float64 `json:"hydrometerGravity"`
+	BeerTemperature      *float64 `json:"beerTemperature,omitempty"`
+	AuxiliaryTemperature *float64 `json:"auxiliaryTemperature,omitempty"`
+	ExternalTemperature  *float64 `json:"externalTemperature,omitempty"`
+	HydrometerGravity    *float64 `json:"hydrometerGravity,omitempty"`
 }
 
 // TODO: refactor to use generics in the future.
 
-func (c *Chamber) Configure(configurator Configurator, service brewfather.Service, logToBrewfather bool,
-	logger *logrus.Logger) error {
-	c.logger = logger
-
+func (c *Chamber) Configure(configurator Configurator, service brewfather.Service,
+	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration) error {
 	c.service = service
-	c.logToBrewfather = logToBrewfather
+	c.logger = logger
+	c.metrics = metrics
+	c.readingsUpdateInterval = readingsUpdateInterval
 
 	errs := c.configureDevices(configurator, c.DeviceConfig)
 
@@ -81,7 +82,8 @@ func (c *Chamber) Configure(configurator Configurator, service brewfather.Servic
 		c.beerThermometer, c.chiller, c.heater, c.ChillerKp, c.ChillerKi, c.ChillerKd,
 		c.HeaterKp, c.HeaterKi, c.HeaterKd, logger)
 
-	c.runMutex = &sync.Mutex{}
+	c.runMutex = &sync.RWMutex{}
+	c.readingsMutex = &sync.Mutex{}
 
 	if errs != nil {
 		return &InvalidConfigurationError{configErrors: errs}
@@ -234,24 +236,21 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 	ctx, cancelFunc := context.WithCancel(ctx)
 	c.cancelFunc = cancelFunc
 
-	if c.logToBrewfather {
-		go func() {
-			c.sendData(ctx)
+	go func() {
+		c.updateReadings(ctx)
 
-			for {
-				timer := time.NewTimer(brewfatherLogInterval)
-				defer timer.Stop()
+		for {
+			timer := time.NewTimer(c.readingsUpdateInterval)
+			defer timer.Stop()
 
-				select {
-				case <-timer.C:
-					c.sendData(ctx)
-				case <-ctx.Done():
-					return
-				}
+			select {
+			case <-timer.C:
+				c.updateReadings(ctx)
+			case <-ctx.Done():
+				return
 			}
-		}()
-	}
-
+		}
+	}()
 	// TODO: this should return an error to the called, but would require the manager to keep track of go routines
 	// The manager would keep a map of cancelFunc, that would be returned from chamber.StartFermentation() along
 	// with an error.
@@ -263,60 +262,6 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 	}()
 
 	return nil
-}
-
-func (c *Chamber) getStep(stepID string) *brewfather.FermentationStep {
-	var step *brewfather.FermentationStep
-
-	for i := range c.CurrentBatch.Fermentation.Steps {
-		if c.CurrentBatch.Fermentation.Steps[i].Type == stepID {
-			step = &c.CurrentBatch.Fermentation.Steps[i]
-
-			break
-		}
-	}
-
-	return step
-}
-
-func (c *Chamber) sendData(ctx context.Context) {
-	log := brewfather.LogEntry{
-		DeviceName:      c.Name,
-		Beer:            c.CurrentBatch.Name,
-		TemperatureUnit: "C",
-		GravityUnit:     "G",
-	}
-
-	if t, err := c.getBeerTemperature(); err != nil {
-		c.logger.WithError(err).Error("could not get beer temperature")
-	} else {
-		log.BeerTemperature = fmt.Sprintf("%f", t)
-	}
-
-	if t, err := c.getAuxiliaryTemperature(); err != nil {
-		c.logger.WithError(err).Error("could not get auxiliary temperature")
-	} else {
-		log.AuxiliaryTemperature = fmt.Sprintf("%f", t)
-	}
-
-	if t, err := c.getExternalTemperature(); err != nil {
-		c.logger.WithError(err).Error("could not get external temperature")
-	} else {
-		log.ExternalTemperature = fmt.Sprintf("%f", t)
-	}
-
-	if t, err := c.getHydrometerGravity(); err != nil {
-		c.logger.WithError(err).Error("could not get external temperature")
-	} else {
-		log.Gravity = fmt.Sprintf("%f", t)
-	}
-
-	c.logger.Debugf("Sending Data to Brewfather: Beer: %s Temperature: %s Gravity: %s",
-		log.Beer, log.BeerTemperature, log.Gravity)
-
-	if err := c.service.Log(ctx, log); err != nil {
-		c.logger.WithError(err).Error("could not log tilt data")
-	}
 }
 
 func (c *Chamber) StopFermentation() error {
@@ -335,88 +280,175 @@ func (c *Chamber) StopFermentation() error {
 }
 
 func (c *Chamber) IsFermenting() bool {
-	c.runMutex.Lock()
-	defer c.runMutex.Unlock()
+	c.runMutex.RLock()
+	defer c.runMutex.RUnlock()
 
 	return c.cancelFunc != nil
 }
 
-func (c *Chamber) UpdateReadings() {
+func (c *Chamber) updateReadings(ctx context.Context) {
+	c.readingsMutex.Lock()
+	defer c.readingsMutex.Unlock()
 	c.Readings = &Readings{}
 
-	if t, err := c.getBeerTemperature(); err != nil {
-		c.logger.WithError(err).Error("could not get reading for beer temperature")
-	} else {
-		c.Readings.BeerTemperature = t
+	var v *float64
+
+	var err error
+
+	if v, err = c.getBeerTemperature(); err != nil {
+		if !errors.Is(err, ErrDeviceIsNil) {
+			c.logger.WithError(err).Error("could not get reading for beer temperature")
+		}
 	}
 
-	if t, err := c.getAuxiliaryTemperature(); err != nil {
-		c.logger.WithError(err).Error("could not get reading for auxiliary temperature")
-	} else {
-		c.Readings.AuxiliaryTemperature = t
+	c.Readings.BeerTemperature = v
+
+	if v, err = c.getAuxiliaryTemperature(); err != nil {
+		if !errors.Is(err, ErrDeviceIsNil) {
+			c.logger.WithError(err).Error("could not get reading for auxiliary temperature")
+		}
 	}
 
-	if t, err := c.getExternalTemperature(); err != nil {
-		c.logger.WithError(err).Error("could not get reading for external temperature")
-	} else {
-		c.Readings.ExternalTemperature = t
+	c.Readings.AuxiliaryTemperature = v
+
+	if v, err = c.getExternalTemperature(); err != nil {
+		if !errors.Is(err, ErrDeviceIsNil) {
+			c.logger.WithError(err).Error("could not get reading for external temperature")
+		}
 	}
 
-	if t, err := c.getHydrometerGravity(); err != nil {
-		c.logger.WithError(err).Error("could not get reading for hydrometer gravity")
-	} else {
-		c.Readings.HydrometerGravity = t
+	c.Readings.ExternalTemperature = v
+
+	if v, err = c.getHydrometerGravity(); err != nil {
+		if !errors.Is(err, ErrDeviceIsNil) {
+			c.logger.WithError(err).Error("could not get reading for hydrometer gravity")
+		}
+	}
+
+	c.Readings.HydrometerGravity = v
+
+	c.emitMetrics()
+
+	if err := c.sendToBrewFather(ctx); err != nil {
+		c.logger.WithError(err).Error("Unable to send readings to Brewfather")
 	}
 }
 
-func (c *Chamber) getBeerTemperature() (float64, error) {
+func (c *Chamber) getBeerTemperature() (*float64, error) {
 	if c.beerThermometer == nil {
-		return 0, errors.New("beer thermometer is nil")
+		return nil, ErrDeviceIsNil
 	}
 
 	t, err := c.beerThermometer.GetTemperature()
 	if err != nil {
-		return 0, errors.Wrap(err, "could not get beer temperature")
+		return nil, errors.Wrap(err, "could not get beer temperature")
 	}
 
-	return t, nil
+	return &t, nil
 }
 
-func (c *Chamber) getAuxiliaryTemperature() (float64, error) {
+func (c *Chamber) getAuxiliaryTemperature() (*float64, error) {
 	if c.auxiliaryThermometer == nil {
-		return 0, errors.New("auxiliary thermometer is nil")
+		return nil, ErrDeviceIsNil
 	}
 
 	t, err := c.auxiliaryThermometer.GetTemperature()
 	if err != nil {
-		return 0, errors.Wrap(err, "could not get auxiliary temperature")
+		return nil, errors.Wrap(err, "could not get auxiliary temperature")
 	}
 
-	return t, nil
+	return &t, nil
 }
 
-func (c *Chamber) getExternalTemperature() (float64, error) {
+func (c *Chamber) getExternalTemperature() (*float64, error) {
 	if c.externalThermometer == nil {
-		return 0, errors.New("external thermometer is nil")
+		return nil, ErrDeviceIsNil
 	}
 
 	t, err := c.externalThermometer.GetTemperature()
 	if err != nil {
-		return 0, errors.Wrap(err, "could not get external temperature")
+		return nil, errors.Wrap(err, "could not get external temperature")
 	}
 
-	return t, nil
+	return &t, nil
 }
 
-func (c *Chamber) getHydrometerGravity() (float64, error) {
+func (c *Chamber) getHydrometerGravity() (*float64, error) {
 	if c.hydrometer == nil {
-		return 0, errors.New("hydrometer is nil")
+		return nil, ErrDeviceIsNil
 	}
 
 	t, err := c.hydrometer.GetGravity()
 	if err != nil {
-		return 0, errors.Wrap(err, "could not get hydrometer gravity")
+		return nil, errors.Wrap(err, "could not get hydrometer gravity")
 	}
 
-	return t, nil
+	return &t, nil
+}
+
+func (c *Chamber) getStep(stepID string) *brewfather.FermentationStep {
+	var step *brewfather.FermentationStep
+
+	for i := range c.CurrentBatch.Recipe.Fermentation.Steps {
+		if c.CurrentBatch.Recipe.Fermentation.Steps[i].Type == stepID {
+			step = &c.CurrentBatch.Recipe.Fermentation.Steps[i]
+
+			break
+		}
+	}
+
+	return step
+}
+
+func (c *Chamber) emitMetrics() {
+	if c.Readings.BeerTemperature != nil {
+		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.beer_temperature,sensor_id=%s", c.Name,
+			c.beerThermometer.GetID()), *c.Readings.BeerTemperature)
+	}
+
+	if c.Readings.AuxiliaryTemperature != nil {
+		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.auxiliary_temperature,sensor_id=%s", c.Name,
+			c.auxiliaryThermometer.GetID()), *c.Readings.AuxiliaryTemperature)
+	}
+
+	if c.Readings.ExternalTemperature != nil {
+		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.external_temperature,sensor_id=%s", c.Name,
+			c.externalThermometer.GetID()), *c.Readings.ExternalTemperature)
+	}
+
+	if c.Readings.HydrometerGravity != nil {
+		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.hydrometer_gravity,sensor_id=%s", c.Name,
+			c.hydrometer.GetID()), *c.Readings.HydrometerGravity)
+	}
+}
+
+func (c *Chamber) sendToBrewFather(ctx context.Context) error {
+	l := brewfather.LogEntry{
+		DeviceName:      c.Name,
+		Beer:            c.CurrentBatch.Recipe.Name,
+		TemperatureUnit: "C",
+		GravityUnit:     "G",
+	}
+
+	if c.Readings.BeerTemperature != nil {
+		l.BeerTemperature = fmt.Sprintf("%f", *c.Readings.BeerTemperature)
+	}
+
+	if c.Readings.AuxiliaryTemperature != nil {
+		l.AuxiliaryTemperature = fmt.Sprintf("%f", *c.Readings.AuxiliaryTemperature)
+	}
+
+	if c.Readings.ExternalTemperature != nil {
+		l.ExternalTemperature = fmt.Sprintf("%f", *c.Readings.ExternalTemperature)
+	}
+
+	if c.Readings.HydrometerGravity != nil {
+		l.Gravity = fmt.Sprintf("%f", *c.Readings.HydrometerGravity)
+	}
+
+	if err := c.service.Log(ctx, l); err != nil {
+		return errors.Wrap(err, "could not log to Brewfather")
+	}
+
+	return nil
 }

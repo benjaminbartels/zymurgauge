@@ -42,6 +42,8 @@ func configure(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -49,10 +51,11 @@ func configure(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, false, l)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 }
 
@@ -60,6 +63,8 @@ func configureDs18b20Error(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(nil, errors.New("configuratorMock error"))
@@ -67,10 +72,11 @@ func configureDs18b20Error(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, false, l) // element 1 has ds18b20
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval) // element 1 has ds18b20
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -82,6 +88,8 @@ func configureTiltError(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -91,8 +99,9 @@ func configureTiltError(t *testing.T) {
 	c := createTestChambers()
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c[0].Configure(configuratorMock, serviceMock, false, l) // element 0 has tilt
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval) // element 0 has tilt
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -107,6 +116,8 @@ func configureGPIOError(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -115,10 +126,11 @@ func configureGPIOError(t *testing.T) {
 	configuratorMock.On("CreateGPIOActuator", gpio3).Return(nil, errors.New("configuratorMock error"))
 
 	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, false, l)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -138,6 +150,8 @@ func log(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -147,7 +161,7 @@ func log(t *testing.T) {
 	doneCh := make(chan struct{}, 1)
 
 	expected := brewfather.LogEntry{
-		DeviceName:           "Chamber1",
+		DeviceName:           "ChamberWithCompleteConfigWithBatch",
 		BeerTemperature:      "25.000000",
 		AuxiliaryTemperature: "25.000000",
 		ExternalTemperature:  "25.000000",
@@ -165,7 +179,7 @@ func log(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, true, l)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c[0].StartFermentation(context.Background(), "Primary")
@@ -178,6 +192,8 @@ func logServiceErrors(t *testing.T) {
 	t.Parallel()
 
 	l, hook := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	configuratorMock := &mocks.Configurator{}
 	configuratorMock.On("CreateDs18b20", mock.Anything).Return(&stubs.Thermometer{}, nil)
@@ -194,7 +210,7 @@ func logServiceErrors(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, true, l)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c[0].StartFermentation(context.Background(), "Primary")
@@ -202,13 +218,15 @@ func logServiceErrors(t *testing.T) {
 
 	<-doneCh
 
-	assert.True(t, logContains(hook.AllEntries(), logrus.ErrorLevel, "could not log tilt data"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.ErrorLevel, "Unable to send readings to Brewfather"))
 }
 
 func logDeviceErrors(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	tiltMock := &mocks.ThermometerAndHydrometer{}
 	tiltMock.On("GetTemperature").Return(0.0, errors.New("tiltMock error"))
@@ -226,7 +244,7 @@ func logDeviceErrors(t *testing.T) {
 	ctx, stop := context.WithCancel(context.Background())
 
 	expected := brewfather.LogEntry{
-		DeviceName:      "Chamber1",
+		DeviceName:      "ChamberWithCompleteConfigWithBatch",
 		TemperatureUnit: "C",
 		GravityUnit:     "G",
 	}
@@ -242,7 +260,7 @@ func logDeviceErrors(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, true, l)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c[0].StartFermentation(ctx, "Primary")
