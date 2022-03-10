@@ -584,7 +584,7 @@ func stopFermentationNotFermentingError(t *testing.T) {
 
 	err := manager.StopFermentation(chamberID1)
 	assert.ErrorIs(t, err, chamber.ErrNotFermenting)
-	assert.Equal(t, err.Error(), chamber.ErrNotFermenting.Error()) // For coverage
+	assert.Contains(t, err.Error(), chamber.ErrNotFermenting.Error()) // For coverage
 }
 
 func assertChamberListsAreEqual(t *testing.T, c1, c2 []*chamber.Chamber) {
