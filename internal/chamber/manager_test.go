@@ -363,6 +363,7 @@ func TestStartFermentation(t *testing.T) {
 	t.Run("startFermentationNoCurrentBatchError", startFermentationNoCurrentBatchError)
 	t.Run("startFermentationInvalidStepError", startFermentationInvalidStepError)
 	t.Run("startFermentationTemperatureControllerLogError", startFermentationTemperatureControllerLogError)
+	t.Run("startFermentationOtherDevicesAreNil", startFermentationOtherDevicesAreNil)
 }
 
 func startFermentation(t *testing.T) {
@@ -499,6 +500,51 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		assert.Fail(t, "log should contain expected value by now")
 	}
+}
+
+func startFermentationOtherDevicesAreNil(t *testing.T) {
+	t.Parallel()
+
+	doneCh := make(chan struct{}, 1)
+
+	testChambers := createTestChambers()
+	l, _ := logtest.NewNullLogger()
+	m := &mocks.Metrics{}
+	m.On("Gauge", mock.Anything, mock.Anything).Return().Run(
+		func(args mock.Arguments) {
+			doneCh <- struct{}{}
+		})
+
+	repoMock := &mocks.ChamberRepo{}
+	repoMock.On("GetAll").Return(testChambers, nil)
+
+	thermometerMock := &mocks.Thermometer{}
+	thermometerMock.On("GetID").Return("")
+	thermometerMock.On("GetTemperature").Return(25.0, nil)
+
+	configuratorMock := &mocks.Configurator{}
+	configuratorMock.On("CreateTilt", mock.Anything).Return(nil, nil)
+	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
+	configuratorMock.On("CreateDs18b20", mock.Anything).Return(thermometerMock, nil)
+
+	serviceMock := &mocks.Service{}
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
+		readingUpdateInterval)
+	assert.NoError(t, err)
+
+	err = manager.StartFermentation(chamberID3, "Primary")
+	assert.NoError(t, err)
+
+	<-doneCh
+
+	_, err = manager.Get(chamberID3)
+	assert.NoError(t, err)
+	// Potential race condition, but we don't care since it would just be a dirty read.
+	// assert.NotNil(t, c.Readings.BeerTemperature)
+	// assert.Nil(t, c.Readings.AuxiliaryTemperature)
+	// assert.Nil(t, c.Readings.ExternalTemperature)
+	// assert.Nil(t, c.Readings.HydrometerGravity)
 }
 
 //nolint: paralleltest // False positives with r.Run not in a loop
