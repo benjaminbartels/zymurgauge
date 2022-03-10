@@ -139,6 +139,7 @@ func newManagerConfigureErrors(t *testing.T) {
 
 	testChambers[0].DeviceConfig = chamber.DeviceConfig{
 		BeerThermometerType: "badType",
+		HydrometerType:      "badType",
 	}
 
 	l, _ := logtest.NewNullLogger()
