@@ -174,7 +174,7 @@ func getAllChambers(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 
 	result, err := manager.GetAll()
 	assert.NoError(t, err)
@@ -185,7 +185,7 @@ func getAllChambersEmpty(t *testing.T) {
 	t.Parallel()
 
 	chambers := []*chamber.Chamber{}
-	manager, _ := setupManagerTest(t, chambers)
+	manager, _, _ := setupManagerTest(t, chambers)
 
 	result, err := manager.GetAll()
 	assert.NoError(t, err)
@@ -204,7 +204,7 @@ func getChamberFound(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 
 	result, err := manager.Get(chamberID1)
 	assert.NoError(t, err)
@@ -216,7 +216,7 @@ func getChamberNotFoundError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 
 	result, err := manager.Get("")
 	assert.NoError(t, err)
@@ -243,7 +243,7 @@ func saveChamber(t *testing.T) {
 		ID: newChamberID,
 	}
 
-	manager, repoMock := setupManagerTest(t, testChambers)
+	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Save", newChamber).Return(nil)
 
 	err := manager.Save(newChamber)
@@ -259,7 +259,7 @@ func saveChamberFermentingError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, repoMock := setupManagerTest(t, testChambers)
+	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Save", testChambers[0]).Return(nil)
 
 	err := manager.StartFermentation(chamberID1, "Primary")
@@ -274,7 +274,7 @@ func saveChamberRepoError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, repoMock := setupManagerTest(t, testChambers)
+	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Save", testChambers[0]).Return(errors.New("repoMock error"))
 
 	err := manager.Save(testChambers[0])
@@ -286,7 +286,7 @@ func saveChamberConfigureError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, repoMock := setupManagerTest(t, testChambers)
+	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Save", testChambers[0]).Return(nil)
 
 	c, err := manager.Get(chamberID1)
@@ -316,7 +316,7 @@ func deleteChamber(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, repoMock := setupManagerTest(t, testChambers)
+	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Delete", chamberID1).Return(nil)
 
 	err := manager.Delete(chamberID1)
@@ -332,7 +332,7 @@ func deleteChamberFermentingError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, repoMock := setupManagerTest(t, testChambers)
+	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Delete", chamberID1).Return(nil)
 
 	err := manager.StartFermentation(chamberID1, "Primary")
@@ -347,7 +347,7 @@ func deleteChamberRepoError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, repoMock := setupManagerTest(t, testChambers)
+	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Delete", chamberID1).Return(errors.New("repoMock error"))
 
 	err := manager.Delete(chamberID1)
@@ -363,7 +363,6 @@ func TestStartFermentation(t *testing.T) {
 	t.Run("startFermentationNoCurrentBatchError", startFermentationNoCurrentBatchError)
 	t.Run("startFermentationInvalidStepError", startFermentationInvalidStepError)
 	t.Run("startFermentationTemperatureControllerLogError", startFermentationTemperatureControllerLogError)
-	t.Run("startFermentationDevicesAreNilError", startFermentationOtherDevicesAreNilError)
 }
 
 func startFermentation(t *testing.T) {
@@ -371,9 +370,36 @@ func startFermentation(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	var counter int
+
+	doneCh := make(chan struct{}, 1)
+	manager, _, metricsMock := setupManagerTest(t, testChambers)
+	metricsMock.ExpectedCalls = nil // Erase previous On() functions
+	metricsMock.On("Gauge", fmt.Sprintf("zymurgauge.%s.auxiliary_temperature,sensor_id=", testChambers[0].Name),
+		mock.Anything).Return()
+	metricsMock.On("Gauge", fmt.Sprintf("zymurgauge.%s.external_temperature,sensor_id=", testChambers[0].Name),
+		mock.Anything).Return()
+	metricsMock.On("Gauge", fmt.Sprintf("zymurgauge.%s.hydrometer_gravity,sensor_id=", testChambers[0].Name),
+		mock.Anything).Return()
+	metricsMock.On("Gauge", fmt.Sprintf("zymurgauge.%s.beer_temperature,sensor_id=", testChambers[0].Name),
+		mock.Anything).Return().Run(
+		func(args mock.Arguments) {
+			counter++
+
+			if counter == 2 {
+				doneCh <- struct{}{}
+			}
+		})
+	metricsMock.On(mock.Anything, mock.Anything).Return()
+
 	err := manager.StartFermentation(chamberID1, "Primary")
 	assert.NoError(t, err)
+
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "metrics.Gauge for beer temperature should have been called twice by now")
+	}
 }
 
 func startFermentationNextStep(t *testing.T) {
@@ -381,7 +407,7 @@ func startFermentationNextStep(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 	err := manager.StartFermentation(chamberID1, "Primary")
 	assert.NoError(t, err)
 
@@ -394,7 +420,7 @@ func startFermentationNotFoundError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 	err := manager.StartFermentation("", "Primary")
 	assert.ErrorIs(t, err, chamber.ErrNotFound)
 }
@@ -404,7 +430,7 @@ func startFermentationNoCurrentBatchError(t *testing.T) {
 
 	testChambers := createTestChambers()
 	testChambers[0].CurrentBatch = nil
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 
 	err := manager.StartFermentation(chamberID1, "Primary")
 	assert.ErrorIs(t, err, chamber.ErrNoCurrentBatch)
@@ -415,7 +441,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 	err := manager.StartFermentation(chamberID1, "BadStep")
 	assert.ErrorIs(t, err, chamber.ErrInvalidStep)
 }
@@ -475,51 +501,6 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 	}
 }
 
-func startFermentationOtherDevicesAreNilError(t *testing.T) {
-	t.Parallel()
-
-	doneCh := make(chan struct{}, 1)
-
-	testChambers := createTestChambers()
-	l, _ := logtest.NewNullLogger()
-	m := &mocks.Metrics{}
-	m.On("Gauge", mock.Anything, mock.Anything).Return().Run(
-		func(args mock.Arguments) {
-			doneCh <- struct{}{}
-		})
-
-	repoMock := &mocks.ChamberRepo{}
-	repoMock.On("GetAll").Return(testChambers, nil)
-
-	thermometerMock := &mocks.Thermometer{}
-	thermometerMock.On("GetID").Return("")
-	thermometerMock.On("GetTemperature").Return(25.0, nil)
-
-	configuratorMock := &mocks.Configurator{}
-	configuratorMock.On("CreateTilt", mock.Anything).Return(nil, nil)
-	configuratorMock.On("CreateGPIOActuator", mock.Anything).Return(&stubs.Actuator{}, nil)
-	configuratorMock.On("CreateDs18b20", mock.Anything).Return(thermometerMock, nil)
-
-	serviceMock := &mocks.Service{}
-	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
-		readingUpdateInterval)
-	assert.NoError(t, err)
-
-	err = manager.StartFermentation(chamberID3, "Primary")
-	assert.NoError(t, err)
-
-	<-doneCh
-
-	c, err := manager.Get(chamberID3)
-	assert.NoError(t, err)
-	// Potential race condition, but we don't care since it would just be a dirty read.
-	assert.NotNil(t, c.Readings.BeerTemperature)
-	assert.Nil(t, c.Readings.AuxiliaryTemperature)
-	assert.Nil(t, c.Readings.ExternalTemperature)
-	assert.Nil(t, c.Readings.HydrometerGravity)
-}
-
 //nolint: paralleltest // False positives with r.Run not in a loop
 func TestStopFermentation(t *testing.T) {
 	t.Parallel()
@@ -533,7 +514,7 @@ func stopFermentation(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 
 	err := manager.StartFermentation(chamberID1, "Primary")
 	assert.NoError(t, err)
@@ -547,7 +528,7 @@ func stopFermentationNotFoundError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 	err := manager.StopFermentation("")
 	assert.ErrorIs(t, err, chamber.ErrNotFound)
 }
@@ -557,7 +538,7 @@ func stopFermentationNotFermentingError(t *testing.T) {
 
 	testChambers := createTestChambers()
 
-	manager, _ := setupManagerTest(t, testChambers)
+	manager, _, _ := setupManagerTest(t, testChambers)
 
 	err := manager.StopFermentation(chamberID1)
 	assert.ErrorIs(t, err, chamber.ErrNotFermenting)
@@ -595,12 +576,12 @@ func assertChambersAreEqual(t *testing.T, c1, c2 *chamber.Chamber) {
 }
 
 func setupManagerTest(t *testing.T,
-	chambers []*chamber.Chamber) (*chamber.Manager, *mocks.ChamberRepo) {
+	chambers []*chamber.Chamber) (*chamber.Manager, *mocks.ChamberRepo, *mocks.Metrics) {
 	t.Helper()
 
 	l, _ := logtest.NewNullLogger()
-	m := &mocks.Metrics{}
-	m.On("Gauge", mock.Anything, mock.Anything).Return()
+	metricsMock := &mocks.Metrics{}
+	metricsMock.On("Gauge", mock.Anything, mock.Anything).Return()
 
 	repoMock := &mocks.ChamberRepo{}
 	repoMock.On("GetAll").Return(chambers, nil)
@@ -613,11 +594,11 @@ func setupManagerTest(t *testing.T,
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
+	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, metricsMock,
 		readingUpdateInterval)
 	assert.NoError(t, err)
 
-	return manager, repoMock
+	return manager, repoMock, metricsMock
 }
 
 func logContains(logs []*logrus.Entry, level logrus.Level, substr string) bool {
