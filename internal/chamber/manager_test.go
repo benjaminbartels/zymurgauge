@@ -540,11 +540,6 @@ func startFermentationOtherDevicesAreNil(t *testing.T) {
 
 	_, err = manager.Get(chamberID3)
 	assert.NoError(t, err)
-	// Potential race condition, but we don't care since it would just be a dirty read.
-	// assert.NotNil(t, c.Readings.BeerTemperature)
-	// assert.Nil(t, c.Readings.AuxiliaryTemperature)
-	// assert.Nil(t, c.Readings.ExternalTemperature)
-	// assert.Nil(t, c.Readings.HydrometerGravity)
 }
 
 //nolint: paralleltest // False positives with r.Run not in a loop
