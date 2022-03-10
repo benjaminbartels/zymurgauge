@@ -55,7 +55,7 @@ func configure(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 }
 
@@ -76,7 +76,7 @@ func configureDs18b20Error(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, l, m, metricsInterval) // element 1 has ds18b20
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval) // element 1 has ds18b20
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -101,7 +101,7 @@ func configureTiltError(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c[0].Configure(configuratorMock, serviceMock, l, m, metricsInterval) // element 0 has tilt
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval) // element 0 has tilt
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -130,7 +130,7 @@ func configureGPIOError(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 
 	var cfgErr *chamber.InvalidConfigurationError
 
@@ -161,7 +161,7 @@ func log(t *testing.T) {
 	doneCh := make(chan struct{}, 1)
 
 	expected := brewfather.LogEntry{
-		DeviceName:           "Chamber1",
+		DeviceName:           "ChamberWithCompleteConfigWithBatch",
 		BeerTemperature:      "25.000000",
 		AuxiliaryTemperature: "25.000000",
 		ExternalTemperature:  "25.000000",
@@ -179,7 +179,7 @@ func log(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c[0].StartFermentation(context.Background(), "Primary")
@@ -210,7 +210,7 @@ func logServiceErrors(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c[0].StartFermentation(context.Background(), "Primary")
@@ -244,7 +244,7 @@ func logDeviceErrors(t *testing.T) {
 	ctx, stop := context.WithCancel(context.Background())
 
 	expected := brewfather.LogEntry{
-		DeviceName:      "Chamber1",
+		DeviceName:      "ChamberWithCompleteConfigWithBatch",
 		TemperatureUnit: "C",
 		GravityUnit:     "G",
 	}
@@ -260,7 +260,7 @@ func logDeviceErrors(t *testing.T) {
 
 	c := createTestChambers()
 
-	err := c[0].Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c[0].Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c[0].StartFermentation(ctx, "Primary")

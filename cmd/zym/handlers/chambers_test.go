@@ -314,7 +314,7 @@ func saveChamberInvalidConfigError(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	controller, err := chamber.NewManager(ctx, repoMock, configuratorMock, serviceMock, l, m, metricsInterval)
+	controller, err := chamber.NewManager(ctx, repoMock, configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	handler := &handlers.ChambersHandler{ChamberController: controller, Logger: l}
@@ -418,7 +418,7 @@ func deleteChamber(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, "Primary")
@@ -490,7 +490,7 @@ func deleteChamberOtherError(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	controllerMock := &mocks.Controller{}
@@ -544,7 +544,7 @@ func startFermentation(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	w, r, ctx := setupHandlerTest("step="+primaryStep, nil)
@@ -574,7 +574,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	step := "Secondary"
@@ -689,7 +689,7 @@ func stopFermentation(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, "Primary")
@@ -762,7 +762,7 @@ func stopFermentationOtherError(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	handler := &handlers.ChambersHandler{ChamberController: controllerMock, Logger: l}
@@ -789,7 +789,7 @@ func stopFermentationRespondError(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	err := c.Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+	err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	err = c.StartFermentation(ctx, primaryStep)

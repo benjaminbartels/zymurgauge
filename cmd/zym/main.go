@@ -33,16 +33,16 @@ const (
 )
 
 type config struct {
-	Host            string        `default:":8080"`
-	DebugHost       string        `default:":4000"`
-	DBPath          string        `default:"zymurgaugedb"`
-	StatsDAddress   string        `default:":8125"`
-	ReadTimeout     time.Duration `default:"5s"`
-	WriteTimeout    time.Duration `default:"10s"`
-	IdleTimeout     time.Duration `default:"120s"`
-	ShutdownTimeout time.Duration `default:"20s"`
-	MetricsInterval time.Duration `default:"1m"`
-	Debug           bool          `default:"false"`
+	Host                   string        `default:":8080"`
+	DebugHost              string        `default:":4000"`
+	DBPath                 string        `default:"zymurgaugedb"`
+	StatsDAddress          string        `default:":8125"`
+	ReadTimeout            time.Duration `default:"5s"`
+	WriteTimeout           time.Duration `default:"10s"`
+	IdleTimeout            time.Duration `default:"120s"`
+	ShutdownTimeout        time.Duration `default:"20s"`
+	ReadingsUpdateInterval time.Duration `default:"1m"`
+	Debug                  bool          `default:"false"`
 }
 
 func main() {
@@ -120,7 +120,7 @@ func run(logger *logrus.Logger, cfg config) error {
 	brewfatherClient := brewfather.New(s.BrewfatherAPIUserID, s.BrewfatherAPIKey, s.BrewfatherLogURL)
 
 	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherClient, logger, statsd,
-		cfg.MetricsInterval)
+		cfg.ReadingsUpdateInterval)
 	if err != nil {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
 	}

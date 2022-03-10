@@ -42,9 +42,9 @@ type Chamber struct {
 	temperatureController   device.TemperatureController
 	service                 brewfather.Service
 	cancelFunc              context.CancelFunc
-	metricsInterval         time.Duration
-	runMutex                *sync.Mutex
-	readingsMutex           *sync.RWMutex
+	readingsUpdateInterval  time.Duration
+	runMutex                *sync.RWMutex
+	readingsMutex           *sync.Mutex
 }
 
 type DeviceConfig struct {
@@ -70,11 +70,11 @@ type Readings struct {
 // TODO: refactor to use generics in the future.
 
 func (c *Chamber) Configure(configurator Configurator, service brewfather.Service,
-	logger *logrus.Logger, metrics metrics.Metrics, metricsInterval time.Duration) error {
+	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration) error {
 	c.service = service
 	c.logger = logger
 	c.metrics = metrics
-	c.metricsInterval = metricsInterval
+	c.readingsUpdateInterval = readingsUpdateInterval
 
 	errs := c.configureDevices(configurator, c.DeviceConfig)
 
@@ -82,8 +82,8 @@ func (c *Chamber) Configure(configurator Configurator, service brewfather.Servic
 		c.beerThermometer, c.chiller, c.heater, c.ChillerKp, c.ChillerKi, c.ChillerKd,
 		c.HeaterKp, c.HeaterKi, c.HeaterKd, logger)
 
-	c.runMutex = &sync.Mutex{}
-	c.readingsMutex = &sync.RWMutex{}
+	c.runMutex = &sync.RWMutex{}
+	c.readingsMutex = &sync.Mutex{}
 
 	if errs != nil {
 		return &InvalidConfigurationError{configErrors: errs}
@@ -240,7 +240,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 		c.updateReadings(ctx)
 
 		for {
-			timer := time.NewTimer(c.metricsInterval)
+			timer := time.NewTimer(c.readingsUpdateInterval)
 			defer timer.Stop()
 
 			select {
@@ -251,7 +251,6 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 			}
 		}
 	}()
-
 	// TODO: this should return an error to the called, but would require the manager to keep track of go routines
 	// The manager would keep a map of cancelFunc, that would be returned from chamber.StartFermentation() along
 	// with an error.
@@ -281,23 +280,15 @@ func (c *Chamber) StopFermentation() error {
 }
 
 func (c *Chamber) IsFermenting() bool {
-	c.runMutex.Lock()
-	defer c.runMutex.Unlock()
+	c.runMutex.RLock()
+	defer c.runMutex.RUnlock()
 
 	return c.cancelFunc != nil
-}
-
-func (c *Chamber) GetReadings() Readings {
-	c.readingsMutex.RLock()
-	defer c.readingsMutex.RUnlock()
-
-	return *c.Readings
 }
 
 func (c *Chamber) updateReadings(ctx context.Context) {
 	c.readingsMutex.Lock()
 	defer c.readingsMutex.Unlock()
-
 	c.Readings = &Readings{}
 
 	var v *float64

@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	devicePath      = "/"
-	metricsInterval = 1 * time.Minute
+	devicePath            = "/"
+	readingUpdateInterval = 100 * time.Millisecond
 )
 
 func TestRoutes(t *testing.T) {
@@ -95,7 +95,7 @@ func TestRoutes(t *testing.T) {
 		serviceMock.On("GetDetail", mock.Anything, batchID).Return(&r, nil)
 		serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-		err := c.Configure(configuratorMock, serviceMock, l, m, metricsInterval)
+		err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)
 		assert.NoError(t, err)
 
 		chambers := []*chamber.Chamber{c}
