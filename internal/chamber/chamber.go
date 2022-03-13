@@ -8,9 +8,9 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/device"
-	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/metrics"
+	"github.com/benjaminbartels/zymurgauge/internal/temperaturecontrol/hysteresis"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -21,12 +21,7 @@ type Chamber struct {
 	ID                      string                  `json:"id"` // TODO: omit empty?
 	Name                    string                  `json:"name"`
 	DeviceConfig            DeviceConfig            `json:"deviceConfig"` // TODO: make is a struct and not a list
-	ChillerKp               float64                 `json:"chillerKp"`
-	ChillerKi               float64                 `json:"chillerKi"`
-	ChillerKd               float64                 `json:"chillerKd"`
-	HeaterKp                float64                 `json:"heaterKp"`
-	HeaterKi                float64                 `json:"heaterKi"`
-	HeaterKd                float64                 `json:"heaterKd"`
+	HysteresisBand          float64                 `json:"hysteresisBand"`
 	CurrentBatch            *brewfather.BatchDetail `json:"currentBatch,omitempty"`
 	ModTime                 time.Time               `json:"modTime"`
 	CurrentFermentationStep *string                 `json:"currentFermentationStep,omitempty"`
@@ -78,9 +73,7 @@ func (c *Chamber) Configure(configurator Configurator, service brewfather.Servic
 
 	errs := c.configureDevices(configurator, c.DeviceConfig)
 
-	c.temperatureController = pid.NewPIDTemperatureController(
-		c.beerThermometer, c.chiller, c.heater, c.ChillerKp, c.ChillerKi, c.ChillerKd,
-		c.HeaterKp, c.HeaterKi, c.HeaterKd, logger)
+	c.temperatureController = hysteresis.NewController(c.beerThermometer, c.chiller, c.heater, c.HysteresisBand, logger)
 
 	c.runMutex = &sync.RWMutex{}
 	c.readingsMutex = &sync.Mutex{}
@@ -215,6 +208,7 @@ func getHydrometer(configurator Configurator, hydrometerType, id string) (device
 	}
 }
 
+// StartFermentation signals the chamber to start the given fermentation step.
 func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 	c.runMutex.Lock()
 	defer c.runMutex.Unlock()
@@ -236,8 +230,33 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 	ctx, cancelFunc := context.WithCancel(ctx)
 	c.cancelFunc = cancelFunc
 
+	var err error
+
 	go func() {
-		c.updateReadings(ctx)
+		err = c.temperatureController.Run(ctx, temp)
+		if err != nil {
+			c.cancelFunc = nil // TODO: test this
+			c.logger.WithError(err).Errorf("could not run temperature controller for chamber %s", c.Name)
+		}
+	}()
+
+	<-time.After(1 * time.Second)
+
+	if err != nil {
+		cancelFunc() // stop updateReadings go routine
+
+		c.cancelFunc = nil // TODO: test this
+
+		return errors.Wrapf(err, "could not run temperature controller for chamber %s", c.Name)
+	}
+
+	go func() {
+		c.RefreshReadings()
+		c.emitMetrics()
+
+		if err := c.sendToBrewFather(ctx); err != nil {
+			c.logger.WithError(err).Error("Unable to send readings to Brewfather")
+		}
 
 		for {
 			timer := time.NewTimer(c.readingsUpdateInterval)
@@ -245,19 +264,15 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 
 			select {
 			case <-timer.C:
-				c.updateReadings(ctx)
+				c.RefreshReadings()
+				c.emitMetrics()
+
+				if err := c.sendToBrewFather(ctx); err != nil {
+					c.logger.WithError(err).Error("Unable to send readings to Brewfather")
+				}
 			case <-ctx.Done():
 				return
 			}
-		}
-	}()
-	// TODO: this should return an error to the called, but would require the manager to keep track of go routines
-	// The manager would keep a map of cancelFunc, that would be returned from chamber.StartFermentation() along
-	// with an error.
-	go func() {
-		if err := c.temperatureController.Run(ctx, temp); err != nil {
-			c.logger.WithError(err).Errorf("could not run temperature controller for chamber %s", c.Name)
-			c.cancelFunc = nil // TODO: test this
 		}
 	}()
 
@@ -286,7 +301,7 @@ func (c *Chamber) IsFermenting() bool {
 	return c.cancelFunc != nil
 }
 
-func (c *Chamber) updateReadings(ctx context.Context) {
+func (c *Chamber) RefreshReadings() {
 	c.readingsMutex.Lock()
 	defer c.readingsMutex.Unlock()
 	c.Readings = &Readings{}
@@ -326,12 +341,6 @@ func (c *Chamber) updateReadings(ctx context.Context) {
 	}
 
 	c.Readings.HydrometerGravity = v
-
-	c.emitMetrics()
-
-	if err := c.sendToBrewFather(ctx); err != nil {
-		c.logger.WithError(err).Error("Unable to send readings to Brewfather")
-	}
 }
 
 func (c *Chamber) getBeerTemperature() (*float64, error) {

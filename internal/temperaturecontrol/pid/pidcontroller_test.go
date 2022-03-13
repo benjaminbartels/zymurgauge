@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
+	"github.com/benjaminbartels/zymurgauge/internal/temperaturecontrol/pid"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"

@@ -107,9 +107,6 @@ func configureTiltError(t *testing.T) {
 
 	assert.ErrorAs(t, err, &cfgErr)
 	assert.Contains(t, cfgErr.Problems()[0].Error(), fmt.Sprintf(tiltErrMsg, tiltColor))
-
-	err = c[0].StartFermentation(context.Background(), "Primary")
-	assert.NoError(t, err)
 }
 
 func configureGPIOError(t *testing.T) {
@@ -203,9 +200,9 @@ func logServiceErrors(t *testing.T) {
 	doneCh := make(chan struct{}, 1)
 
 	serviceMock := &mocks.Service{}
-	serviceMock.On("Log", mock.Anything, mock.Anything).Return(errors.New("thermometerMock error")).Run(
+	serviceMock.On("Log", mock.Anything, mock.Anything).Return(errors.New("serviceMock error")).Run(
 		func(args mock.Arguments) {
-			doneCh <- struct{}{}
+			defer func() { doneCh <- struct{}{} }()
 		})
 
 	c := createTestChambers()
