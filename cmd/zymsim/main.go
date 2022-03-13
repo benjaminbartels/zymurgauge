@@ -12,8 +12,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsim/simulator"
 	"github.com/benjaminbartels/zymurgauge/internal/device"
-	"github.com/benjaminbartels/zymurgauge/internal/device/pid"
-	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
+	"github.com/benjaminbartels/zymurgauge/internal/temperaturecontrol/hysteresis"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wcharczuk/go-chart"
@@ -32,18 +31,13 @@ type reading struct {
 }
 
 type cli struct {
-	Multiplier   float64       `kong:"default=6000.0,short=m,help='Time dilation multiplier. Defaults to 6000.'"`
-	Runtime      time.Duration `kong:"default=5s,short=r,help='Runtime of simulation. Defaults to 5s.'"`
-	Debug        bool          `kong:"default=false,short=d,help='Enable debug logging. Default is false.'"`
-	StartingTemp float64       `kong:"arg,help='Starting temperature.'"`           // 25.0
-	TargetTemp   float64       `kong:"arg,help='Target temperature.'"`             // 20.0
-	ChillerKp    float64       `kong:"arg,help='Chiller proportional gain (kP).'"` // -1.0
-	ChillerKi    float64       `kong:"arg,help='Chiller integral gain (kI).'"`     // 0.0
-	ChillerKd    float64       `kong:"arg,help='Chiller derivative gain (kd).'"`   // 0.0
-	HeaterKp     float64       `kong:"arg,help='Heater proportional gain (kP).'"`  // 1.0
-	HeaterKi     float64       `kong:"arg,help='Heater integral gain (kI).'"`      // 0.0
-	HeaterKd     float64       `kong:"arg,help='Heater derivative gain (kD).'"`    // 0.0
-	FileName     string        `kong:"arg,optional,help='Name of results file. Defaults to chart_{timestamp}.png.'"`
+	Multiplier     float64       `kong:"default=6000.0,short=m,help='Time dilation multiplier. Defaults to 6000.'"`
+	Runtime        time.Duration `kong:"default=5s,short=r,help='Runtime of simulation. Defaults to 5s.'"`
+	Debug          bool          `kong:"default=false,short=d,help='Enable debug logging. Default is false.'"`
+	StartingTemp   float64       `kong:"arg,help='Starting temperature.'"` // 25.0
+	TargetTemp     float64       `kong:"arg,help='Target temperature.'"`   // 20.0
+	HysteresisBand float64       `kong:"arg,help='Hysteresis band.'"`      // 1.0
+	FileName       string        `kong:"arg,optional,help='Name of results file. Defaults to chart_{timestamp}.png.'"`
 }
 
 func main() {
@@ -67,10 +61,7 @@ func run(logger *logrus.Logger) error {
 	}
 
 	sim := simulator.New(cli.StartingTemp)
-	clock := fakes.NewDilatedClock(cli.Multiplier)
-	pid := pid.NewPIDTemperatureController(sim.Thermometer, sim.Chiller, sim.Heater,
-		cli.ChillerKp, cli.ChillerKi, cli.ChillerKd, cli.HeaterKp, cli.HeaterKi, cli.HeaterKd,
-		logger, pid.SetClock(clock))
+	pid := hysteresis.NewController(sim.Thermometer, sim.Chiller, sim.Heater, cli.HysteresisBand, logger)
 	ctx, stop := context.WithCancel(context.Background())
 	startTime := time.Now()
 

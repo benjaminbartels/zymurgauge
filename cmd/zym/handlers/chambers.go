@@ -26,6 +26,11 @@ type ChambersHandler struct {
 func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	p httprouter.Params) error {
 	chambers, err := h.ChamberController.GetAll()
+
+	for _, c := range chambers {
+		c.RefreshReadings()
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "could not get all chambers from controller")
 	}
@@ -48,6 +53,8 @@ func (h *ChambersHandler) Get(ctx context.Context, w http.ResponseWriter, r *htt
 	if c == nil {
 		return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
 	}
+
+	c.RefreshReadings()
 
 	if err := web.Respond(ctx, w, c, http.StatusOK); err != nil {
 		return errors.Wrap(err, "problem responding to client")

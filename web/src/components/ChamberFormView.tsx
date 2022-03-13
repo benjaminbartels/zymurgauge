@@ -113,12 +113,7 @@ export default function ChamberFormView() {
         hydrometerType: data.hydrometerType,
         hydrometerId: data.hydrometerId,
       },
-      chillerKp: +data.chillerKp,
-      chillerKi: +data.chillerKi,
-      chillerKd: +data.chillerKd,
-      heaterKp: +data.heaterKp,
-      heaterKi: +data.heaterKi,
-      heaterKd: +data.heaterKd,
+      hysteresisBand: +data.hysteresisBand,
       currentFermentationStep: "",
       currentBatch: batchDetail !== undefined ? batchDetail : undefined,
       readings: null, // TODO: solve this...
@@ -170,124 +165,20 @@ export default function ChamberFormView() {
                       )}
                     />
                   </Grid>
-                  <Grid item xs={12} md={4}>
+                  <Grid item xs={12}>
                     <Controller
-                      name="chillerKp"
+                      name="hysteresisBand"
                       control={control}
-                      defaultValue={chamber?.chillerKp || ""}
-                      rules={{ required: "Chiller Kp required" }}
+                      defaultValue={chamber?.hysteresisBand || ""}
+                      rules={{ required: "Hysteresis Band required" }}
                       render={({
                         field: { onChange, value },
                         fieldState: { error },
                       }) => (
                         <TextField
-                          label="Chiller Kp"
+                          label="Hysteresis Band (°C)"
                           type="number"
-                          value={value}
-                          onChange={onChange}
-                          error={!!error}
-                          helperText={error ? error.message : null}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Controller
-                      name="chillerKi"
-                      control={control}
-                      defaultValue={chamber?.chillerKi || ""}
-                      rules={{ required: "Chiller Ki required" }}
-                      render={({
-                        field: { onChange, value },
-                        fieldState: { error },
-                      }) => (
-                        <TextField
-                          label="Chiller Ki"
-                          type="number"
-                          value={value}
-                          onChange={onChange}
-                          error={!!error}
-                          helperText={error ? error.message : null}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Controller
-                      name="chillerKd"
-                      control={control}
-                      defaultValue={chamber?.chillerKd || ""}
-                      rules={{ required: "Chiller Kd required" }}
-                      render={({
-                        field: { onChange, value },
-                        fieldState: { error },
-                      }) => (
-                        <TextField
-                          label="Chiller Kd"
-                          type="number"
-                          value={value}
-                          onChange={onChange}
-                          error={!!error}
-                          helperText={error ? error.message : null}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Controller
-                      name="heaterKp"
-                      control={control}
-                      defaultValue={chamber?.heaterKp || ""}
-                      rules={{ required: "Heater Kp required" }}
-                      render={({
-                        field: { onChange, value },
-                        fieldState: { error },
-                      }) => (
-                        <TextField
-                          label="Heater Kp"
-                          type="number"
-                          value={value}
-                          onChange={onChange}
-                          error={!!error}
-                          helperText={error ? error.message : null}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Controller
-                      name="heaterKi"
-                      control={control}
-                      defaultValue={chamber?.heaterKi || ""}
-                      rules={{ required: "Heater Ki required" }}
-                      render={({
-                        field: { onChange, value },
-                        fieldState: { error },
-                      }) => (
-                        <TextField
-                          label="Heater Ki"
-                          type="number"
-                          value={value}
-                          onChange={onChange}
-                          error={!!error}
-                          helperText={error ? error.message : null}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Controller
-                      name="heaterKd"
-                      control={control}
-                      defaultValue={chamber?.heaterKd || ""}
-                      rules={{ required: "Heater Kd required" }}
-                      render={({
-                        field: { onChange, value },
-                        fieldState: { error },
-                      }) => (
-                        <TextField
-                          label="Heater Kd"
-                          type="number"
+                          inputProps={{ step: ".1" }}
                           value={value}
                           onChange={onChange}
                           error={!!error}

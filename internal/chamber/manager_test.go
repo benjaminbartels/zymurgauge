@@ -359,7 +359,6 @@ func deleteChamberRepoError(t *testing.T) {
 func TestStartFermentation(t *testing.T) {
 	t.Parallel()
 	t.Run("startFermentation", startFermentation)
-	t.Run("startFermentationNextStep", startFermentationNextStep)
 	t.Run("startFermentationNotFoundError", startFermentationNotFoundError)
 	t.Run("startFermentationNoCurrentBatchError", startFermentationNoCurrentBatchError)
 	t.Run("startFermentationInvalidStepError", startFermentationInvalidStepError)
@@ -402,19 +401,6 @@ func startFermentation(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		assert.Fail(t, "metrics.Gauge for beer temperature should have been called twice by now")
 	}
-}
-
-func startFermentationNextStep(t *testing.T) {
-	t.Parallel()
-
-	testChambers := createTestChambers()
-
-	manager, _, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(chamberID1, "Primary")
-	assert.NoError(t, err)
-
-	err = manager.StartFermentation(chamberID1, "Secondary")
-	assert.NoError(t, err)
 }
 
 func startFermentationNotFoundError(t *testing.T) {
@@ -609,12 +595,7 @@ func assertChambersAreEqual(t *testing.T, c1, c2 *chamber.Chamber) {
 	t.Helper()
 	assert.Equal(t, c1.ID, c2.ID)
 	assert.Equal(t, c1.Name, c2.Name)
-	assert.Equal(t, c1.ChillerKp, c2.ChillerKp)
-	assert.Equal(t, c1.ChillerKi, c2.ChillerKi)
-	assert.Equal(t, c1.ChillerKd, c2.ChillerKd)
-	assert.Equal(t, c1.HeaterKp, c2.HeaterKp)
-	assert.Equal(t, c1.HeaterKi, c2.HeaterKi)
-	assert.Equal(t, c1.HeaterKd, c2.HeaterKd)
+	assert.Equal(t, c1.HysteresisBand, c2.HysteresisBand)
 	assert.Equal(t, c1.ModTime, c2.ModTime)
 }
 

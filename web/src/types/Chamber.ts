@@ -4,12 +4,7 @@ export interface Chamber {
   id: string | undefined;
   name: string;
   deviceConfig: DeviceConfig;
-  chillerKp: number;
-  chillerKi: number;
-  chillerKd: number;
-  heaterKp: number;
-  heaterKi: number;
-  heaterKd: number;
+  hysteresisBand: number;
   currentBatch: BatchDetail | undefined;
   currentFermentationStep: string;
   readings: Readings | null;

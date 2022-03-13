@@ -7,13 +7,14 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/clock"
+	"github.com/benjaminbartels/zymurgauge/internal/temperaturecontrol"
 	"github.com/felixge/pidctrl"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
 
-var _ device.TemperatureController = (*TemperatureController)(nil)
+var _ temperaturecontrol.TemperatureController = (*Controller)(nil)
 
 const (
 	pidMin                     float64       = 0
@@ -36,7 +37,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-type TemperatureController struct {
+type Controller struct {
 	thermometer         device.Thermometer
 	chiller             device.Actuator
 	heater              device.Actuator
@@ -63,8 +64,8 @@ type Status struct {
 
 func NewPIDTemperatureController(thermometer device.Thermometer, chiller, heater device.Actuator,
 	chillerKp, chillerKi, chillerKd, heaterKp, heaterKi, heaterKd float64,
-	logger *logrus.Logger, options ...OptionsFunc) *TemperatureController {
-	t := &TemperatureController{
+	logger *logrus.Logger, options ...OptionsFunc) *Controller {
+	t := &Controller{
 		thermometer:         thermometer,
 		chillerKp:           chillerKp,
 		chillerKi:           chillerKi,
@@ -89,24 +90,24 @@ func NewPIDTemperatureController(thermometer device.Thermometer, chiller, heater
 	return t
 }
 
-type OptionsFunc func(*TemperatureController)
+type OptionsFunc func(*Controller)
 
 func SetClock(clock clock.Clock) OptionsFunc {
-	return func(t *TemperatureController) {
+	return func(t *Controller) {
 		t.clock = clock
 	}
 }
 
 // ChillingCyclePeriod sets the duration of the chiller's PWM cycle.  Default is 30 minutes.
 func SetChillingCyclePeriod(period time.Duration) OptionsFunc {
-	return func(t *TemperatureController) {
+	return func(t *Controller) {
 		t.chillingCyclePeriod = period
 	}
 }
 
 // HeatingCyclePeriod sets the duration of the chiller's PWM cycle.  Default is 1 minute.
 func SetHeatingCyclePeriod(period time.Duration) OptionsFunc {
-	return func(t *TemperatureController) {
+	return func(t *Controller) {
 		t.heatingCyclePeriod = period
 	}
 }
@@ -114,7 +115,7 @@ func SetHeatingCyclePeriod(period time.Duration) OptionsFunc {
 // SetChillingMinimum sets the minimum duration in which the Temperature Controller will leave the Chiller Actuator On.
 // This is to prevent excessive cycling.  Default is 10 minutes.
 func SetChillingMinimum(min time.Duration) OptionsFunc {
-	return func(t *TemperatureController) {
+	return func(t *Controller) {
 		t.chillingMinimum = min
 	}
 }
@@ -122,13 +123,13 @@ func SetChillingMinimum(min time.Duration) OptionsFunc {
 // SetHeaterMinimum sets the minimum duration in which the Temperature Controller will leave the Heater Actuator On.
 // This is to prevent excessive cycling. Default is 10 seconds.
 func SetHeatingMinimum(min time.Duration) OptionsFunc {
-	return func(t *TemperatureController) {
+	return func(t *Controller) {
 		t.heatingMinimum = min
 	}
 }
 
 //nolint: funlen,cyclop // TODO: refactor
-func (t *TemperatureController) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController,
+func (t *Controller) startCycle(ctx context.Context, name string, pid *pidctrl.PIDController,
 	actuator device.Actuator, period, minimum time.Duration) error {
 	lastUpdateTime := t.clock.Now()
 
@@ -202,7 +203,7 @@ func (t *TemperatureController) startCycle(ctx context.Context, name string, pid
 	}
 }
 
-func (t *TemperatureController) wait(ctx context.Context, waitTime time.Duration) bool {
+func (t *Controller) wait(ctx context.Context, waitTime time.Duration) bool {
 	timer := t.clock.NewTimer(waitTime)
 	defer timer.Stop()
 
@@ -218,7 +219,9 @@ func (t *TemperatureController) wait(ctx context.Context, waitTime time.Duration
 	}
 }
 
-func (t *TemperatureController) Run(ctx context.Context, setPoint float64) error {
+// TODO: Don't turn on controller again if rest period is not over to prevent short cycle
+
+func (t *Controller) Run(ctx context.Context, setPoint float64) error {
 	t.runMutex.Lock()
 	if t.isRunning {
 		defer t.runMutex.Unlock()
@@ -259,7 +262,7 @@ func newPID(kP, kI, kD, min, max float64) *pidctrl.PIDController {
 	return pid
 }
 
-func (t *TemperatureController) quit(name string, actuator device.Actuator) error {
+func (t *Controller) quit(name string, actuator device.Actuator) error {
 	t.logger.Debugf("Actuator %s quiting", name)
 
 	if err := actuator.Off(); err != nil {
