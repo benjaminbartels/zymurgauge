@@ -13,7 +13,6 @@ import (
 	"github.com/benjaminbartels/zymurgauge/cmd/zymsim/simulator"
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/temperaturecontrol/hysteresis"
-	"github.com/benjaminbartels/zymurgauge/internal/test/fakes"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wcharczuk/go-chart"
@@ -62,9 +61,7 @@ func run(logger *logrus.Logger) error {
 	}
 
 	sim := simulator.New(cli.StartingTemp)
-	clock := fakes.NewDilatedClock(cli.Multiplier)
-	pid := hysteresis.NewController(sim.Thermometer, sim.Chiller, sim.Heater, cli.HysteresisBand, logger,
-		hysteresis.SetClock(clock))
+	pid := hysteresis.NewController(sim.Thermometer, sim.Chiller, sim.Heater, cli.HysteresisBand, logger)
 	ctx, stop := context.WithCancel(context.Background())
 	startTime := time.Now()
 

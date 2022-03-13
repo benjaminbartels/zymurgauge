@@ -76,7 +76,6 @@ func (c *Chamber) Configure(configurator Configurator, service brewfather.Servic
 	c.temperatureController = hysteresis.NewController(c.beerThermometer, c.chiller, c.heater, c.HysteresisBand, logger)
 
 	c.runMutex = &sync.RWMutex{}
-	c.readingsMutex = &sync.Mutex{}
 
 	if errs != nil {
 		return &InvalidConfigurationError{configErrors: errs}
@@ -252,11 +251,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 
 	go func() {
 		c.RefreshReadings()
-		c.emitMetrics()
-
-		if err := c.sendToBrewFather(ctx); err != nil {
-			c.logger.WithError(err).Error("Unable to send readings to Brewfather")
-		}
+		c.sendData(ctx)
 
 		for {
 			timer := time.NewTimer(c.readingsUpdateInterval)
@@ -265,11 +260,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 			select {
 			case <-timer.C:
 				c.RefreshReadings()
-				c.emitMetrics()
-
-				if err := c.sendToBrewFather(ctx); err != nil {
-					c.logger.WithError(err).Error("Unable to send readings to Brewfather")
-				}
+				c.sendData(ctx)
 			case <-ctx.Done():
 				return
 			}
@@ -302,6 +293,10 @@ func (c *Chamber) IsFermenting() bool {
 }
 
 func (c *Chamber) RefreshReadings() {
+	if c.readingsMutex == nil {
+		c.readingsMutex = &sync.Mutex{}
+	}
+
 	c.readingsMutex.Lock()
 	defer c.readingsMutex.Unlock()
 	c.Readings = &Readings{}
@@ -407,6 +402,14 @@ func (c *Chamber) getStep(stepID string) *brewfather.FermentationStep {
 	}
 
 	return step
+}
+
+func (c *Chamber) sendData(ctx context.Context) {
+	c.emitMetrics()
+
+	if err := c.sendToBrewFather(ctx); err != nil {
+		c.logger.WithError(err).Error("Unable to send readings to Brewfather")
+	}
 }
 
 func (c *Chamber) emitMetrics() {
