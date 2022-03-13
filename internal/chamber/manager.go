@@ -132,6 +132,7 @@ func (m *Manager) Delete(id string) error {
 	return nil
 }
 
+// StartFermentation signals the given chamber to start the given fermentation step.
 func (m *Manager) StartFermentation(chamberID string, step string) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -139,6 +140,10 @@ func (m *Manager) StartFermentation(chamberID string, step string) error {
 	chamber, ok := m.chambers[chamberID]
 	if !ok {
 		return ErrNotFound
+	}
+
+	if chamber.IsFermenting() {
+		return ErrFermenting
 	}
 
 	err := chamber.StartFermentation(m.ctx, step)
