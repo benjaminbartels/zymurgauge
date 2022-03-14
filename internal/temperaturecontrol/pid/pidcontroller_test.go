@@ -17,15 +17,12 @@ import (
 )
 
 const (
-	chillerKp               float64 = -10
-	chillerKi               float64 = 0
-	chillerKd               float64 = 0
-	heaterKp                float64 = 10
-	heaterKi                float64 = 0
-	heaterKd                float64 = 0
+	kP                      float64 = 10
+	kI                      float64 = 0
+	kD                      float64 = 0
 	thermometerReadErrorMsg         = "could not read thermometer"
-	chillerOnErrorMsg               = "could not turn chiller actuator on"
-	chillerOffError                 = "could not turn chiller actuator off"
+	actuatorOnErrorMsg              = "could not turn actuator on"
+	actuatorOffError                = "could not turn actuator off"
 	actuatorQuitError               = "could not turn actuator off while quiting"
 )
 
@@ -41,12 +38,11 @@ func TestRunActuatorsOn(t *testing.T) {
 		name        string
 		temperature float64
 		setPoint    float64
-		chillerOn   bool
-		heaterOn    bool
+		actuatorOn  bool
 	}{
-		{name: "below", temperature: 10, setPoint: 15, chillerOn: false, heaterOn: true},
-		{name: "same", temperature: 15, setPoint: 15, chillerOn: false, heaterOn: false},
-		{name: "above", temperature: 20, setPoint: 15, chillerOn: true, heaterOn: false},
+		{name: "below", temperature: 10, setPoint: 15, actuatorOn: true},
+		{name: "same", temperature: 15, setPoint: 15, actuatorOn: false},
+		{name: "above", temperature: 20, setPoint: 15, actuatorOn: false},
 	}
 
 	for _, tc := range tests {
@@ -55,57 +51,37 @@ func TestRunActuatorsOn(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			l, _ := logtest.NewNullLogger()
+			l.SetLevel(logrus.DebugLevel)
 
-			var (
-				chillerOn bool
-				heaterOn  bool
-			)
+			var actuatorOn bool
 
 			thermometerMock := &mocks.Thermometer{}
 			thermometerMock.On("GetTemperature").Return(tc.temperature, nil)
 
-			chillerCh := make(chan struct{}, 1)
-			chillerMock := &mocks.Actuator{}
-			chillerMock.Mock.On("On").Return(nil).Run(
+			actuatorCh := make(chan struct{}, 1)
+			actuatorMock := &mocks.Actuator{}
+			actuatorMock.Mock.On("On").Return(nil).Run(
 				func(args mock.Arguments) {
-					chillerCh <- struct{}{}
+					actuatorCh <- struct{}{}
 				})
-			chillerMock.Mock.On("Off").Return(nil)
+			actuatorMock.Mock.On("Off").Return(nil)
 
-			heaterCh := make(chan struct{}, 1)
-			heaterMock := &mocks.Actuator{}
-			heaterMock.Mock.On("On").Return(nil).Run(
-				func(args mock.Arguments) {
-					heaterCh <- struct{}{}
-				})
-			heaterMock.Mock.On("Off").Return(nil)
-
-			ctlr := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
-				heaterKp, heaterKi, heaterKd, l)
+			ctlr := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l)
 
 			ctx, stop := context.WithCancel(context.Background())
 
-			if tc.chillerOn {
+			if tc.actuatorOn {
 				// wait for chillerFake.On to be called and we receive the elapsed time on channel
 				go func() {
-					<-chillerCh
-					chillerOn = true
-					stop()
-				}()
-			}
-
-			if tc.heaterOn {
-				// wait for heaterFake.On to be called and we receive the elapsed time on channel
-				go func() {
-					<-heaterCh
-					heaterOn = true
+					<-actuatorCh
+					actuatorOn = true
 					stop()
 				}()
 			}
 
 			// timeout
 			go func() {
-				<-time.After(200 * time.Millisecond)
+				<-time.After(100 * time.Millisecond)
 				stop()
 			}()
 
@@ -113,8 +89,7 @@ func TestRunActuatorsOn(t *testing.T) {
 			err := ctlr.Run(ctx, tc.setPoint)
 			assert.NoError(t, err)
 
-			assert.Equal(t, tc.chillerOn, chillerOn, "expected chiller to be on")
-			assert.Equal(t, tc.heaterOn, heaterOn, "expected heater to be on")
+			assert.Equal(t, tc.actuatorOn, actuatorOn, "expected actuator to be on")
 		})
 	}
 }
@@ -126,12 +101,10 @@ func TestRunDutyCycle(t *testing.T) {
 		name                string
 		temperature         float64
 		expectedElapsedTime time.Duration
-		waitTime            time.Duration
 	}{
-		{name: "0% duty", temperature: 20, expectedElapsedTime: 0 * time.Millisecond},
-		{name: "minimum duty", temperature: 20.5, expectedElapsedTime: 10 * time.Millisecond},
-		{name: "50% duty", temperature: 25, expectedElapsedTime: 50 * time.Millisecond},
-		{name: "100% duty", temperature: 30, expectedElapsedTime: 100 * time.Millisecond},
+		{name: "0% duty", temperature: 20, expectedElapsedTime: 0},
+		{name: "50% duty", temperature: 15, expectedElapsedTime: 500 * time.Millisecond},
+		{name: "100% duty", temperature: 10, expectedElapsedTime: 1 * time.Second},
 	}
 
 	for _, tc := range tests {
@@ -159,25 +132,17 @@ func TestRunDutyCycle(t *testing.T) {
 				}
 			}
 
-			chillerMock := &mocks.Actuator{}
-			chillerMock.Mock.On("On").Return(nil).Run(on)
-			chillerMock.Mock.On("Off").Return(nil).Run(off)
-
-			heaterMock := &mocks.Actuator{}
-			heaterMock.Mock.On("Off").Return(nil)
-
-			therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock,
-				chillerKp, chillerKi, chillerKd,
-				heaterKp, heaterKi, heaterKd,
-				l, pid.SetChillingCyclePeriod(100*time.Millisecond),
-				pid.SetChillingMinimum(10*time.Millisecond))
+			actuatorMock := &mocks.Actuator{}
+			actuatorMock.Mock.On("On").Return(nil).Run(on)
+			actuatorMock.Mock.On("Off").Return(nil).Run(off)
+			therm := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l)
 
 			var elapsedTime time.Duration
 			var mu sync.RWMutex
 
 			ctx, stop := context.WithCancel(context.Background())
 
-			// wait for chillerFake.Off to be called and we receive the elapsed time on channel
+			// wait for actuatorMock.Off to be called and we receive the elapsed time on channel
 			go func() {
 				mu.Lock()
 				elapsedTime = <-doneCh
@@ -187,7 +152,7 @@ func TestRunDutyCycle(t *testing.T) {
 
 			// timeout
 			go func() {
-				<-time.After(200 * time.Millisecond)
+				<-time.After(1000 * time.Millisecond)
 				stop()
 			}()
 
@@ -214,20 +179,16 @@ func TestLogging(t *testing.T) {
 	thermometerMock := &mocks.Thermometer{}
 	thermometerMock.On("GetTemperature").Return(25.0, nil)
 
-	chillerMock := &mocks.Actuator{}
-	chillerMock.Mock.On("Off").Return(nil)
-
 	doneCh := make(chan struct{}, 1)
-	heaterMock := &mocks.Actuator{}
-	heaterMock.Mock.On("On").Return(nil)
-	heaterMock.Mock.On("Off").Return(nil).Run(
+	actuatorMock := &mocks.Actuator{}
+	actuatorMock.Mock.On("On").Return(nil)
+	actuatorMock.Mock.On("Off").Return(nil).Run(
 		func(args mock.Arguments) {
 			doneCh <- struct{}{}
 		})
 
-	therm := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
-		heaterKp, heaterKi, heaterKd, l, pid.SetHeatingCyclePeriod(100*time.Millisecond),
-		pid.SetHeatingMinimum(50*time.Millisecond))
+	therm := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l,
+		pid.CyclePeriod(100*time.Millisecond))
 
 	ctx, stop := context.WithCancel(context.Background())
 
@@ -244,18 +205,13 @@ func TestLogging(t *testing.T) {
 	<-time.After(1 * time.Second)
 
 	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel,
-		"Actuator heater current temperature is 25.0000°C, set point is 30.0000°C"))
+		"Actuator current temperature is 25.0000°C, set point is 30.0000°C"))
 	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel,
-		"Actuator heater dutyCycle is 50.00%, dutyTime is 50ms, waitTime is 50ms"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater acting for 50ms"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater acted for 50ms"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater waiting for 50ms"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator heater waited for 50ms"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel,
-		"Actuator chiller current temperature is 25.0000°C, set point is 30.0000°C"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel,
-		"Actuator chiller dutyCycle is 0.00%, dutyTime is 0s, waitTime is 30m0s"))
-	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator chiller waiting for 30m0s"))
+		"Actuator dutyCycle is 50.00%, dutyTime is 50ms, waitTime is 50ms"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator acting for 50ms"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator acted for 50ms"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator waiting for 50ms"))
+	assert.True(t, logContains(hook.AllEntries(), logrus.DebugLevel, "Actuator waited for 50ms"))
 }
 
 func TestRunAlreadyRunningError(t *testing.T) {
@@ -268,16 +224,12 @@ func TestRunAlreadyRunningError(t *testing.T) {
 	thermometerMock.On("GetTemperature").Return(20.0, nil)
 
 	doneCh := make(chan struct{}, 1)
-	chillerMock := &mocks.Actuator{}
-	chillerMock.Mock.On("Off").Return(nil).Run(func(args mock.Arguments) {
+	actuatorMock := &mocks.Actuator{}
+	actuatorMock.Mock.On("Off").Return(nil).Run(func(args mock.Arguments) {
 		doneCh <- struct{}{}
 	})
 
-	heaterMock := &mocks.Actuator{}
-	heaterMock.Mock.On("Off").Return(nil)
-
-	ctrl := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
-		heaterKp, heaterKi, heaterKd, l)
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l)
 
 	go func() {
 		// wait until first therm.Run is called
@@ -298,12 +250,9 @@ func TestThermometerIsNilError(t *testing.T) {
 
 	l, _ := logtest.NewNullLogger()
 
-	chillerMock := &mocks.Actuator{}
+	actuatorMock := &mocks.Actuator{}
 
-	heaterMock := &mocks.Actuator{}
-
-	ctrl := pid.NewPIDTemperatureController(nil, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
-		heaterKp, heaterKi, heaterKd, l)
+	ctrl := pid.NewPIDTemperatureController(nil, actuatorMock, kP, kI, kD, l)
 
 	// first therm.Run is called
 	err := ctrl.Run(context.Background(), 20)
@@ -318,8 +267,7 @@ func TestActuatorIsNilError(t *testing.T) {
 	thermometerMock := &mocks.Thermometer{}
 	thermometerMock.On("GetTemperature").Return(20.0, nil)
 
-	ctrl := pid.NewPIDTemperatureController(thermometerMock, nil, nil, chillerKp, chillerKi, chillerKd,
-		heaterKp, heaterKi, heaterKd, l)
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, nil, kP, kI, kD, l)
 
 	// first therm.Run is called
 	err := ctrl.Run(context.Background(), 20)
@@ -336,11 +284,9 @@ func TestThermometerError(t *testing.T) {
 	thermometerMock := &mocks.Thermometer{}
 	thermometerMock.On("GetTemperature").Return(0.0, errDeadThermometer)
 
-	chillerMock := &mocks.Actuator{}
-	heaterMock := &mocks.Actuator{}
+	actuatorMock := &mocks.Actuator{}
 
-	ctrl := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
-		heaterKp, heaterKi, heaterKd, l)
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l)
 
 	go func() {
 		for {
@@ -375,18 +321,14 @@ func TestActuatorOnError(t *testing.T) {
 
 	doneCh := make(chan struct{}, 1)
 
-	chillerMock := &mocks.Actuator{}
-	chillerMock.Mock.On("On").Return(errDeadActuator)
+	actuatorMock := &mocks.Actuator{}
+	actuatorMock.Mock.On("On").Return(errDeadActuator)
 
-	heaterMock := &mocks.Actuator{}
-	heaterMock.Mock.On("Off").Return(nil)
-
-	ctrl := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
-		heaterKp, heaterKi, heaterKd, l)
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l)
 
 	go func() {
 		for {
-			if logContains(hook.AllEntries(), logrus.ErrorLevel, chillerOnErrorMsg) {
+			if logContains(hook.AllEntries(), logrus.ErrorLevel, actuatorOnErrorMsg) {
 				doneCh <- struct{}{}
 
 				return
@@ -397,7 +339,7 @@ func TestActuatorOnError(t *testing.T) {
 	}()
 
 	go func() {
-		_ = ctrl.Run(context.Background(), 15)
+		_ = ctrl.Run(context.Background(), 25)
 	}()
 
 	select {
@@ -417,20 +359,15 @@ func TestActuatorOffErrorAfterDuty(t *testing.T) {
 
 	doneCh := make(chan struct{}, 1)
 
-	chillerMock := &mocks.Actuator{}
-	chillerMock.Mock.On("On").Return(nil)
-	chillerMock.Mock.On("Off").Return(errDeadActuator)
+	actuatorMock := &mocks.Actuator{}
+	actuatorMock.Mock.On("On").Return(nil)
+	actuatorMock.Mock.On("Off").Return(errDeadActuator)
 
-	heaterMock := &mocks.Actuator{}
-	heaterMock.Mock.On("Off").Return(nil)
-
-	ctrl := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
-		heaterKp, heaterKi, heaterKd, l, pid.SetChillingCyclePeriod(100*time.Millisecond),
-		pid.SetChillingMinimum(10*time.Millisecond))
+	ctrl := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l)
 
 	go func() {
 		for {
-			if logContains(hook.AllEntries(), logrus.ErrorLevel, chillerOffError) {
+			if logContains(hook.AllEntries(), logrus.ErrorLevel, actuatorOffError) {
 				doneCh <- struct{}{}
 
 				return
@@ -460,18 +397,14 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 	thermometerMock.On("GetTemperature").Return(20.0, nil)
 
 	doneCh := make(chan struct{}, 1)
-	chillerMock := &mocks.Actuator{}
-	chillerMock.Mock.On("On").Return(nil).Run(
+	actuatorMock := &mocks.Actuator{}
+	actuatorMock.Mock.On("On").Return(nil).Run(
 		func(args mock.Arguments) {
 			doneCh <- struct{}{}
 		})
-	chillerMock.Mock.On("Off").Return(errDeadActuator)
+	actuatorMock.Mock.On("Off").Return(errDeadActuator)
 
-	heaterMock := &mocks.Actuator{}
-	heaterMock.Mock.On("Off").Return(nil)
-
-	ctlr := pid.NewPIDTemperatureController(thermometerMock, chillerMock, heaterMock, chillerKp, chillerKi, chillerKd,
-		heaterKp, heaterKi, heaterKd, l)
+	ctlr := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l)
 
 	ctx, stop := context.WithCancel(context.Background())
 
@@ -481,7 +414,7 @@ func TestActuatorOffErrorOnQuit(t *testing.T) {
 		stop()
 	}()
 
-	err := ctlr.Run(ctx, 15)
+	err := ctlr.Run(ctx, 25)
 	assert.Contains(t, err.Error(), actuatorQuitError)
 }
 
