@@ -165,7 +165,7 @@ func (m *Monitor) handler(adv bluetooth.Advertisement) {
 	m.availableColors = append(m.availableColors, color)
 
 	if m.tilts[color].ibeacon == nil {
-		m.logger.Debugf("Tilt Online - Color: %s, UUID: %s, Major: %d, Minor: %d", m.colors[ibeacon.UUID],
+		m.logger.Debugf("Tilt online - Color: %s, UUID: %s, Major: %d, Minor: %d", m.colors[ibeacon.UUID],
 			ibeacon.UUID, ibeacon.Major, ibeacon.Minor)
 	}
 
