@@ -113,7 +113,8 @@ export default function ChamberFormView() {
         hydrometerType: data.hydrometerType,
         hydrometerId: data.hydrometerId,
       },
-      hysteresisBand: +data.hysteresisBand,
+      chillingDifferential: +data.chillingDifferential,
+      heatingDifferential: +data.heatingDifferential,
       currentFermentationStep: "",
       currentBatch: batchDetail !== undefined ? batchDetail : undefined,
       readings: null, // TODO: solve this...
@@ -165,18 +166,40 @@ export default function ChamberFormView() {
                       )}
                     />
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid item xs={12} md={6}>
                     <Controller
-                      name="hysteresisBand"
+                      name="chillingDifferential"
                       control={control}
-                      defaultValue={chamber?.hysteresisBand || ""}
-                      rules={{ required: "Hysteresis Band required" }}
+                      defaultValue={chamber?.chillingDifferential || ""}
+                      rules={{ required: "Chilling Differential required" }}
                       render={({
                         field: { onChange, value },
                         fieldState: { error },
                       }) => (
                         <TextField
-                          label="Hysteresis Band (°C)"
+                          label="Chilling Differential (°C)"
+                          type="number"
+                          inputProps={{ step: ".1" }}
+                          value={value}
+                          onChange={onChange}
+                          error={!!error}
+                          helperText={error ? error.message : null}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Controller
+                      name="heatingDifferential"
+                      control={control}
+                      defaultValue={chamber?.heatingDifferential || ""}
+                      rules={{ required: "Heating Differential required" }}
+                      render={({
+                        field: { onChange, value },
+                        fieldState: { error },
+                      }) => (
+                        <TextField
+                          label="Heating Differential (°C)"
                           type="number"
                           inputProps={{ step: ".1" }}
                           value={value}
