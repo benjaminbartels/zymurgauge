@@ -31,13 +31,14 @@ type reading struct {
 }
 
 type cli struct {
-	Multiplier     float64       `kong:"default=6000.0,short=m,help='Time dilation multiplier. Defaults to 6000.'"`
-	Runtime        time.Duration `kong:"default=5s,short=r,help='Runtime of simulation. Defaults to 5s.'"`
-	Debug          bool          `kong:"default=false,short=d,help='Enable debug logging. Default is false.'"`
-	StartingTemp   float64       `kong:"arg,help='Starting temperature.'"` // 25.0
-	TargetTemp     float64       `kong:"arg,help='Target temperature.'"`   // 20.0
-	HysteresisBand float64       `kong:"arg,help='Hysteresis band.'"`      // 1.0
-	FileName       string        `kong:"arg,optional,help='Name of results file. Defaults to chart_{timestamp}.png.'"`
+	Multiplier           float64       `kong:"default=6000.0,short=m,help='Time dilation multiplier. Defaults to 6000.'"`
+	Runtime              time.Duration `kong:"default=5s,short=r,help='Runtime of simulation. Defaults to 5s.'"`
+	Debug                bool          `kong:"default=false,short=d,help='Enable debug logging. Default is false.'"`
+	StartingTemp         float64       `kong:"arg,help='Starting temperature.'"`  // 25.0
+	TargetTemp           float64       `kong:"arg,help='Target temperature.'"`    // 20.0
+	ChillingDifferential float64       `kong:"arg,help='Chilling differential.'"` // 1.0
+	HeatingDifferential  float64       `kong:"arg,help='Heating differential.'"`  // 1.0
+	FileName             string        `kong:"arg,optional,help='Results file name. Defaults to chart_{timestamp}.png.'"`
 }
 
 func main() {
@@ -61,7 +62,8 @@ func run(logger *logrus.Logger) error {
 	}
 
 	sim := simulator.New(cli.StartingTemp)
-	pid := hysteresis.NewController(sim.Thermometer, sim.Chiller, sim.Heater, cli.HysteresisBand, logger)
+	pid := hysteresis.NewController(sim.Thermometer, sim.Chiller, sim.Heater, cli.ChillingDifferential,
+		cli.HeatingDifferential, logger)
 	ctx, stop := context.WithCancel(context.Background())
 	startTime := time.Now()
 

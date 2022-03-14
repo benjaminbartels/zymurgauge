@@ -826,6 +826,7 @@ func assertChambersAreEqual(t *testing.T, c1, c2 *chamber.Chamber) {
 	t.Helper()
 	assert.Equal(t, c1.ID, c2.ID)
 	assert.Equal(t, c1.Name, c2.Name)
-	assert.Equal(t, c1.HysteresisBand, c2.HysteresisBand)
+	assert.Equal(t, c1.ChillingDifferential, c2.ChillingDifferential)
+	assert.Equal(t, c1.HeatingDifferential, c2.HeatingDifferential)
 	assert.Equal(t, c1.ModTime, c2.ModTime)
 }

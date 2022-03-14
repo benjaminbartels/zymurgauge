@@ -21,7 +21,8 @@ type Chamber struct {
 	ID                      string                  `json:"id"` // TODO: omit empty?
 	Name                    string                  `json:"name"`
 	DeviceConfig            DeviceConfig            `json:"deviceConfig"` // TODO: make is a struct and not a list
-	HysteresisBand          float64                 `json:"hysteresisBand"`
+	ChillingDifferential    float64                 `json:"chillingDifferential"`
+	HeatingDifferential     float64                 `json:"heatingDifferential"`
 	CurrentBatch            *brewfather.BatchDetail `json:"currentBatch,omitempty"`
 	ModTime                 time.Time               `json:"modTime"`
 	CurrentFermentationStep *string                 `json:"currentFermentationStep,omitempty"`
@@ -73,7 +74,8 @@ func (c *Chamber) Configure(configurator Configurator, service brewfather.Servic
 
 	errs := c.configureDevices(configurator, c.DeviceConfig)
 
-	c.temperatureController = hysteresis.NewController(c.beerThermometer, c.chiller, c.heater, c.HysteresisBand, logger)
+	c.temperatureController = hysteresis.NewController(c.beerThermometer, c.chiller, c.heater, c.ChillingDifferential,
+		c.HeatingDifferential, logger)
 
 	c.runMutex = &sync.RWMutex{}
 

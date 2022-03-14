@@ -31,33 +31,33 @@ func (e Error) Error() string {
 }
 
 type Controller struct {
-	thermometer         device.Thermometer
-	chiller             device.Actuator
-	heater              device.Actuator
-	hysteresisBand      float64
-	cyclePeriod         time.Duration
-	chillerCooldown     time.Duration
-	logger              *logrus.Logger
-	setPoint            float64
-	isRunning           bool
-	chillerOnStartTime  time.Time
-	chillerOffStartTime time.Time
-	setPointCh          chan float64
-	runMutex            sync.Mutex
+	thermometer          device.Thermometer
+	chiller              device.Actuator
+	heater               device.Actuator
+	chillingDifferential float64
+	heatingDifferential  float64
+	cyclePeriod          time.Duration
+	chillerCooldown      time.Duration
+	logger               *logrus.Logger
+	setPoint             float64
+	isRunning            bool
+	chillerOnStartTime   time.Time
+	chillerOffStartTime  time.Time
+	runMutex             sync.Mutex
 }
 
 func NewController(thermometer device.Thermometer, chiller, heater device.Actuator,
-	hysteresisBand float64,
+	chillingDifferential, heatingDifferential float64,
 	logger *logrus.Logger, options ...OptionsFunc) *Controller {
 	t := &Controller{
-		thermometer:     thermometer,
-		chiller:         chiller,
-		heater:          heater,
-		hysteresisBand:  hysteresisBand,
-		cyclePeriod:     defaultCyclePeriod,
-		chillerCooldown: defaultChillerCooldown,
-		setPointCh:      make(chan float64),
-		logger:          logger,
+		thermometer:          thermometer,
+		chiller:              chiller,
+		heater:               heater,
+		chillingDifferential: chillingDifferential,
+		heatingDifferential:  heatingDifferential,
+		cyclePeriod:          defaultCyclePeriod,
+		chillerCooldown:      defaultChillerCooldown,
+		logger:               logger,
 	}
 
 	for _, option := range options {
@@ -81,10 +81,6 @@ func ChillerCooldown(chillerCooldown time.Duration) OptionsFunc {
 	}
 }
 
-func (c *Controller) SetTemperature(temperature float64) {
-	c.setPointCh <- temperature
-}
-
 func (c *Controller) Run(ctx context.Context, setPoint float64) error {
 	c.runMutex.Lock()
 	if c.isRunning {
@@ -92,6 +88,8 @@ func (c *Controller) Run(ctx context.Context, setPoint float64) error {
 
 		return ErrAlreadyRunning
 	}
+
+	c.logger.Debugf("Running hysteresis controller with set point: %.2f", setPoint)
 
 	if c.thermometer == nil {
 		defer c.runMutex.Unlock()
@@ -130,21 +128,27 @@ func (c *Controller) startCycle(ctx context.Context) error {
 			continue
 		}
 
-		divisor := 2.0
-		upperBound := c.setPoint + c.hysteresisBand/divisor
-		lowerBound := c.setPoint - c.hysteresisBand/divisor
+		upperBound := c.setPoint + c.chillingDifferential
+		lowerBound := c.setPoint - c.heatingDifferential
 
-		if temperature > upperBound {
-			err = c.startChilling()
-		} else if temperature < lowerBound {
-			err = c.startHeating()
+		if temperature >= upperBound {
+			c.logger.Debugf("Temperature %.2f is >= upperbound %.2f", temperature, upperBound)
+			c.chillerOn()
 		}
 
-		if err != nil {
-			c.logger.WithError(err).Error(err, "errors occurred while evaluating temperature")
-			<-time.After(errorWaitPeriod)
+		if temperature <= lowerBound {
+			c.logger.Debugf("Temperature %.2f is <= upperbound %.2f", temperature, lowerBound)
+			c.heaterOn()
+		}
 
-			continue
+		if temperature <= c.setPoint {
+			c.logger.Debugf("Temperature %.2f is <= setpoint %.2f", temperature, c.setPoint)
+			c.chillerOff()
+		}
+
+		if temperature > c.setPoint {
+			c.logger.Debugf("Temperature %.2f is > setpoint %.2f", temperature, c.setPoint)
+			c.heaterOff()
 		}
 
 		if didComplete := c.wait(ctx); !didComplete {
@@ -153,51 +157,44 @@ func (c *Controller) startCycle(ctx context.Context) error {
 	}
 }
 
-func (c *Controller) startChilling() error {
-	var result error
-
+func (c *Controller) chillerOn() {
 	cooldownOverTime := c.chillerOffStartTime.Add(c.chillerCooldown)
 
 	if time.Now().After(cooldownOverTime) {
 		if err := c.chiller.On(); err != nil {
-			result = multierror.Append(result, errors.Wrap(err, "could not turn chiller actuator on"))
+			c.logger.WithError(err).Error("could not turn chiller actuator on")
 		} else {
+			c.logger.Debug("Chiller on")
 			c.chillerOnStartTime = time.Now()
 		}
 	} else {
 		c.logger.Debugf("Cannot turn chiller on for another %s", time.Until(cooldownOverTime))
 	}
-
-	if err := c.heater.Off(); err != nil {
-		result = multierror.Append(result, errors.Wrap(err, "could not turn heater actuator off"))
-	}
-
-	if result != nil {
-		return errors.Wrap(result, "errors occurred while starting to chill")
-	}
-
-	return nil
 }
 
-func (c *Controller) startHeating() error {
-	var result error
-
-	err := c.chiller.Off()
-	if err != nil {
-		result = multierror.Append(result, errors.Wrap(err, "could not turn chiller actuator off"))
+func (c *Controller) chillerOff() {
+	if err := c.chiller.Off(); err != nil {
+		c.logger.WithError(err).Error(err, "could not turn chiller actuator off")
 	} else if !c.chillerOnStartTime.IsZero() {
+		c.logger.Debug("Chiller off")
 		c.chillerOffStartTime = time.Now()
 	}
+}
 
-	if heaterErr := c.heater.On(); err != nil {
-		result = multierror.Append(result, errors.Wrap(heaterErr, "could not turn heater actuator on"))
+func (c *Controller) heaterOn() {
+	if err := c.heater.On(); err != nil {
+		c.logger.WithError(err).Error("could not turn heater actuator on")
+	} else {
+		c.logger.Debug("Heater on")
 	}
+}
 
-	if result != nil {
-		return errors.Wrap(result, "errors occurred while starting to heat")
+func (c *Controller) heaterOff() {
+	if err := c.heater.Off(); err != nil {
+		c.logger.WithError(err).Error(err, "could not turn heater actuator off")
+	} else {
+		c.logger.Debug("Heater off")
 	}
-
-	return nil
 }
 
 func (c *Controller) wait(ctx context.Context) bool {
@@ -206,10 +203,6 @@ func (c *Controller) wait(ctx context.Context) bool {
 
 	select {
 	case <-timer.C:
-		return true
-	case temperature := <-c.setPointCh:
-		c.setPoint = temperature
-
 		return true
 	case <-ctx.Done():
 		c.runMutex.Lock()
