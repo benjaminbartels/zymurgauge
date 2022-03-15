@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/ioutil"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/alecthomas/kong"
@@ -154,10 +154,7 @@ func createGraph(durations []time.Duration, temps []float64, targetTemp float64,
 	for i := 0; i < numOfTick; i++ {
 		tickValue := int64(interval) * int64(i)
 		d := time.Duration(tickValue).Round(time.Minute)
-		hour := d / time.Hour
-		d -= hour * time.Hour //nolint: durationcheck // TODO: fix durationcheck later
-		minute := d / time.Minute
-		ticks[i] = chart.Tick{Value: float64(tickValue), Label: fmt.Sprintf("%02d:%02d", hour, minute)}
+		ticks[i] = chart.Tick{Value: float64(tickValue), Label: shortDuration(d)}
 	}
 
 	series := []chart.Series{chart.ContinuousSeries{
@@ -211,4 +208,17 @@ func writeChart(c chart.Chart, fileName string) error {
 	}
 
 	return nil
+}
+
+func shortDuration(d time.Duration) string {
+	s := d.String()
+	if strings.HasSuffix(s, "m0s") {
+		s = s[:len(s)-2]
+	}
+
+	if strings.HasSuffix(s, "h0m") {
+		s = s[:len(s)-2]
+	}
+
+	return s
 }

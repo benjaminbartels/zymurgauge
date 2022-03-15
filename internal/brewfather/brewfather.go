@@ -1,4 +1,4 @@
-//nolint:tagliatelle
+//nolint:tagliatelle // this file was manual generated and includes minor changes
 package brewfather
 
 import "context"

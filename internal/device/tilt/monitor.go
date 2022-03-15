@@ -119,7 +119,7 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 			case errors.Is(err, context.Canceled):
 				return nil // TODO: should this return ctx.Err()
 			default:
-				return errors.Wrap(err, "could not scan")
+				m.logger.WithError(err).Error("error occurred while scanning")
 			}
 		}
 
