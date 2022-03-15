@@ -16,7 +16,6 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
-	c "github.com/benjaminbartels/zymurgauge/internal/platform/context"
 	"github.com/benjaminbartels/zymurgauge/internal/settings"
 	"github.com/benjaminbartels/zymurgauge/web"
 	"github.com/kelseyhightower/envconfig"
@@ -60,7 +59,6 @@ func main() {
 	}
 }
 
-//nolint:funlen,cyclop // TODO: Revisit later
 func run(logger *logrus.Logger, cfg config) error {
 	if cfg.Debug {
 		logger.SetLevel(logrus.DebugLevel)
@@ -70,8 +68,8 @@ func run(logger *logrus.Logger, cfg config) error {
 		return errors.Wrap(err, "could not initialize gpio")
 	}
 
-	ctx, interruptCancel := c.WithInterrupt(context.Background())
-	defer interruptCancel()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
 	errCh := make(chan error, 1)
 
@@ -87,19 +85,9 @@ func run(logger *logrus.Logger, cfg config) error {
 		errCh <- monitor.Run(ctx)
 	}()
 
-	db, err := bbolt.Open(cfg.DBPath, dbFilePermissions, &bbolt.Options{Timeout: bboltReadTimeout})
+	chamberRepo, settingsRepo, err := createDatabases(cfg.DBPath)
 	if err != nil {
-		return errors.Wrap(err, "could not open database")
-	}
-
-	chamberRepo, err := database.NewChamberRepo(db)
-	if err != nil {
-		return errors.Wrap(err, "could not create chamber repo")
-	}
-
-	settingsRepo, err := database.NewSettingsRepo(db)
-	if err != nil {
-		return errors.Wrap(err, "could not create settings repo")
+		return errors.Wrap(err, "could not create databases")
 	}
 
 	configurator := &chamber.DefaultConfigurator{
@@ -156,6 +144,31 @@ func run(logger *logrus.Logger, cfg config) error {
 	return wait(ctx, httpServer, errCh, cfg.ShutdownTimeout, logger)
 }
 
+func createDatabases(path string) (chamberRepo *database.ChamberRepo, settingsRepo *database.SettingsRepo, err error) {
+	db, err := bbolt.Open(path, dbFilePermissions, &bbolt.Options{Timeout: bboltReadTimeout})
+	if err != nil {
+		err = errors.Wrap(err, "could not open database")
+
+		return
+	}
+
+	chamberRepo, err = database.NewChamberRepo(db)
+	if err != nil {
+		err = errors.Wrap(err, "could not create chamber repo")
+
+		return
+	}
+
+	settingsRepo, err = database.NewSettingsRepo(db)
+	if err != nil {
+		err = errors.Wrap(err, "could not create settings repo")
+
+		return
+	}
+
+	return
+}
+
 func wait(ctx context.Context, server *http.Server, errCh chan error, timeout time.Duration,
 	logger *logrus.Logger) error {
 	select {
@@ -164,11 +177,11 @@ func wait(ctx context.Context, server *http.Server, errCh chan error, timeout ti
 	case <-ctx.Done():
 		logger.Info("stopping zymurgauge")
 
-		ctx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
+		timeoutCtx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
 		defer timeoutCancel()
 
 		//nolint: contextcheck // https://github.com/sylvia7788/contextcheck/issues/2
-		if err := server.Shutdown(ctx); err != nil {
+		if err := server.Shutdown(timeoutCtx); err != nil {
 			logger.WithError(err).Error("Could not shutdown http server.")
 
 			if err := server.Close(); err != nil {
