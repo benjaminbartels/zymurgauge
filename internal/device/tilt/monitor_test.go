@@ -2,6 +2,7 @@ package tilt_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/bluetooth"
 	"github.com/go-ble/ble/linux"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -115,7 +117,7 @@ func TestScanCancelled(t *testing.T) {
 func TestScanOtherError(t *testing.T) {
 	t.Parallel()
 
-	l, _ := logtest.NewNullLogger()
+	l, hook := logtest.NewNullLogger()
 	device := &linux.Device{}
 	ctx := context.Background()
 
@@ -129,8 +131,29 @@ func TestScanOtherError(t *testing.T) {
 	interval := tilt.SetInterval(1 * time.Millisecond)
 	monitor := tilt.NewMonitor(scannerMock, l, timeout, interval)
 
-	err := monitor.Run(ctx)
-	assert.Contains(t, err.Error(), "could not scan: unrecoverable scan error")
+	doneCh := make(chan struct{}, 1)
+
+	go func() {
+		for {
+			if logContains(hook.AllEntries(), logrus.ErrorLevel, "error occurred while scanning") {
+				doneCh <- struct{}{}
+
+				return
+			}
+
+			<-time.After(100 * time.Millisecond)
+		}
+	}()
+
+	go func() {
+		_ = monitor.Run(ctx)
+	}()
+
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		assert.Fail(t, "log should contain expected value by now")
+	}
 }
 
 func TestGetTiltNotFound(t *testing.T) {
@@ -160,4 +183,16 @@ func TestGetTiltNotFound(t *testing.T) {
 
 	err := monitor.Run(ctx)
 	assert.NoError(t, err)
+}
+
+func logContains(logs []*logrus.Entry, level logrus.Level, substr string) bool {
+	found := false
+
+	for _, v := range logs {
+		if strings.Contains(v.Message, substr) && v.Level == level {
+			found = true
+		}
+	}
+
+	return found
 }
