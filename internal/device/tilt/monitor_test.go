@@ -135,7 +135,7 @@ func TestScanOtherError(t *testing.T) {
 
 	go func() {
 		for {
-			if logContains(hook.AllEntries(), logrus.ErrorLevel, "error occurred while scanning") {
+			if logContains(hook.AllEntries(), logrus.WarnLevel, "Error occurred while scanning. Resetting hci device.") {
 				doneCh <- struct{}{}
 
 				return
