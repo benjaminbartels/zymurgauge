@@ -97,6 +97,14 @@ func (m *Monitor) Run(ctx context.Context) error {
 
 	m.runMutex.Unlock()
 
+	if err := m.setupHCIDevice(); err != nil {
+		return errors.Wrap(err, "could not setup hci device")
+	}
+
+	return m.startCycle(ctx)
+}
+
+func (m *Monitor) setupHCIDevice() error {
 	device, err := m.scanner.NewDevice()
 	if err != nil {
 		return errors.Wrap(err, "could not create new device")
@@ -104,7 +112,7 @@ func (m *Monitor) Run(ctx context.Context) error {
 
 	m.scanner.SetDefaultDevice(device)
 
-	return m.startCycle(ctx)
+	return nil
 }
 
 func (m *Monitor) startCycle(ctx context.Context) error {
@@ -119,19 +127,27 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 			case errors.Is(err, context.Canceled):
 				return nil // TODO: should this return ctx.Err()
 			default:
-				m.logger.WithError(err).Error("error occurred while scanning")
+				m.logger.WithError(err).Warn("Error occurred while scanning. Resetting hci device.")
+
+				if err := m.setupHCIDevice(); err != nil {
+					return errors.Wrap(err, "could not setup hci device")
+				}
 			}
 		}
 
-		for _, color := range m.colors {
-			if !containsColor(m.availableColors, color) && m.tilts[color].ibeacon != nil {
-				m.logger.Debugf("Tilt offline - Color: %s", color)
-				m.tilts[color].ibeacon = nil
-			}
-		}
+		m.handleOfflineTilts()
 
 		if m.wait(ctx) {
 			return nil
+		}
+	}
+}
+
+func (m *Monitor) handleOfflineTilts() {
+	for _, color := range m.colors {
+		if !containsColor(m.availableColors, color) && m.tilts[color].ibeacon != nil {
+			m.logger.Debugf("Tilt offline - Color: %s", color)
+			m.tilts[color].ibeacon = nil
 		}
 	}
 }
