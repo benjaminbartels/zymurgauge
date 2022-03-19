@@ -16,8 +16,9 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/debug"
 	"github.com/benjaminbartels/zymurgauge/internal/settings"
-	"github.com/benjaminbartels/zymurgauge/web"
+	"github.com/benjaminbartels/zymurgauge/ui"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -74,7 +75,7 @@ func run(logger *logrus.Logger, cfg config) error {
 	errCh := make(chan error, 1)
 
 	go func() {
-		if err := http.ListenAndServe(cfg.DebugHost, handlers.DebugMux()); err != nil {
+		if err := http.ListenAndServe(cfg.DebugHost, debug.Mux()); err != nil {
 			logger.WithError(err).Errorf("Debug endpoint %s closed.", cfg.DebugHost)
 		}
 	}()
@@ -127,13 +128,15 @@ func run(logger *logrus.Logger, cfg config) error {
 		}
 	}()
 
+	app := handlers.NewApp(chamberManager, onewire.DefaultDevicePath, brewfatherClient, settingsRepo, settingsCh,
+		ui.FS, shutdown, logger)
+
 	httpServer := &http.Server{
 		Addr:         cfg.Host,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler: handlers.NewAPI(chamberManager, onewire.DefaultDevicePath, brewfatherClient, web.FS, settingsRepo,
-			settingsCh, shutdown, logger),
+		Handler:      app,
 	}
 
 	go func() {

@@ -29,8 +29,8 @@ build-go: ## Build the default go package and put the output binary in out/bin/
 	GOOS=linux GOARCH=arm CGO_ENABLED=0 $(GOCMD) build -a -ldflags="-w -s -extldflags '-static'" -o out/bin/$(BINARY_NAME) ./$(MAIN_DIR)
 
 build-react: ## Build the React UI
-	yarn --cwd "web" install
-	yarn --cwd "web" build
+	yarn --cwd "ui" install
+	yarn --cwd "ui" build
 
 clean: ## Remove build and coverage related file
 	rm -fr out $(MAIN_DIR)/tmp

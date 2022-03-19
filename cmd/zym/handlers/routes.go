@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"expvar"
 	"fmt"
 	"net/http"
-	"net/http/pprof"
 	"os"
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
@@ -12,7 +10,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/settings"
-	uiweb "github.com/benjaminbartels/zymurgauge/web"
+	"github.com/benjaminbartels/zymurgauge/ui"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,66 +20,50 @@ const (
 	batchesPath      = "/batches"
 	settingsPath     = "/settings"
 	version          = "v1"
-	uiDir            = "build"
-	base             = "/ui"
 )
 
-// NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfather.Service, uiFiles uiweb.FileReader,
-	settingsRepo settings.Repo, updateChan chan settings.Settings, shutdown chan os.Signal,
-	logger *logrus.Logger) http.Handler {
-	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger), middleware.Cors())
+func NewApp(chamberManager chamber.Controller, devicePath string,
+	service brewfather.Service, settingsRepo settings.Repo, updateChan chan settings.Settings,
+	uiFileReader web.FileReader, shutdown chan os.Signal, logger *logrus.Logger) *web.App {
+	api := web.NewAPI(shutdown,
+		middleware.RequestLogger(logger),
+		middleware.Errors(logger),
+		middleware.Cors())
 
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberManager,
 		Logger:            logger,
 	}
 
-	app.Register(http.MethodGet, version, chambersPath, chambersHandler.GetAll)
-	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Get)
-	app.Register(http.MethodPost, version, chambersPath, chambersHandler.Save)
-	app.Register(http.MethodDelete, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Delete)
-	app.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/start", chambersPath), chambersHandler.Start)
-	app.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/stop", chambersPath), chambersHandler.Stop)
+	api.Register(http.MethodGet, version, chambersPath, chambersHandler.GetAll)
+	api.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Get)
+	api.Register(http.MethodPost, version, chambersPath, chambersHandler.Save)
+	api.Register(http.MethodDelete, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Delete)
+	api.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/start", chambersPath), chambersHandler.Start)
+	api.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/stop", chambersPath), chambersHandler.Stop)
 
 	batchesHandler := &BatchesHandler{
 		Service: service,
 	}
 
-	app.Register(http.MethodGet, version, batchesPath, batchesHandler.GetAll)
-	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", batchesPath), batchesHandler.Get)
+	api.Register(http.MethodGet, version, batchesPath, batchesHandler.GetAll)
+	api.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", batchesPath), batchesHandler.Get)
 
 	thermometersHandler := &ThermometersHandler{
 		DevicePath: devicePath,
 	}
 
-	app.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
+	api.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
 
 	settingsHandler := &SettingsHandler{
 		SettingsRepo: settingsRepo,
 		UpdateChan:   updateChan,
 	}
 
-	app.Register(http.MethodGet, version, settingsPath, settingsHandler.Get)
-	app.Register(http.MethodPost, version, settingsPath, settingsHandler.Save)
+	api.Register(http.MethodGet, version, settingsPath, settingsHandler.Get)
+	api.Register(http.MethodPost, version, settingsPath, settingsHandler.Save)
 
-	uiHander := &UIHandler{
-		FileReader: uiFiles,
-	}
-
-	app.Register(http.MethodGet, "ui", "/*filepath", uiHander.Get)
+	app := web.NewApp(api, ui.FS, logger)
 
 	return app
-}
-
-func DebugMux() *http.ServeMux {
-	debugMux := http.NewServeMux()
-	debugMux.HandleFunc("/debug/pprof/", pprof.Index)
-	debugMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	debugMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	debugMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	debugMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	debugMux.Handle("/debug/vars", expvar.Handler())
-
-	return debugMux
 }

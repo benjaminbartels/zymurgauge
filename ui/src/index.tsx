@@ -12,7 +12,7 @@ import reportWebVitals from "./reportWebVitals";
 
 ReactDOM.render(
   <React.StrictMode>
-    <BrowserRouter basename="/ui">
+    <BrowserRouter basename="/">
       <Routes>
         <Route path="/" element={<App />}>
           {/* <Route index element={<Dashboard />} /> */}
