@@ -177,10 +177,23 @@ func (m *Monitor) handler(adv bluetooth.Advertisement) {
 		return
 	}
 
-	color := m.colors[ibeacon.UUID]
+	color, ok := m.colors[ibeacon.UUID]
+	if !ok {
+		m.logger.Warnf("Color not found color for ibeacon UUID %s", ibeacon.UUID)
+
+		return
+	}
+
 	m.availableColors = append(m.availableColors, color)
 
-	if m.tilts[color].ibeacon == nil {
+	tilt, ok := m.tilts[color]
+	if !ok {
+		m.logger.Warnf("Could not find tilt for color %s", color)
+
+		return
+	}
+
+	if tilt.ibeacon == nil {
 		m.logger.Debugf("Tilt online - Color: %s, UUID: %s, Major: %d, Minor: %d", m.colors[ibeacon.UUID],
 			ibeacon.UUID, ibeacon.Major, ibeacon.Minor)
 	}
