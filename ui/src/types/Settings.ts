@@ -3,7 +3,7 @@ export enum TemperatureUnits {
   Fahrenheit,
 }
 
-export interface Settings {
+export interface AppSettings {
   temperatureUnits: TemperatureUnits;
   authSecret: string;
   brewfatherApiUserId: string;

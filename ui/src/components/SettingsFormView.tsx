@@ -15,11 +15,11 @@ import {
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import SettingsService from "../services/settings-service";
-import { Settings } from "../types/Settings";
+import { AppSettings } from "../types/Settings";
 
 export default function SettingsView() {
   const { handleSubmit, control } = useForm();
-  const [settings, setSettings] = useState<Settings>();
+  const [settings, setSettings] = useState<AppSettings>();
 
   React.useEffect(() => {
     SettingsService.get()
@@ -32,7 +32,7 @@ export default function SettingsView() {
   }, []);
 
   const onSubmit = (data: any) => {
-    let settings: Settings = {
+    let settings: AppSettings = {
       temperatureUnits: data.temperatureUnits,
       authSecret: data.authSecret,
       brewfatherApiUserId: data.brewfatherApiUserId,

@@ -17,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	go.etcd.io/bbolt v1.3.6
+	golang.org/x/crypto v0.0.0-20201203163018-be400aefbc4c
 	periph.io/x/conn/v3 v3.6.10
 	periph.io/x/host/v3 v3.7.2
 )

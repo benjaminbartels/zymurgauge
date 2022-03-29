@@ -14,9 +14,9 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func CreateToken(secret string, user User, expiresIn time.Duration) (string, error) {
+func CreateToken(secret, username string, expiresIn time.Duration) (string, error) {
 	claims := &Claims{
-		Username: user.Username,
+		Username: username,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(expiresIn).Unix(),
 		},

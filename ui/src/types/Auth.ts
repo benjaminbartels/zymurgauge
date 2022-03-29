@@ -1,8 +1,8 @@
-export interface AuthRequest {
+export interface Credentials {
   username: string;
   password: string;
 }
 
-export interface AuthResponse {
+export interface LoginResponse {
   token: string;
 }

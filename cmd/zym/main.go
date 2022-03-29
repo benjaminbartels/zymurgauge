@@ -13,6 +13,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/alexcesaro/statsd"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
+	"github.com/benjaminbartels/zymurgauge/internal/auth"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
@@ -26,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
+	"golang.org/x/crypto/bcrypt"
 	"periph.io/x/host/v3"
 )
 
@@ -104,25 +106,29 @@ func run(logger *logrus.Logger, cfg config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	errCh := make(chan error, 1)
-
-	monitor := createBluetoothMonitor(ctx, logger, errCh)
-
-	startDebugEndpoint(cfg.DebugHost, logger)
-
 	chamberRepo, settingsRepo, err := createRepos(cfg.DBPath)
 	if err != nil {
 		return errors.Wrap(err, "could not create databases")
-	}
-
-	configurator := &chamber.DefaultConfigurator{
-		TiltMonitor: monitor,
 	}
 
 	// TODO: Handle settings update without restart
 	s, err := settingsRepo.Get()
 	if err != nil {
 		logger.WithError(err).Warn("could not get settings")
+	}
+
+	if s == nil {
+		return errors.New("Settings are not initialized. Please run 'zym init'")
+	}
+
+	errCh := make(chan error, 1)
+
+	monitor := createBluetoothMonitor(ctx, logger, errCh)
+
+	startDebugEndpoint(cfg.DebugHost, logger)
+
+	configurator := &chamber.DefaultConfigurator{
+		TiltMonitor: monitor,
 	}
 
 	var statsdClient *statsd.Client
@@ -235,6 +241,11 @@ func checkAndInitSettings(username, password string, settingsRepo *database.Sett
 		return errors.New("initial credentials have not been set, please set them by running 'zym init'")
 	}
 
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.Wrap(err, "could not generate password hash")
+	}
+
 	letters := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	secretKeyLength := 64
 
@@ -246,10 +257,15 @@ func checkAndInitSettings(username, password string, settingsRepo *database.Sett
 	}
 
 	s := &settings.Settings{
-		AdminUsername:    username,
-		AdminPassword:    password,
-		AuthSecret:       string(b),
-		TemperatureUnits: "Celsius",
+		AppSettings: settings.AppSettings{
+			AuthSecret:       string(b),
+			TemperatureUnits: "Celsius",
+		},
+		Credentials: auth.Credentials{
+			Username: username,
+			Password: string(hash),
+		},
+		ModTime: time.Now(),
 	}
 
 	if err := settingsRepo.Save(s); err != nil {

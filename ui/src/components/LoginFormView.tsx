@@ -9,7 +9,6 @@ import {
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import AuthService from "../services/auth-service";
-import SettingsService from "../services/settings-service";
 
 export default function LoginFormView() {
   const { handleSubmit, control } = useForm();
@@ -18,10 +17,6 @@ export default function LoginFormView() {
   const onSubmit = async (data: any) => {
     try {
       await AuthService.login(data.username, data.password);
-
-      const response = await SettingsService.get();
-
-      localStorage.setItem("influxDbUrl", response.data.influxDbUrl);
 
       navigate(`/chambers`);
     } catch (e: any) {

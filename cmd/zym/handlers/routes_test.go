@@ -112,8 +112,12 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("StartFermentation", chamberID, "A").Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
+		s := &settings.Settings{
+			AppSettings: settings.AppSettings{AuthSecret: "my-auth-secret"},
+		}
+
 		settingsMock := &mocks.SettingsRepo{}
-		settingsMock.On("Get").Return(&settings.Settings{AuthSecret: "my-auth-secret"}, nil)
+		settingsMock.On("Get").Return(s, nil)
 
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
@@ -138,8 +142,7 @@ func TestRoutes(t *testing.T) {
 			w := httptest.NewRecorder()
 			jsonBytes, _ := json.Marshal(tc.body)
 			r := httptest.NewRequest(tc.method, tc.path, bytes.NewBuffer(jsonBytes))
-			user := auth.User{Username: "username", Password: "password"}
-			token, _ := auth.CreateToken("my-auth-secret", user, 1*time.Minute)
+			token, _ := auth.CreateToken("my-auth-secret", "username", 1*time.Minute)
 
 			r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 			app.ServeHTTP(w, r)

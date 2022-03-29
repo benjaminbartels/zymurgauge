@@ -12,6 +12,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -24,7 +25,7 @@ type AuthHandler struct {
 }
 
 func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	user, err := parseUser(r)
+	creds, err := parseCredentials(r)
 	if err != nil {
 		return errors.Wrap(err, "could not parse credentials")
 	}
@@ -34,11 +35,15 @@ func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.
 		return errors.Wrap(err, "could not get settings")
 	}
 
-	if user.Username != s.AdminUsername || user.Password != s.AdminPassword {
-		return web.NewRequestError("incorrect username and/or password", http.StatusUnauthorized)
+	if creds.Username != s.Username {
+		return web.NewRequestError("incorrect username", http.StatusUnauthorized)
 	}
 
-	token, err := auth.CreateToken(s.AuthSecret, user, expiresIn)
+	if err := bcrypt.CompareHashAndPassword([]byte(s.Password), []byte(creds.Password)); err != nil {
+		return web.NewRequestError("incorrect password", http.StatusUnauthorized)
+	}
+
+	token, err := auth.CreateToken(s.AuthSecret, creds.Username, expiresIn)
 	if err != nil {
 		return errors.Wrap(err, "could not create token")
 	}
@@ -56,8 +61,8 @@ func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.
 	return nil
 }
 
-func parseUser(r *http.Request) (auth.User, error) {
-	var user auth.User
+func parseCredentials(r *http.Request) (auth.Credentials, error) {
+	var user auth.Credentials
 	err := json.NewDecoder(r.Body).Decode(&user)
 
 	return user, errors.Wrap(err, "could not decode user from request body")
