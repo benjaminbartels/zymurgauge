@@ -3,6 +3,7 @@ package chamber
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,7 +21,7 @@ import (
 type Chamber struct {
 	ID                      string                  `json:"id"` // TODO: omit empty?
 	Name                    string                  `json:"name"`
-	DeviceConfig            DeviceConfig            `json:"deviceConfig"` // TODO: make is a struct and not a list
+	DeviceConfig            DeviceConfig            `json:"deviceConfig"`
 	ChillingDifferential    float64                 `json:"chillingDifferential"`
 	HeatingDifferential     float64                 `json:"heatingDifferential"`
 	CurrentBatch            *brewfather.BatchDetail `json:"currentBatch,omitempty"`
@@ -415,23 +416,25 @@ func (c *Chamber) sendData(ctx context.Context) {
 }
 
 func (c *Chamber) emitMetrics() {
+	name := strings.ReplaceAll(c.Name, " ", "")
+
 	if c.Readings.BeerTemperature != nil {
-		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.beer_temperature,sensor_id=%s", c.Name,
+		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.beer_temperature,sensor_id=%s", name,
 			c.beerThermometer.GetID()), *c.Readings.BeerTemperature)
 	}
 
 	if c.Readings.AuxiliaryTemperature != nil {
-		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.auxiliary_temperature,sensor_id=%s", c.Name,
+		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.auxiliary_temperature,sensor_id=%s", name,
 			c.auxiliaryThermometer.GetID()), *c.Readings.AuxiliaryTemperature)
 	}
 
 	if c.Readings.ExternalTemperature != nil {
-		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.external_temperature,sensor_id=%s", c.Name,
+		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.external_temperature,sensor_id=%s", name,
 			c.externalThermometer.GetID()), *c.Readings.ExternalTemperature)
 	}
 
 	if c.Readings.HydrometerGravity != nil {
-		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.hydrometer_gravity,sensor_id=%s", c.Name,
+		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.hydrometer_gravity,sensor_id=%s", name,
 			c.hydrometer.GetID()), *c.Readings.HydrometerGravity)
 	}
 }

@@ -1,85 +1,72 @@
-// Package web contains a small web framework extension.
 package web
 
 import (
-	"context"
+	"mime"
 	"net/http"
-	"os"
-	"syscall"
-	"time"
+	"path/filepath"
+	"strings"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 )
 
-// Handler extends the http.HandlerFunc buy adding a context, params and an error to return.
-type Handler func(context.Context, http.ResponseWriter, *http.Request, httprouter.Params) error
+const (
+	uiDir = "build"
+)
 
-// App represents a web application that hosts a REST API.
+type FileReader interface {
+	ReadFile(name string) ([]byte, error)
+}
+
 type App struct {
-	router      *httprouter.Router
-	shutdown    chan os.Signal
-	middlewares []Middleware
+	api          *API
+	uiFileReader FileReader
+	mux          *http.ServeMux
+	logger       *logrus.Logger
 }
 
-// NewApp creates an App that handle a set of routes for the application.
-func NewApp(shutdown chan os.Signal, middlewares ...Middleware) *App {
-	router := httprouter.New()
-
-	router.GlobalOPTIONS = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Access-Control-Request-Method") != "" {
-			// Set CORS headers
-			// TODO: re-visit this an cors.
-			header := w.Header()
-			header.Set("Access-Control-Allow-Origin", "*")
-			header.Set("Access-Control-Allow-Methods", header.Get("Allow"))
-			header.Set("Access-Control-Allow-Headers",
-				"Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		}
-
-		// Adjust status code to 204
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	return &App{
-		router:      router,
-		shutdown:    shutdown,
-		middlewares: middlewares,
+func NewApp(api *API, uiFileReader FileReader, logger *logrus.Logger) *App {
+	app := &App{
+		api:          api,
+		uiFileReader: uiFileReader,
+		logger:       logger,
 	}
+
+	app.mux = http.NewServeMux()
+	app.mux.Handle("/api/", api)
+	app.mux.Handle("/", http.HandlerFunc(app.ui))
+
+	return app
 }
 
-// ServeHTTP implements the http.Handler interface.
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	a.router.ServeHTTP(w, r)
+	a.mux.ServeHTTP(w, r)
 }
 
-// Register mounts the provided handler to the provided path creating a route.
-func (a *App) Register(method, group, path string, handler Handler) {
-	handler = wrap(a.middlewares, handler)
+func (a *App) ui(w http.ResponseWriter, r *http.Request) {
+	var filePath string
 
-	h := func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		v := CtxValues{
-			Path: r.URL.Path,
-			Now:  time.Now(),
-		}
-
-		ctx := InitContextValues(r.Context(), &v)
-
-		if err := handler(ctx, w, r, p); err != nil {
-			// TODO: log here?
-			a.SignalShutdown() // TODO: is this necessary?
-
-			return
-		}
+	switch {
+	case strings.HasPrefix(r.URL.Path, "/static"):
+		filePath = uiDir + r.URL.Path
+	case strings.HasSuffix(r.URL.Path, ".png"):
+		filePath = uiDir + r.URL.Path
+	case strings.HasSuffix(r.URL.Path, ".ico"):
+		filePath = uiDir + r.URL.Path
+	default:
+		filePath = uiDir + "/index.html"
 	}
 
-	if group != "" {
-		path = "/" + group + path
+	b, err := a.uiFileReader.ReadFile(filePath)
+	if err != nil {
+		a.logger.WithError(err).Error("Could not read file")
 	}
 
-	a.router.Handle(method, path, h)
-}
+	if contentType := mime.TypeByExtension(filepath.Ext(r.URL.Path)); len(contentType) > 0 {
+		h := w.Header()
+		h.Add("Content-Type", contentType)
+	}
 
-// SignalShutdown is used to gracefully shutdown the app.
-func (a *App) SignalShutdown() {
-	a.shutdown <- syscall.SIGTERM
+	if _, err := w.Write(b); err != nil {
+		a.logger.WithError(err).Error("Could not write response")
+	}
 }
