@@ -1,8 +1,10 @@
-import { HTTP } from "./http-common";
-
+import axios from "axios";
+import { authHeader, getUrl } from "./common";
 class ThermometerService {
   getAll() {
-    return HTTP.get<Array<string>>("/thermometers");
+    return axios.get<Array<string>>(getUrl("thermometers"), {
+      headers: authHeader(),
+    });
   }
 }
 

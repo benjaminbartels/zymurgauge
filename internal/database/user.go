@@ -4,26 +4,26 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/settings"
+	"github.com/benjaminbartels/zymurgauge/internal/auth"
 	"github.com/pkg/errors"
 	"go.etcd.io/bbolt"
 )
 
 const (
-	settingsBucket = "Settings"
-	settingsKey    = "settings"
+	userBucket   = "Users"
+	adminUserKey = "admin"
 )
 
-var _ settings.Repo = (*SettingsRepo)(nil)
+var _ auth.UserRepo = (*UserRepo)(nil)
 
-// SettingsRepo represents a bbolt repository for managing Settings.
-type SettingsRepo struct {
+// UserRepo represents a bbolt repository for managing User.
+type UserRepo struct {
 	db *bbolt.DB
 }
 
-// NewSettingsRepo returns a new Settings repository using the given bbolt database. It also creates the Settings
+// NewUserRepo returns a new User repository using the given bbolt database. It also creates the User
 // bucket if it is not yet created on disk.
-func NewSettingsRepo(db *bbolt.DB) (*SettingsRepo, error) {
+func NewUserRepo(db *bbolt.DB) (*UserRepo, error) {
 	tx, err := db.Begin(true)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not begin transaction")
@@ -31,26 +31,26 @@ func NewSettingsRepo(db *bbolt.DB) (*SettingsRepo, error) {
 
 	defer rollback(tx, &err)
 
-	if _, err := tx.CreateBucketIfNotExists([]byte(settingsBucket)); err != nil {
-		return nil, errors.Wrap(err, "could not create Settings bucket")
+	if _, err := tx.CreateBucketIfNotExists([]byte(userBucket)); err != nil {
+		return nil, errors.Wrap(err, "could not create User bucket")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "could not commit transaction")
 	}
 
-	return &SettingsRepo{
+	return &UserRepo{
 		db: db,
 	}, nil
 }
 
-// Get returns Settings.
-func (r *SettingsRepo) Get() (*settings.Settings, error) {
-	var c *settings.Settings
+// Get returns a User by its ID.
+func (r *UserRepo) Get() (*auth.User, error) {
+	var u *auth.User
 
 	if err := r.db.View(func(tx *bbolt.Tx) error {
-		if v := tx.Bucket([]byte(settingsBucket)).Get([]byte(settingsKey)); v != nil {
-			if err := json.Unmarshal(v, &c); err != nil {
+		if v := tx.Bucket([]byte(settingsBucket)).Get([]byte(adminUserKey)); v != nil {
+			if err := json.Unmarshal(v, &u); err != nil {
 				return errors.Wrap(err, "could not unmarshal Settings")
 			}
 		}
@@ -60,11 +60,11 @@ func (r *SettingsRepo) Get() (*settings.Settings, error) {
 		return nil, errors.Wrap(err, "could not execute view transaction")
 	}
 
-	return c, nil
+	return u, nil
 }
 
 // Save creates or updates Settings.
-func (r *SettingsRepo) Save(c *settings.Settings) error {
+func (r *UserRepo) Save(c *auth.User) error {
 	c.ModTime = time.Now().UTC()
 
 	if err := r.db.Update(func(tx *bbolt.Tx) error {
@@ -72,7 +72,7 @@ func (r *SettingsRepo) Save(c *settings.Settings) error {
 		c.ModTime = time.Now()
 		if v, err := json.Marshal(c); err != nil {
 			return errors.Wrap(err, "could not marshal Settings")
-		} else if err := bu.Put([]byte(settingsKey), v); err != nil {
+		} else if err := bu.Put([]byte(adminUserKey), v); err != nil {
 			return errors.Wrap(err, "could not put Settings")
 		}
 

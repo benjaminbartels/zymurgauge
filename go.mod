@@ -7,6 +7,7 @@ require (
 	github.com/alexcesaro/statsd v2.0.0+incompatible
 	github.com/felixge/pidctrl v0.0.0-20160307080219-7b13bcae7243
 	github.com/go-ble/ble v0.0.0-20210519192345-b055c211937b
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/julienschmidt/httprouter v1.3.0

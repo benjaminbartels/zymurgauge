@@ -63,7 +63,7 @@ export default function ChamberView() {
           const og = parseFloat(response.data.currentBatch.recipe.og);
           const fg = parseFloat(response.data.currentBatch.recipe.fg);
 
-          const influxQuery = async () => {
+          const influxQuery = async (url: string) => {
             const beerTemperatureData: { x: any; y: any }[] = [];
             const auxiliaryTemperatureData: { x: any; y: any }[] = [];
             const externalTemperatureData: { x: any; y: any }[] = [];
@@ -75,8 +75,7 @@ export default function ChamberView() {
               |> sample(n:2, pos: 0)`;
 
             const clientOptions: ClientOptions = {
-              url: process.env.REACT_APP_INFLUXDB_API_URL!,
-              token: process.env.REACT_APP_INFLUXDB_TOKEN,
+              url: url,
               // headers: { Authorization: "Bearer " + token },
             };
 
@@ -243,7 +242,11 @@ export default function ChamberView() {
             });
           };
 
-          influxQuery();
+          const influxDbUrl = localStorage.getItem("influxDbUrl");
+
+          if (influxDbUrl) {
+            influxQuery(influxDbUrl);
+          }
         })
         .catch((e: Error) => {
           console.log(e);

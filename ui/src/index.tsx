@@ -5,10 +5,14 @@ import App from "./App";
 import ChamberFormView from "./components/ChamberFormView";
 import ChambersView from "./components/ChambersView";
 import ChamberView from "./components/ChamberView";
+import LoginFormView from "./components/LoginFormView";
+import PrivateRoute from "./components/PrivateRoute";
 // import Dashboard from "./components/DashboardView";
 import SettingsFormView from "./components/SettingsFormView";
 import "./index.css";
 import reportWebVitals from "./reportWebVitals";
+
+// TODO: add 404 not found route
 
 ReactDOM.render(
   <React.StrictMode>
@@ -17,16 +21,52 @@ ReactDOM.render(
         <Route path="/" element={<App />}>
           {/* <Route index element={<Dashboard />} /> */}
           <Route index element={<Navigate replace to="/chambers" />} />
-          <Route index element={<ChambersView />} />
+          {/* <Route index element={<ChambersView />} /> */}
           <Route path="chambers">
-            <Route index element={<ChambersView />} />
+            <Route
+              index
+              element={
+                <PrivateRoute>
+                  <ChambersView />
+                </PrivateRoute>
+              }
+            />
             <Route path=":chamberId">
-              <Route index element={<ChamberView />} />
-              <Route path="edit" element={<ChamberFormView />} />
+              <Route
+                index
+                element={
+                  <PrivateRoute>
+                    <ChamberView />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="edit"
+                element={
+                  <PrivateRoute>
+                    <ChamberFormView />
+                  </PrivateRoute>
+                }
+              />
             </Route>
-            <Route path="new" element={<ChamberFormView />} />
+            <Route
+              path="new"
+              element={
+                <PrivateRoute>
+                  <ChamberFormView />
+                </PrivateRoute>
+              }
+            />
           </Route>
-          <Route path="settings" element={<SettingsFormView />} />
+          <Route
+            path="settings"
+            element={
+              <PrivateRoute>
+                <SettingsFormView />
+              </PrivateRoute>
+            }
+          />
+          <Route path="login" element={<LoginFormView />} />
         </Route>
       </Routes>
     </BrowserRouter>

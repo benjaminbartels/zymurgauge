@@ -1,12 +1,17 @@
+import axios from "axios";
 import { Settings } from "../types/Settings";
-import { HTTP } from "./http-common";
+import { authHeader, getUrl } from "./common";
 
 class SettingsService {
   get() {
-    return HTTP.get<Settings>("/settings");
+    return axios.get<Settings>(getUrl("settings"), {
+      headers: authHeader(),
+    });
   }
   save(settings: Settings) {
-    return HTTP.post<Settings>("/settings", settings);
+    return axios.post<Settings>(getUrl("settings"), settings, {
+      headers: authHeader(),
+    });
   }
 }
 

@@ -1,12 +1,17 @@
+import axios from "axios";
 import { BatchDetail, BatchSummary } from "../types/Batch";
-import { HTTP } from "./http-common";
+import { authHeader, getUrl } from "./common";
 
 class BatchService {
   getAllSummaries() {
-    return HTTP.get<Array<BatchSummary>>("/batches");
+    return axios.get<Array<BatchSummary>>(getUrl("batches"), {
+      headers: authHeader(),
+    });
   }
   getDetail(id: string) {
-    return HTTP.get<BatchDetail>(`/batches/${id}`);
+    return axios.get<BatchDetail>(getUrl(`batches/${id}`), {
+      headers: authHeader(),
+    });
   }
 }
 

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,9 +12,11 @@ import (
 	"time"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
+	"github.com/benjaminbartels/zymurgauge/internal/auth"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/debug"
+	"github.com/benjaminbartels/zymurgauge/internal/settings"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/benjaminbartels/zymurgauge/internal/test/stubs"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -24,6 +27,7 @@ import (
 const (
 	devicePath            = "/"
 	readingUpdateInterval = 100 * time.Millisecond
+	authSecret            = "my-auth-secret"
 )
 
 func TestRoutes(t *testing.T) {
@@ -109,7 +113,10 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("StartFermentation", chamberID, "A").Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
+		userMock := &mocks.UserRepo{}
+
 		settingsMock := &mocks.SettingsRepo{}
+		settingsMock.On("Get").Return(&settings.Settings{AuthSecret: authSecret}, nil)
 
 		shutdown := make(chan os.Signal, 1)
 		logger, _ := logtest.NewNullLogger()
@@ -117,7 +124,8 @@ func TestRoutes(t *testing.T) {
 		fsMock := &mocks.FileReader{}
 		fsMock.On("ReadFile", "build/index.html").Return([]byte(""), nil)
 
-		app := handlers.NewApp(controllerMock, devicePath, serviceMock, settingsMock, nil, fsMock, shutdown, logger)
+		app, _ := handlers.NewApp(controllerMock, devicePath, serviceMock, userMock, settingsMock, nil, fsMock,
+			shutdown, logger)
 
 		t.Run(tc.path, func(t *testing.T) {
 			t.Parallel()
@@ -133,6 +141,10 @@ func TestRoutes(t *testing.T) {
 			w := httptest.NewRecorder()
 			jsonBytes, _ := json.Marshal(tc.body)
 			r := httptest.NewRequest(tc.method, tc.path, bytes.NewBuffer(jsonBytes))
+			user := auth.User{Username: "username", Password: "password"}
+			token, _ := auth.CreateToken(authSecret, user, 1*time.Minute)
+
+			r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 			app.ServeHTTP(w, r)
 			assert.Equal(t, tc.code, w.Code)
 		})
