@@ -4,6 +4,8 @@ import "time"
 
 type Settings struct {
 	TemperatureUnits    string    `json:"temperatureUnits"`
+	AdminUsername       string    `json:"adminUsername"`
+	AdminPassword       string    `json:"adminPassword"`
 	AuthSecret          string    `json:"authSecret"`
 	BrewfatherAPIUserID string    `json:"brewfatherApiUserId,omitempty"`
 	BrewfatherAPIKey    string    `json:"brewfatherApiKey,omitempty"`

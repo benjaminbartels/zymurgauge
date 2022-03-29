@@ -19,7 +19,6 @@ const (
 )
 
 type AuthHandler struct {
-	UserRepo     auth.UserRepo
 	SettingsRepo settings.Repo
 	Logger       *logrus.Logger // TODO: use logrus.Entry
 }
@@ -30,18 +29,13 @@ func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.
 		return errors.Wrap(err, "could not parse credentials")
 	}
 
-	u, err := h.UserRepo.Get()
-	if err != nil {
-		return errors.Wrap(err, "could not get settings")
-	}
-
-	if user.Username != u.Username || user.Password != u.Password {
-		return web.NewRequestError("incorrect username and/or password", http.StatusUnauthorized)
-	}
-
 	s, err := h.SettingsRepo.Get()
 	if err != nil {
 		return errors.Wrap(err, "could not get settings")
+	}
+
+	if user.Username != s.AdminUsername || user.Password != s.AdminPassword {
+		return web.NewRequestError("incorrect username and/or password", http.StatusUnauthorized)
 	}
 
 	token, err := auth.CreateToken(s.AuthSecret, user, expiresIn)

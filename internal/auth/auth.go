@@ -32,7 +32,6 @@ func CreateToken(secret string, user User, expiresIn time.Duration) (string, err
 	return tokenString, nil
 }
 
-// TODO: respond to 401 in client
 func IsAuthorized(secret, tokenString string) (bool, error) {
 	claims := &Claims{}
 

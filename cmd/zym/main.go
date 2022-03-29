@@ -13,7 +13,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/alexcesaro/statsd"
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/auth"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/database"
@@ -83,13 +82,14 @@ func main() {
 			os.Exit(1)
 		}
 	case "init <admin-username> <admin-password>":
-		_, userRepo, settingsRepo, err := createRepos(cfg.DBPath)
+		_, settingsRepo, err := createRepos(cfg.DBPath)
 		if err != nil {
 			logger.Error(err)
 			os.Exit(1)
 		}
 
-		if err := checkAndInitSettings(cli.Init.AdminUsername, cli.Init.AdminPassword, userRepo, settingsRepo, logger); err != nil {
+		if err := checkAndInitSettings(cli.Init.AdminUsername, cli.Init.AdminPassword, settingsRepo,
+			logger); err != nil {
 			logger.Error(err)
 			os.Exit(1)
 		}
@@ -110,7 +110,7 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	startDebugEndpoint(cfg.DebugHost, logger)
 
-	chamberRepo, userRepo, settingsRepo, err := createRepos(cfg.DBPath)
+	chamberRepo, settingsRepo, err := createRepos(cfg.DBPath)
 	if err != nil {
 		return errors.Wrap(err, "could not create databases")
 	}
@@ -149,8 +149,8 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	settingsCh := startUpdateSettingsChannel(brewfatherClient)
 
-	app, err := handlers.NewApp(chamberManager, onewire.DefaultDevicePath, brewfatherClient,
-		userRepo, settingsRepo, settingsCh, ui.FS, shutdown, logger)
+	app, err := handlers.NewApp(chamberManager, onewire.DefaultDevicePath, brewfatherClient, settingsRepo, settingsCh,
+		ui.FS, shutdown, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not create new app")
 	}
@@ -189,8 +189,7 @@ func startDebugEndpoint(host string, logger *logrus.Logger) {
 	}()
 }
 
-func createRepos(path string) (chamberRepo *database.ChamberRepo, userRepo *database.UserRepo,
-	settingsRepo *database.SettingsRepo, err error) {
+func createRepos(path string) (chamberRepo *database.ChamberRepo, settingsRepo *database.SettingsRepo, err error) {
 	db, err := bbolt.Open(path, dbFilePermissions, &bbolt.Options{Timeout: bboltReadTimeout})
 	if err != nil {
 		err = errors.Wrap(err, "could not open database")
@@ -205,13 +204,6 @@ func createRepos(path string) (chamberRepo *database.ChamberRepo, userRepo *data
 		return
 	}
 
-	userRepo, err = database.NewUserRepo(db)
-	if err != nil {
-		err = errors.Wrap(err, "could not create settings repo")
-
-		return
-	}
-
 	settingsRepo, err = database.NewSettingsRepo(db)
 	if err != nil {
 		err = errors.Wrap(err, "could not create settings repo")
@@ -222,9 +214,8 @@ func createRepos(path string) (chamberRepo *database.ChamberRepo, userRepo *data
 	return
 }
 
-func checkAndInitSettings(username, password string, userRepo *database.UserRepo, settingsRepo *database.SettingsRepo,
-	logger *logrus.Logger) error {
-	user, err := userRepo.Get()
+func checkAndInitSettings(username, password string, settingsRepo *database.SettingsRepo, logger *logrus.Logger) error {
+	user, err := settingsRepo.Get()
 	if err != nil {
 		return errors.Wrap(err, "could not get settings")
 	}
@@ -244,15 +235,6 @@ func checkAndInitSettings(username, password string, userRepo *database.UserRepo
 		return errors.New("initial credentials have not been set, please set them by running 'zym init'")
 	}
 
-	user = &auth.User{
-		Username: username,
-		Password: password,
-	}
-
-	if err := userRepo.Save(user); err != nil {
-		return errors.Wrap(err, "could not save admin user")
-	}
-
 	letters := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	secretKeyLength := 64
 
@@ -264,6 +246,8 @@ func checkAndInitSettings(username, password string, userRepo *database.UserRepo
 	}
 
 	s := &settings.Settings{
+		AdminUsername:    username,
+		AdminPassword:    password,
 		AuthSecret:       string(b),
 		TemperatureUnits: "Celsius",
 	}

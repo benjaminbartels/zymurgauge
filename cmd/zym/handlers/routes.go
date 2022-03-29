@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/benjaminbartels/zymurgauge/internal/auth"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
@@ -25,7 +24,7 @@ const (
 	version          = "v1"
 )
 
-func NewApp(chamberManager chamber.Controller, devicePath string, service brewfather.Service, userRepo auth.UserRepo,
+func NewApp(chamberManager chamber.Controller, devicePath string, service brewfather.Service,
 	settingsRepo settings.Repo, updateChan chan settings.Settings, uiFileReader web.FileReader, shutdown chan os.Signal,
 	logger *logrus.Logger) (*web.App, error) {
 	api := web.NewAPI(shutdown,
@@ -41,7 +40,6 @@ func NewApp(chamberManager chamber.Controller, devicePath string, service brewfa
 	authMw := middleware.Authorize(s.AuthSecret, logger)
 
 	LoginHandler := &AuthHandler{
-		UserRepo:     userRepo,
 		SettingsRepo: settingsRepo,
 		Logger:       logger,
 	}
