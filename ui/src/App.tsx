@@ -26,8 +26,10 @@ const getDisplayName = (pathname: string) => {
       return "Settings";
     case "login":
       return "Login";
-    default:
+    case "":
       return "Chambers";
+    default:
+      return "";
     // return "Dashboard";
   }
 };
