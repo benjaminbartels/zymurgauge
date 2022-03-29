@@ -6,6 +6,7 @@ import ChamberFormView from "./components/ChamberFormView";
 import ChambersView from "./components/ChambersView";
 import ChamberView from "./components/ChamberView";
 import LoginFormView from "./components/LoginFormView";
+import NotFoundView from "./components/NotFoundView";
 import PrivateRoute from "./components/PrivateRoute";
 // import Dashboard from "./components/DashboardView";
 import SettingsFormView from "./components/SettingsFormView";
@@ -19,6 +20,7 @@ ReactDOM.render(
     <BrowserRouter basename="/">
       <Routes>
         <Route path="/" element={<App />}>
+          <Route path="*" element={<NotFoundView />} />
           {/* <Route index element={<Dashboard />} /> */}
           <Route index element={<Navigate replace to="/chambers" />} />
           {/* <Route index element={<ChambersView />} /> */}
