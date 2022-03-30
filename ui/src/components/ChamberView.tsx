@@ -85,7 +85,7 @@ export default function ChamberView() {
             let query =
               `from(bucket: "telegraf/autogen")
               |> range(start: -12h)
-              |> filter(fn: (r) => r._measurement == "` +
+              |> filter(fn: (r) => r._measurement == "zymurgauge_` +
               chamberName +
               `")
               |> sample(n:2, pos: 0)`;
