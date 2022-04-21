@@ -19,7 +19,7 @@ func NewIBeacon(manufacurerData []byte) (*IBeacon, error) {
 	}
 
 	return &IBeacon{
-		UUID:  hex.EncodeToString(manufacurerData[4:20]), // TODO: remove preamble
+		UUID:  hex.EncodeToString(manufacurerData[4:20]),
 		Major: binary.BigEndian.Uint16(manufacurerData[20:22]),
 		Minor: binary.BigEndian.Uint16(manufacurerData[22:24]),
 	}, nil

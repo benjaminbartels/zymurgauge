@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	tiltID                        = "4c000215a495" // TODO: remove preamble
+	tiltID                        = "4c000215a495"
 	defaultTimeout  time.Duration = 10 * time.Second
 	defaultInterval time.Duration = 1 * time.Second
+	errorWaitPeriod time.Duration = 5 * time.Second
 )
 
 type Color string
@@ -127,11 +128,8 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 			case errors.Is(err, context.Canceled):
 				return nil // TODO: should this return ctx.Err()
 			default:
-				m.logger.WithError(err).Warn("Error occurred while scanning. Resetting hci device.")
-
-				if err := m.setupHCIDevice(); err != nil {
-					return errors.Wrap(err, "could not setup hci device")
-				}
+				m.logger.WithError(err).Warnf("Error occurred while scanning. Will try again in %s.", errorWaitPeriod)
+				<-time.After(errorWaitPeriod)
 			}
 		}
 
