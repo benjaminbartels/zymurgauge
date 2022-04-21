@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"expvar"
 	"fmt"
 	"net/http"
-	"net/http/pprof"
 	"os"
 
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
@@ -12,76 +10,76 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/settings"
-	uiweb "github.com/benjaminbartels/zymurgauge/web"
+	"github.com/benjaminbartels/zymurgauge/ui"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 const (
+	loginPath        = "/login"
 	chambersPath     = "/chambers"
 	thermometersPath = "/thermometers"
 	batchesPath      = "/batches"
 	settingsPath     = "/settings"
 	version          = "v1"
-	uiDir            = "build"
-	base             = "/ui"
 )
 
-// NewAPI return a web.App with configured routes and handlers.
-func NewAPI(chamberManager chamber.Controller, devicePath string, service brewfather.Service, uiFiles uiweb.FileReader,
-	settingsRepo settings.Repo, updateChan chan settings.Settings, shutdown chan os.Signal,
-	logger *logrus.Logger) http.Handler {
-	app := web.NewApp(shutdown, middleware.RequestLogger(logger), middleware.Errors(logger), middleware.Cors())
+func NewApp(chamberManager chamber.Controller, devicePath string, service brewfather.Service,
+	settingsRepo settings.Repo, updateChan chan settings.Settings, uiFileReader web.FileReader, shutdown chan os.Signal,
+	logger *logrus.Logger) (*web.App, error) {
+	api := web.NewAPI(shutdown,
+		middleware.RequestLogger(logger),
+		middleware.Errors(logger),
+		middleware.Cors())
+
+	s, err := settingsRepo.Get()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get settings")
+	}
+
+	authMw := middleware.Authorize(s.AuthSecret, logger)
+
+	LoginHandler := &AuthHandler{
+		SettingsRepo: settingsRepo,
+		Logger:       logger,
+	}
+
+	api.Register(http.MethodPost, version, loginPath, LoginHandler.Login)
 
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberManager,
 		Logger:            logger,
 	}
 
-	app.Register(http.MethodGet, version, chambersPath, chambersHandler.GetAll)
-	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Get)
-	app.Register(http.MethodPost, version, chambersPath, chambersHandler.Save)
-	app.Register(http.MethodDelete, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Delete)
-	app.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/start", chambersPath), chambersHandler.Start)
-	app.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/stop", chambersPath), chambersHandler.Stop)
+	api.Register(http.MethodGet, version, chambersPath, chambersHandler.GetAll, authMw)
+	api.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Get, authMw)
+	api.Register(http.MethodPost, version, chambersPath, chambersHandler.Save, authMw)
+	api.Register(http.MethodDelete, version, fmt.Sprintf("%s/:id", chambersPath), chambersHandler.Delete, authMw)
+	api.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/start", chambersPath), chambersHandler.Start, authMw)
+	api.Register(http.MethodPost, version, fmt.Sprintf("%s/:id/stop", chambersPath), chambersHandler.Stop, authMw)
 
 	batchesHandler := &BatchesHandler{
 		Service: service,
 	}
 
-	app.Register(http.MethodGet, version, batchesPath, batchesHandler.GetAll)
-	app.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", batchesPath), batchesHandler.Get)
+	api.Register(http.MethodGet, version, batchesPath, batchesHandler.GetAll, authMw)
+	api.Register(http.MethodGet, version, fmt.Sprintf("%s/:id", batchesPath), batchesHandler.Get, authMw)
 
 	thermometersHandler := &ThermometersHandler{
 		DevicePath: devicePath,
 	}
 
-	app.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
+	api.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
 
 	settingsHandler := &SettingsHandler{
 		SettingsRepo: settingsRepo,
 		UpdateChan:   updateChan,
 	}
 
-	app.Register(http.MethodGet, version, settingsPath, settingsHandler.Get)
-	app.Register(http.MethodPost, version, settingsPath, settingsHandler.Save)
+	api.Register(http.MethodGet, version, settingsPath, settingsHandler.Get, authMw)
+	api.Register(http.MethodPost, version, settingsPath, settingsHandler.Save, authMw)
 
-	uiHander := &UIHandler{
-		FileReader: uiFiles,
-	}
+	app := web.NewApp(api, ui.FS, logger)
 
-	app.Register(http.MethodGet, "ui", "/*filepath", uiHander.Get)
-
-	return app
-}
-
-func DebugMux() *http.ServeMux {
-	debugMux := http.NewServeMux()
-	debugMux.HandleFunc("/debug/pprof/", pprof.Index)
-	debugMux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	debugMux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	debugMux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	debugMux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	debugMux.Handle("/debug/vars", expvar.Handler())
-
-	return debugMux
+	return app, nil
 }

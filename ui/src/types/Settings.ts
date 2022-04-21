@@ -3,9 +3,12 @@ export enum TemperatureUnits {
   Fahrenheit,
 }
 
-export interface Settings {
+export interface AppSettings {
+  temperatureUnits: TemperatureUnits;
+  authSecret: string;
   brewfatherApiUserId: string;
   brewfatherApiKey: string;
   brewfatherLogUrl: string;
-  temperatureUnits: TemperatureUnits;
+  influxDbUrl: string;
+  statsDAddress: string;
 }

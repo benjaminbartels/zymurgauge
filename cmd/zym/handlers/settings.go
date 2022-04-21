@@ -26,7 +26,7 @@ func (h *SettingsHandler) Get(ctx context.Context, w http.ResponseWriter, r *htt
 		return web.NewRequestError("settings not found", http.StatusNotFound)
 	}
 
-	if err := web.Respond(ctx, w, s, http.StatusOK); err != nil {
+	if err := web.Respond(ctx, w, s.AppSettings, http.StatusOK); err != nil {
 		return errors.Wrap(err, "problem responding to client")
 	}
 
@@ -34,12 +34,19 @@ func (h *SettingsHandler) Get(ctx context.Context, w http.ResponseWriter, r *htt
 }
 
 func (h *SettingsHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
-	s, err := parseSettings(r)
+	appSettings, err := parseAppSettings(r)
 	if err != nil {
 		return errors.Wrap(err, "could not parse settings")
 	}
 
-	if err := h.SettingsRepo.Save(&s); err != nil {
+	s, err := h.SettingsRepo.Get()
+	if err != nil {
+		return errors.Wrap(err, "could not get settings from repository")
+	}
+
+	s.AppSettings = appSettings
+
+	if err := h.SettingsRepo.Save(s); err != nil {
 		return errors.Wrap(err, "could not save settings to repository")
 	}
 
@@ -48,14 +55,14 @@ func (h *SettingsHandler) Save(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 
 	if h.UpdateChan != nil {
-		h.UpdateChan <- s
+		h.UpdateChan <- *s
 	}
 
 	return nil
 }
 
-func parseSettings(r *http.Request) (settings.Settings, error) {
-	var settings settings.Settings
+func parseAppSettings(r *http.Request) (settings.AppSettings, error) {
+	var settings settings.AppSettings
 	err := json.NewDecoder(r.Body).Decode(&settings)
 
 	return settings, errors.Wrap(err, "could not decode settings from request body")

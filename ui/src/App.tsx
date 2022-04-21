@@ -1,5 +1,6 @@
 // import DashboardIcon from "@mui/icons-material/Dashboard";
 import KitchenIcon from "@mui/icons-material/Kitchen";
+import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
@@ -11,7 +12,8 @@ import ListItemText from "@mui/material/ListItemText";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import AuthService from "./services/auth-service";
 
 const theme = createTheme();
 const drawerWidth = 240;
@@ -22,8 +24,12 @@ const getDisplayName = (pathname: string) => {
       return "Chambers";
     case "settings":
       return "Settings";
-    default:
+    case "login":
+      return "Login";
+    case "":
       return "Chambers";
+    default:
+      return "";
     // return "Dashboard";
   }
 };
@@ -48,6 +54,14 @@ function TopAppBar() {
 }
 
 function NavigationDrawer() {
+  const navigate = useNavigate();
+  const token = AuthService.getToken();
+
+  const onLogoutClicked = (data: any) => {
+    AuthService.logout();
+    navigate(`/login`);
+  };
+
   return (
     <Drawer
       variant="permanent"
@@ -61,27 +75,35 @@ function NavigationDrawer() {
         },
       }}
     >
-      <List>
-        {/* <ListItem button component={Link} to="/">
-          <ListItemIcon>
-            <DashboardIcon />
-          </ListItemIcon>
-          <ListItemText primary="Dashboard" />
-        </ListItem> */}
-        {/* <ListItem button component={Link} to="chambers"> */}
-        <ListItem button component={Link} to="/">
-          <ListItemIcon>
-            <KitchenIcon />
-          </ListItemIcon>
-          <ListItemText primary="Chambers" />
-        </ListItem>
-        <ListItem button component={Link} to="settings">
-          <ListItemIcon>
-            <SettingsIcon />
-          </ListItemIcon>
-          <ListItemText primary="Settings" />
-        </ListItem>
-      </List>
+      {token && (
+        <List>
+          {/* <ListItem button component={Link} to="/">
+                <ListItemIcon>
+                  <DashboardIcon />
+                </ListItemIcon>
+                <ListItemText primary="Dashboard" />
+              </ListItem> */}
+          {/* <ListItem button component={Link} to="chambers"> */}
+          <ListItem button component={Link} to="/">
+            <ListItemIcon>
+              <KitchenIcon />
+            </ListItemIcon>
+            <ListItemText primary="Chambers" />
+          </ListItem>
+          <ListItem button component={Link} to="settings">
+            <ListItemIcon>
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Settings" />
+          </ListItem>
+          <ListItem button onClick={onLogoutClicked}>
+            <ListItemIcon>
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText primary="Logout" />
+          </ListItem>
+        </List>
+      )}
     </Drawer>
   );
 }

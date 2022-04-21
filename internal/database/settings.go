@@ -39,30 +39,9 @@ func NewSettingsRepo(db *bbolt.DB) (*SettingsRepo, error) {
 		return nil, errors.Wrap(err, "could not commit transaction")
 	}
 
-	r := &SettingsRepo{
+	return &SettingsRepo{
 		db: db,
-	}
-
-	s, err := r.Get()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not get settings")
-	}
-
-	if s == nil {
-		s := &settings.Settings{
-			BrewfatherAPIUserID: "",
-			BrewfatherAPIKey:    "",
-			BrewfatherLogURL:    "",
-			TemperatureUnits:    "C",
-		}
-
-		err = r.Save(s)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not save settings")
-		}
-	}
-
-	return r, nil
+	}, nil
 }
 
 // Get returns Settings.

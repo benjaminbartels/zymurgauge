@@ -23,7 +23,7 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: ui
-          path: web/build
+          path: ui/build
   build-service:
     name: Build Go
     needs: build-ui
@@ -35,7 +35,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ui
-          path: web/build
+          path: ui/build
       - name: Set up Go 1.17
         uses: actions/setup-go@v2
         with:
@@ -53,7 +53,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ui
-          path: web/build
+          path: ui/build
       - name: Set up Go 1.17
         uses: actions/setup-go@v2
         with:
@@ -78,7 +78,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: ui
-          path: web/build
+          path: ui/build
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:

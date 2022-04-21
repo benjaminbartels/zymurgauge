@@ -15,16 +15,15 @@ import {
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import SettingsService from "../services/settings-service";
-import { Settings } from "../types/Settings";
+import { AppSettings } from "../types/Settings";
 
 export default function SettingsView() {
   const { handleSubmit, control } = useForm();
-  const [settings, setSettings] = useState<Settings>();
+  const [settings, setSettings] = useState<AppSettings>();
 
   React.useEffect(() => {
     SettingsService.get()
       .then((response: any) => {
-        console.log("settings:", response.data);
         setSettings(response.data);
       })
       .catch((e: Error) => {
@@ -33,12 +32,14 @@ export default function SettingsView() {
   }, []);
 
   const onSubmit = (data: any) => {
-    console.log("!!!!! ", data.temperatureUnits);
-    let settings: Settings = {
+    let settings: AppSettings = {
+      temperatureUnits: data.temperatureUnits,
+      authSecret: data.authSecret,
       brewfatherApiUserId: data.brewfatherApiUserId,
       brewfatherApiKey: data.brewfatherApiKey,
       brewfatherLogUrl: data.brewfatherLogUrl,
-      temperatureUnits: data.temperatureUnits,
+      influxDbUrl: data.influxDbUrl,
+      statsDAddress: data.statsDAddress,
     };
 
     SettingsService.save(settings)
@@ -62,6 +63,52 @@ export default function SettingsView() {
                 alignItems="flex-start"
                 spacing={2}
               >
+                <Grid item xs={12}>
+                  <FormControl component="fieldset">
+                    <FormLabel component="legend">Temperature Units</FormLabel>
+                    <Controller
+                      name="temperatureUnits"
+                      control={control}
+                      defaultValue={settings?.temperatureUnits || ""}
+                      render={({ field }) => (
+                        <RadioGroup {...field}>
+                          <FormControlLabel
+                            value="Fahrenheit"
+                            control={<Radio />}
+                            label="°F"
+                          />
+                          <FormControlLabel
+                            value="Celsius"
+                            control={<Radio />}
+                            label="°C"
+                          />
+                        </RadioGroup>
+                      )}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <Controller
+                    name="authSecret"
+                    control={control}
+                    defaultValue={settings?.authSecret || ""}
+                    rules={{ required: "Authorization Secret required" }}
+                    render={({
+                      field: { onChange, value },
+                      fieldState: { error },
+                    }) => (
+                      <TextField
+                        fullWidth
+                        label="Authorization Secret"
+                        type="text"
+                        value={value}
+                        onChange={onChange}
+                        error={!!error}
+                        helperText={error ? error.message : null}
+                      />
+                    )}
+                  />
+                </Grid>
                 <Grid item xs={12}>
                   <Controller
                     name="brewfatherApiUserId"
@@ -130,28 +177,47 @@ export default function SettingsView() {
                 </Grid>
 
                 <Grid item xs={12}>
-                  <FormControl component="fieldset">
-                    <FormLabel component="legend">Temperature Units</FormLabel>
-                    <Controller
-                      name="temperatureUnits"
-                      control={control}
-                      defaultValue={settings?.temperatureUnits || ""}
-                      render={({ field }) => (
-                        <RadioGroup {...field}>
-                          <FormControlLabel
-                            value="Fahrenheit"
-                            control={<Radio />}
-                            label="°F"
-                          />
-                          <FormControlLabel
-                            value="Celsius"
-                            control={<Radio />}
-                            label="°C"
-                          />
-                        </RadioGroup>
-                      )}
-                    />
-                  </FormControl>
+                  <Controller
+                    name="influxDbUrl"
+                    control={control}
+                    defaultValue={settings?.influxDbUrl || ""}
+                    render={({
+                      field: { onChange, value },
+                      fieldState: { error },
+                    }) => (
+                      <TextField
+                        fullWidth
+                        label="InfluxDB URL"
+                        type="text"
+                        value={value}
+                        onChange={onChange}
+                        error={!!error}
+                        helperText={error ? error.message : null}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Controller
+                    name="statsDAddress"
+                    control={control}
+                    defaultValue={settings?.statsDAddress || ""}
+                    render={({
+                      field: { onChange, value },
+                      fieldState: { error },
+                    }) => (
+                      <TextField
+                        fullWidth
+                        label="STATSD Address (telegraf)"
+                        type="text"
+                        value={value}
+                        onChange={onChange}
+                        error={!!error}
+                        helperText={error ? error.message : null}
+                      />
+                    )}
+                  />
                 </Grid>
               </Grid>
             </CardContent>

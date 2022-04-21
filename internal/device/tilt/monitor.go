@@ -143,9 +143,13 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 
 func (m *Monitor) handleOfflineTilts() {
 	for _, color := range m.colors {
-		if !containsColor(m.availableColors, color) && m.tilts[color].ibeacon != nil {
-			m.logger.Debugf("Tilt offline - Color: %s", color)
-			m.tilts[color].ibeacon = nil
+		if !containsColor(m.availableColors, color) {
+			if tilt, ok := m.tilts[color]; ok {
+				if tilt.ibeacon != nil {
+					m.logger.Debugf("Tilt offline - Color: %s", color)
+					m.tilts[color].ibeacon = nil
+				}
+			}
 		}
 	}
 }
@@ -196,7 +200,9 @@ func (m *Monitor) handler(adv bluetooth.Advertisement) {
 			ibeacon.UUID, ibeacon.Major, ibeacon.Minor)
 	}
 
-	m.tilts[color].ibeacon = ibeacon
+			m.tilts[color].ibeacon = ibeacon
+		}
+	}
 }
 
 func (m *Monitor) filter(adv bluetooth.Advertisement) bool {

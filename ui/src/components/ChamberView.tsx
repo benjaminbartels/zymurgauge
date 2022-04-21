@@ -33,6 +33,7 @@ import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import ChamberService from "../services/chamber-service";
+import SettingsService from "../services/settings-service";
 import { Chamber } from "../types/Chamber";
 
 ChartJS.register(
@@ -54,6 +55,16 @@ export default function ChamberView() {
   const [currentFermentationStep, setCurrentFermentationStep] = useState("");
 
   useEffect(() => {
+    var influxDbUrl: string;
+
+    SettingsService.get()
+      .then((response: any) => {
+        influxDbUrl = response.data.influxDbUrl;
+      })
+      .catch((e: Error) => {
+        console.log(e);
+      });
+
     if (params.chamberId != null) {
       ChamberService.get(params.chamberId)
         .then((response: any) => {
@@ -63,20 +74,25 @@ export default function ChamberView() {
           const og = parseFloat(response.data.currentBatch.recipe.og);
           const fg = parseFloat(response.data.currentBatch.recipe.fg);
 
-          const influxQuery = async () => {
+          const influxQuery = async (url: string) => {
             const beerTemperatureData: { x: any; y: any }[] = [];
             const auxiliaryTemperatureData: { x: any; y: any }[] = [];
             const externalTemperatureData: { x: any; y: any }[] = [];
             const hydrometerGravityData: { x: any; y: any }[] = [];
 
-            let query = `from(bucket: "telegraf/autogen")
+            const chamberName = response.data.name.replace(" ", "");
+
+            let query =
+              `from(bucket: "telegraf/autogen")
               |> range(start: -12h)
-              |> filter(fn: (r) => r._measurement == "zymurgauge_Chamber1")
+              |> filter(fn: (r) => r._measurement == "zymurgauge_` +
+              chamberName +
+              `")
               |> sample(n:2, pos: 0)`;
 
             const clientOptions: ClientOptions = {
-              url: process.env.REACT_APP_INFLUXDB_API_URL!,
-              token: process.env.REACT_APP_INFLUXDB_TOKEN,
+              url: url,
+              // token: process.env.REACT_APP_INFLUXDB_TOKEN,
               // headers: { Authorization: "Bearer " + token },
             };
 
@@ -243,7 +259,9 @@ export default function ChamberView() {
             });
           };
 
-          influxQuery();
+          if (influxDbUrl !== "") {
+            influxQuery(influxDbUrl);
+          }
         })
         .catch((e: Error) => {
           console.log(e);

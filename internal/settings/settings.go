@@ -1,11 +1,23 @@
 package settings
 
-import "time"
+import (
+	"time"
+
+	"github.com/benjaminbartels/zymurgauge/internal/auth"
+)
 
 type Settings struct {
-	BrewfatherAPIUserID string    `json:"brewfatherApiUserId"`
-	BrewfatherAPIKey    string    `json:"brewfatherApiKey"`
-	BrewfatherLogURL    string    `json:"brewfatherLogUrl"`
-	TemperatureUnits    string    `json:"temperatureUnits"`
-	ModTime             time.Time `json:"modTime"`
+	AppSettings
+	auth.Credentials
+	ModTime time.Time `json:"modTime"`
+}
+
+type AppSettings struct {
+	TemperatureUnits    string `json:"temperatureUnits"`
+	AuthSecret          string `json:"authSecret"`
+	BrewfatherAPIUserID string `json:"brewfatherApiUserId,omitempty"`
+	BrewfatherAPIKey    string `json:"brewfatherApiKey,omitempty"`
+	BrewfatherLogURL    string `json:"brewfatherLogUrl,omitempty"`
+	InfluxDBURL         string `json:"influxDbUrl,omitempty"`
+	StatsDAddress       string `json:"statsDAddress,omitempty"`
 }

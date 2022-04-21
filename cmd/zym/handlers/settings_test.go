@@ -20,10 +20,12 @@ import (
 
 func getTestSettings() *settings.Settings {
 	return &settings.Settings{
-		BrewfatherAPIUserID: "someID",
-		BrewfatherAPIKey:    "someKey",
-		BrewfatherLogURL:    "https://someurl.com",
-		TemperatureUnits:    "C",
+		AppSettings: settings.AppSettings{
+			BrewfatherAPIUserID: "someID",
+			BrewfatherAPIKey:    "someKey",
+			BrewfatherLogURL:    "https://someurl.com",
+			TemperatureUnits:    "Celsius",
+		},
 	}
 }
 
@@ -141,6 +143,7 @@ func saveSettings(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 
 	settingsMock := &mocks.SettingsRepo{}
+	settingsMock.On("Get").Return(s, nil)
 	settingsMock.On("Save", s).Return(nil)
 
 	ch := make(chan settings.Settings)
@@ -187,6 +190,7 @@ func saveSettingsOtherError(t *testing.T) {
 	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 
 	settingsMock := &mocks.SettingsRepo{}
+	settingsMock.On("Get").Return(s, nil)
 	settingsMock.On("Save", s).Return(errors.New("controllerMock error"))
 
 	ch := make(chan settings.Settings)
@@ -206,6 +210,7 @@ func saveSettingsRespondError(t *testing.T) {
 	w, r, _ := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 
 	settingsMock := &mocks.SettingsRepo{}
+	settingsMock.On("Get").Return(s, nil)
 	settingsMock.On("Save", s).Return(nil)
 
 	ch := make(chan settings.Settings)
