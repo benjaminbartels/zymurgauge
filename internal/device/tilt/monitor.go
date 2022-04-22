@@ -98,21 +98,6 @@ func (m *Monitor) Run(ctx context.Context) error {
 
 	m.runMutex.Unlock()
 
-	if err := m.setupHCIDevice(); err != nil {
-		return errors.Wrap(err, "could not setup hci device")
-	}
-
-	return m.startCycle(ctx)
-}
-
-func (m *Monitor) setupHCIDevice() error {
-	device, err := m.scanner.NewDevice()
-	if err != nil {
-		return errors.Wrap(err, "could not create new device")
-	}
-
-	m.scanner.SetDefaultDevice(device)
-
 	return nil
 }
 

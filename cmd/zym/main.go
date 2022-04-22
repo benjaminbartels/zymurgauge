@@ -123,7 +123,7 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	errCh := make(chan error, 1)
 
-	monitor := createBluetoothMonitor(ctx, logger, errCh)
+	monitor, err := createBluetoothMonitor(ctx, logger, errCh)
 
 	startDebugEndpoint(cfg.DebugHost, logger)
 
@@ -173,18 +173,22 @@ func run(logger *logrus.Logger, cfg config) error {
 		logger.Infof("zymurgauge version %s started, listening at %s", build, cfg.Host)
 		errCh <- httpServer.ListenAndServe()
 	}()
-
 	return wait(ctx, httpServer, errCh, cfg.ShutdownTimeout, logger)
 }
 
-func createBluetoothMonitor(ctx context.Context, logger *logrus.Logger, errCh chan error) *tilt.Monitor {
-	monitor := tilt.NewMonitor(bluetooth.NewBLEScanner(), logger)
+func createBluetoothMonitor(ctx context.Context, logger *logrus.Logger, errCh chan error) (*tilt.Monitor, error) {
+	scanner, err := bluetooth.NewBLEScanner()
+	if err != nil {
+		return nil, errors.Wrap(err, "could create BLE scanner")
+	}
+
+	monitor := tilt.NewMonitor(scanner, logger)
 
 	go func() {
 		errCh <- monitor.Run(ctx)
 	}()
 
-	return monitor
+	return monitor, nil
 }
 
 func startDebugEndpoint(host string, logger *logrus.Logger) {
@@ -289,7 +293,8 @@ func startUpdateSettingsChannel(brewfatherClient *brewfather.ServiceClient) chan
 }
 
 func wait(ctx context.Context, server *http.Server, errCh chan error, timeout time.Duration,
-	logger *logrus.Logger) error {
+	logger *logrus.Logger,
+) error {
 	select {
 	case err := <-errCh:
 		return errors.Wrap(err, "fatal error occurred")

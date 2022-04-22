@@ -17,29 +17,6 @@ type Scanner struct {
 	mock.Mock
 }
 
-// NewDevice provides a mock function with given fields:
-func (_m *Scanner) NewDevice() (*linux.Device, error) {
-	ret := _m.Called()
-
-	var r0 *linux.Device
-	if rf, ok := ret.Get(0).(func() *linux.Device); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*linux.Device)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // Scan provides a mock function with given fields: ctx, h, f
 func (_m *Scanner) Scan(ctx context.Context, h func(bluetooth.Advertisement), f func(bluetooth.Advertisement) bool) error {
 	ret := _m.Called(ctx, h, f)
@@ -52,11 +29,6 @@ func (_m *Scanner) Scan(ctx context.Context, h func(bluetooth.Advertisement), f 
 	}
 
 	return r0
-}
-
-// SetDefaultDevice provides a mock function with given fields: device
-func (_m *Scanner) SetDefaultDevice(device bluetooth.Device) {
-	_m.Called(device)
 }
 
 // WithSigHandler provides a mock function with given fields: ctx, cancel

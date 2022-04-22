@@ -17,19 +17,16 @@ services:
       - "8086:8086" # influxdb
       - "8888:8888" # chronograf
     volumes:
-      - ${HOME}/.zymurgauge/config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${HOME}/.zymurgauge/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
   influxdb:
     restart: always
-    image: arm32v7/influxdb:1.8.0
+    image: arm32v7/influxdb:1.8.10
     container_name: influxdb
     volumes:
       - ${HOME}/.zymurgauge/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf:ro
       - ${HOME}/.zymurgauge/influxdb/data:/var/lib/influxdb
       - ${HOME}/.zymurgauge/influxdb/init:/docker-entrypoint-initdb.d
-    environment:
-      - INFLUXDB_ADMIN_USER=${INFLUXDB_USER}
-      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_PASSWORD}
 
   telegraf:
     restart: always
@@ -39,10 +36,10 @@ services:
       - influxdb
     ports:
       - "8125:8125/udp"
-    # TODO: Find better solution
+    # TODO: Find better solution. This allows for collection of docker metrics which might be out of scope
     user: telegraf:${GROUP_ID:?"Please run as follows 'GROUP_ID=$(stat -c '%g' /var/run/docker.sock) docker-compose up'"}
     volumes:
-      - ${HOME}/.zymurgauge/data/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ${HOME}/.zymurgauge/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys:/host/sys:ro
       - /proc:/host/proc:ro
@@ -60,5 +57,3 @@ services:
       - influxdb
     environment:
       - INFLUXDB_URL=http://influxdb:8086
-      - INFLUXDB_USERNAME=${INFLUXDB_USER}
-      - INFLUXDB_PASSWORD=${INFLUXDB_PASSWORD}

@@ -10,23 +10,19 @@ import (
 
 var _ Scanner = (*BLEScanner)(nil)
 
-type BLEScanner struct{}
-
-func NewBLEScanner() *BLEScanner {
-	return &BLEScanner{}
+type BLEScanner struct {
+	device *linux.Device
 }
 
-func (b *BLEScanner) NewDevice() (*linux.Device, error) {
+func NewBLEScanner() (*BLEScanner, error) {
 	device, err := linux.NewDevice()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create new ble device")
 	}
 
-	return device, nil
-}
-
-func (b *BLEScanner) SetDefaultDevice(device Device) {
 	ble.SetDefaultDevice(device)
+
+	return &BLEScanner{device: device}, nil
 }
 
 func (b *BLEScanner) WithSigHandler(ctx context.Context, cancel func()) context.Context {
@@ -34,6 +30,21 @@ func (b *BLEScanner) WithSigHandler(ctx context.Context, cancel func()) context.
 }
 
 func (b *BLEScanner) Scan(ctx context.Context, h func(a Advertisement), f func(a Advertisement) bool) error {
+	if err := b.scan(ctx, h, f); err != nil {
+		if err := b.restart(); err != nil {
+			return errors.Wrapf(err, "could not restart device after error: %s")
+		}
+
+		// retry after restart
+		if err := b.scan(ctx, h, f); err != nil {
+			return errors.Wrap(err, "could not scan after restart")
+		}
+	}
+
+	return nil
+}
+
+func (b *BLEScanner) scan(ctx context.Context, h func(a Advertisement), f func(a Advertisement) bool) error {
 	handler := func(adv ble.Advertisement) {
 		h(adv)
 	}
@@ -43,8 +54,29 @@ func (b *BLEScanner) Scan(ctx context.Context, h func(a Advertisement), f func(a
 	}
 
 	if err := ble.Scan(ctx, false, handler, filter); err != nil {
-		return errors.Wrap(err, "could not scan")
+		switch {
+		case errors.Is(err, context.DeadlineExceeded):
+		case errors.Is(err, context.Canceled):
+			return err
+		default:
+			return errors.Wrap(err, "could not scan")
+		}
 	}
+
+	return nil
+}
+
+func (b *BLEScanner) restart() error {
+	if err := b.device.Stop(); err != nil {
+		return errors.Wrap(err, "could not stop device")
+	}
+
+	device, err := linux.NewDevice()
+	if err != nil {
+		return errors.Wrap(err, "could not create new device")
+	}
+	ble.SetDefaultDevice(device)
+	b.device = device
 
 	return nil
 }
