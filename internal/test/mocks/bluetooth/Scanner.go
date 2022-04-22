@@ -7,8 +7,6 @@ import (
 
 	bluetooth "github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
 
-	linux "github.com/go-ble/ble/linux"
-
 	mock "github.com/stretchr/testify/mock"
 )
 
