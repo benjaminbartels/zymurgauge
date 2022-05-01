@@ -123,7 +123,10 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	errCh := make(chan error, 1)
 
-	monitor, err := createBluetoothMonitor(ctx, logger, errCh)
+	monitor, err := createTiltMonitor(ctx, logger, errCh)
+	if err != nil {
+		return errors.Wrap(err, "could not create tilt monitor")
+	}
 
 	startDebugEndpoint(cfg.DebugHost, logger)
 
@@ -173,10 +176,11 @@ func run(logger *logrus.Logger, cfg config) error {
 		logger.Infof("zymurgauge version %s started, listening at %s", build, cfg.Host)
 		errCh <- httpServer.ListenAndServe()
 	}()
+
 	return wait(ctx, httpServer, errCh, cfg.ShutdownTimeout, logger)
 }
 
-func createBluetoothMonitor(ctx context.Context, logger *logrus.Logger, errCh chan error) (*tilt.Monitor, error) {
+func createTiltMonitor(ctx context.Context, logger *logrus.Logger, errCh chan error) (*tilt.Monitor, error) {
 	scanner, err := bluetooth.NewBLEScanner()
 	if err != nil {
 		return nil, errors.Wrap(err, "could create BLE scanner")

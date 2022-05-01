@@ -28,7 +28,8 @@ type Manager struct {
 }
 
 func NewManager(ctx context.Context, repo Repo, configurator Configurator, service brewfather.Service,
-	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration) (*Manager, error) {
+	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration,
+) (*Manager, error) {
 	m := &Manager{
 		ctx:                    ctx,
 		repo:                   repo,
