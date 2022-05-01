@@ -8,7 +8,6 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/bluetooth"
-	"github.com/go-ble/ble/linux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
@@ -16,21 +15,15 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var (
-	errDevice = errors.New("device error")
-	errScan   = errors.New("unrecoverable scan error")
-)
+var errScan = errors.New("unrecoverable scan error")
 
 func TestRunAlreadyRunningError(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
 	ctx, stop := context.WithCancel(context.Background())
-	device := &linux.Device{}
 
 	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(device, nil)
-	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 
 	timeout := tilt.SetTimeout(1 * time.Second)
@@ -50,31 +43,14 @@ func TestRunAlreadyRunningError(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestRunNewDeviceError(t *testing.T) {
-	t.Parallel()
-
-	l, _ := logtest.NewNullLogger()
-
-	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(nil, errDevice)
-
-	monitor := tilt.NewMonitor(scannerMock, l)
-
-	err := monitor.Run(context.Background())
-	assert.Contains(t, err.Error(), "could not create new device: device error")
-}
-
 func TestScanDeadlineExceeded(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
-	device := &linux.Device{}
 	ctx, stop := context.WithCancel(context.Background())
 	ctr := 0
 
 	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(device, nil)
-	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 	scannerMock.On("Scan", mock.Anything, mock.Anything, mock.Anything).Return(context.DeadlineExceeded).Run(
 		func(args mock.Arguments) {
@@ -96,12 +72,9 @@ func TestScanCancelled(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
-	device := &linux.Device{}
 	ctx := context.Background()
 
 	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(device, nil)
-	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 	scannerMock.On("Scan", mock.Anything, mock.Anything, mock.Anything).Return(context.Canceled)
 
@@ -118,12 +91,9 @@ func TestScanOtherError(t *testing.T) {
 	t.Parallel()
 
 	l, hook := logtest.NewNullLogger()
-	device := &linux.Device{}
 	ctx := context.Background()
 
 	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(device, nil)
-	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 	scannerMock.On("Scan", mock.Anything, mock.Anything, mock.Anything).Return(errScan)
 
@@ -135,7 +105,7 @@ func TestScanOtherError(t *testing.T) {
 
 	go func() {
 		for {
-			if logContains(hook.AllEntries(), logrus.WarnLevel, "Error occurred while scanning. Resetting hci device.") {
+			if logContains(hook.AllEntries(), logrus.WarnLevel, "Error occurred while scanning. Will try again in 5s.") {
 				doneCh <- struct{}{}
 
 				return
@@ -160,12 +130,9 @@ func TestGetTiltNotFound(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
-	device := &linux.Device{}
 	ctx, stop := context.WithCancel(context.Background())
 
 	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(device, nil)
-	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 
 	timeout := tilt.SetTimeout(1 * time.Millisecond)

@@ -12,25 +12,31 @@ import (
 )
 
 const (
-	tiltID                        = "4c000215a495"
-	defaultTimeout  time.Duration = 10 * time.Second
-	defaultInterval time.Duration = 1 * time.Second
-	errorWaitPeriod time.Duration = 5 * time.Second
+	defaultTimeout           time.Duration = 10 * time.Second
+	defaultInterval          time.Duration = 1 * time.Second
+	errorWaitPeriod          time.Duration = 5 * time.Second
+	manufacurerDataMinLength               = 25
 )
 
 type Color string
 
 type Monitor struct {
-	scanner         bluetooth.Scanner
-	logger          *logrus.Logger
-	timeout         time.Duration
-	interval        time.Duration
-	availableColors []Color
-	tilts           map[Color]*Tilt
-	isRunning       bool
-	runMutex        sync.Mutex
-	colors          map[string]Color
+	scanner     bluetooth.Scanner
+	logger      *logrus.Logger
+	timeout     time.Duration
+	interval    time.Duration
+	foundColors []Color // TODO Do I really need this?
+	tilts       map[Color]*Tilt
+	isRunning   bool
+	runMutex    sync.Mutex
+	colors      map[string]Color
 }
+
+// 4c000215a495bb50c5b14b44b5121370f02d74de004403e7c5
+
+//              a495bb10c5b14b44b5121370f02d74de
+// full 4c000215a495bb50c5b14b44b5121370f02d74de004403e7c5
+// part     0215a495bb50c5b1
 
 func NewMonitor(scanner bluetooth.Scanner, logger *logrus.Logger, options ...OptionsFunc) *Monitor {
 	m := &Monitor{
@@ -98,12 +104,12 @@ func (m *Monitor) Run(ctx context.Context) error {
 
 	m.runMutex.Unlock()
 
-	return nil
+	return m.startCycle(ctx)
 }
 
 func (m *Monitor) startCycle(ctx context.Context) error {
 	for {
-		m.availableColors = []Color{}
+		m.foundColors = []Color{}
 
 		scanCtx := m.scanner.WithSigHandler(context.WithTimeout(ctx, m.timeout))
 
@@ -128,7 +134,7 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 
 func (m *Monitor) handleOfflineTilts() {
 	for _, color := range m.colors {
-		if !containsColor(m.availableColors, color) {
+		if !containsColor(m.foundColors, color) {
 			if tilt, ok := m.tilts[color]; ok {
 				if tilt.ibeacon != nil {
 					m.logger.Debugf("Tilt offline - Color: %s", color)
@@ -137,6 +143,16 @@ func (m *Monitor) handleOfflineTilts() {
 			}
 		}
 	}
+}
+
+func containsColor(colors []Color, v Color) bool {
+	for _, s := range colors {
+		if v == s {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (m *Monitor) wait(ctx context.Context) bool {
@@ -156,38 +172,37 @@ func (m *Monitor) wait(ctx context.Context) bool {
 	return false
 }
 
+func (m *Monitor) filter(adv bluetooth.Advertisement) bool {
+	if len(adv.ManufacturerData()) >= manufacurerDataMinLength {
+		// see: https://kvurd.com/blog/tilt-hydrometer-ibeacon-data-format/
+		uuid := hex.EncodeToString(adv.ManufacturerData()[4:20])
+
+		_, ok := m.colors[uuid]
+
+		return ok
+	}
+
+	return false
+}
+
 func (m *Monitor) handler(adv bluetooth.Advertisement) {
-	ibeacon, err := NewIBeacon(adv.ManufacturerData())
+	ibeacon, err := bluetooth.NewIBeacon(adv.ManufacturerData())
 	if err != nil {
 		m.logger.WithError(err).Error("could not create new IBeacon")
 
 		return
 	}
 
-	if color, ok := m.colors[ibeacon.UUID]; ok {
-		m.availableColors = append(m.availableColors, color)
+	if color, ok := m.colors[ibeacon.GetUUID()]; ok {
+		m.foundColors = append(m.foundColors, color)
 
 		if tilt, ok := m.tilts[color]; ok {
 			if tilt.ibeacon == nil {
-				m.logger.Debugf("Tilt online - Color: %s, UUID: %s, Major: %d, Minor: %d", m.colors[ibeacon.UUID],
-					ibeacon.UUID, ibeacon.Major, ibeacon.Minor)
+				m.logger.Debugf("Tilt online - Color: %s, UUID: %s, Major: %d, Minor: %d", m.colors[ibeacon.GetUUID()],
+					ibeacon.GetUUID(), ibeacon.GetMajor(), ibeacon.GetMinor())
 			}
 
 			m.tilts[color].ibeacon = ibeacon
 		}
 	}
-}
-
-func (m *Monitor) filter(adv bluetooth.Advertisement) bool {
-	return len(adv.ManufacturerData()) >= 25 && hex.EncodeToString(adv.ManufacturerData())[0:12] == tiltID
-}
-
-func containsColor(colors []Color, v Color) bool {
-	for _, s := range colors {
-		if v == s {
-			return true
-		}
-	}
-
-	return false
 }
