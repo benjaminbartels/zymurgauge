@@ -16,7 +16,8 @@ type BatchesHandler struct {
 }
 
 func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
-	p httprouter.Params) error {
+	p httprouter.Params,
+) error {
 	batches, err := h.Service.GetAllSummaries(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get all batches from repository")

@@ -48,7 +48,8 @@ type Controller struct {
 
 func NewController(thermometer device.Thermometer, chiller, heater device.Actuator,
 	chillingDifferential, heatingDifferential float64,
-	logger *logrus.Logger, options ...OptionsFunc) *Controller {
+	logger *logrus.Logger, options ...OptionsFunc,
+) *Controller {
 	t := &Controller{
 		thermometer:          thermometer,
 		chiller:              chiller,

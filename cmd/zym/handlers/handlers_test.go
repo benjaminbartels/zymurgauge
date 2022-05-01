@@ -32,7 +32,8 @@ const (
 var errSomeError = errors.New("some error")
 
 func setupHandlerTest(query string, body io.Reader) (w *httptest.ResponseRecorder, r *http.Request,
-	ctx context.Context) {
+	ctx context.Context,
+) {
 	w = httptest.NewRecorder()
 
 	if query != "" {

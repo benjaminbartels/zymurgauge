@@ -5,8 +5,6 @@ package bluetooth
 
 import (
 	"context"
-
-	"github.com/go-ble/ble/linux"
 )
 
 // The program is only meant to run on linux on arm. This file only exists to prevent compilation issues on non
@@ -16,17 +14,9 @@ var _ Scanner = (*BLEScanner)(nil)
 
 type BLEScanner struct{}
 
-func NewBLEScanner() *BLEScanner {
-	return &BLEScanner{}
+func NewBLEScanner() (*BLEScanner, error) {
+	return &BLEScanner{}, nil
 }
-
-func (b *BLEScanner) NewDevice() (*linux.Device, error) {
-	device, _ := linux.NewDevice()
-
-	return device, nil
-}
-
-func (b *BLEScanner) SetDefaultDevice(device Device) {}
 
 func (b *BLEScanner) WithSigHandler(ctx context.Context, cancel func()) context.Context {
 	return ctx

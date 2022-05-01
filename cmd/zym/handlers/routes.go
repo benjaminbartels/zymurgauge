@@ -26,7 +26,8 @@ const (
 
 func NewApp(chamberManager chamber.Controller, devicePath string, service brewfather.Service,
 	settingsRepo settings.Repo, updateChan chan settings.Settings, uiFileReader web.FileReader, shutdown chan os.Signal,
-	logger *logrus.Logger) (*web.App, error) {
+	logger *logrus.Logger,
+) (*web.App, error) {
 	api := web.NewAPI(shutdown,
 		middleware.RequestLogger(logger),
 		middleware.Errors(logger),

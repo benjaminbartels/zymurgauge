@@ -116,7 +116,8 @@ func runSimulator(ctx context.Context, simulator *simulator.Simulator, multiplie
 }
 
 func runTemperatureReader(ctx context.Context, thermometer device.Thermometer, startTime time.Time,
-	multiplier float64, readings chan reading) {
+	multiplier float64, readings chan reading,
+) {
 	tick := time.Tick(readInterval)
 
 	for {

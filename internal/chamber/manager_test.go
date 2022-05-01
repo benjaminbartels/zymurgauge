@@ -601,7 +601,8 @@ func assertChambersAreEqual(t *testing.T, c1, c2 *chamber.Chamber) {
 }
 
 func setupManagerTest(t *testing.T,
-	chambers []*chamber.Chamber) (*chamber.Manager, *mocks.ChamberRepo, *mocks.Metrics) {
+	chambers []*chamber.Chamber,
+) (*chamber.Manager, *mocks.ChamberRepo, *mocks.Metrics) {
 	t.Helper()
 
 	l, _ := logtest.NewNullLogger()

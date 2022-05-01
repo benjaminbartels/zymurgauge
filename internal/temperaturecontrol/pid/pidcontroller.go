@@ -50,7 +50,8 @@ type Status struct {
 }
 
 func NewPIDTemperatureController(thermometer device.Thermometer, actuator device.Actuator, kP, kI, kD float64,
-	logger *logrus.Logger, options ...OptionsFunc) *Controller {
+	logger *logrus.Logger, options ...OptionsFunc,
+) *Controller {
 	c := &Controller{
 		thermometer: thermometer,
 

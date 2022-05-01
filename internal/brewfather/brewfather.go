@@ -57,5 +57,4 @@ type LogEntry struct {
 	Comment              string `json:"comment,omitempty"`       // "Hello World",
 	Beer                 string `json:"beer,omitempty"`          // "Pale Ale",
 	Battery              string `json:"battery,omitempty"`       // 4.98
-
 }

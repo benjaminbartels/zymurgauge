@@ -1,9 +1,8 @@
 package tilt
 
 const (
-	ErrNotFound                      = Error("chamber not found")
-	ErrAlreadyRunning                = Error("monitor is already running")
-	ErrInvalidManufacturerDataLength = Error("manufacurerData length is less that 25")
+	ErrNotFound       = Error("tilt not found")
+	ErrAlreadyRunning = Error("monitor is already running")
 )
 
 type Error string

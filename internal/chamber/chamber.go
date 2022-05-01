@@ -67,7 +67,8 @@ type Readings struct {
 // TODO: refactor to use generics in the future.
 
 func (c *Chamber) Configure(configurator Configurator, service brewfather.Service,
-	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration) error {
+	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration,
+) error {
 	c.service = service
 	c.logger = logger
 	c.metrics = metrics

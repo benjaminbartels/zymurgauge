@@ -7,7 +7,6 @@ import (
 	"time"
 
 	mocks "github.com/benjaminbartels/zymurgauge/internal/test/mocks/bluetooth"
-	"github.com/go-ble/ble/linux"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -36,12 +35,9 @@ func TestGetTilt(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
-	device := &linux.Device{}
 	ctx, stop := context.WithCancel(context.Background())
 
 	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(device, nil)
-	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 
 	monitor := NewMonitor(scannerMock, l)
@@ -78,12 +74,9 @@ func TestGetTiltIBeaconIsNilError(t *testing.T) {
 	t.Parallel()
 
 	l, _ := logtest.NewNullLogger()
-	device := &linux.Device{}
 	ctx, stop := context.WithCancel(context.Background())
 
 	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(device, nil)
-	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 
 	timeout := SetTimeout(1 * time.Millisecond)
@@ -109,7 +102,7 @@ func TestGetTiltIBeaconIsNilError(t *testing.T) {
 
 				monitor.handler(adv)
 			case 2:
-				// on second first call to Scan check to see if orange tilt exists
+				// on second call to Scan check to see if orange tilt exists
 				var err error
 				orangeTilt, err = monitor.GetTilt(orange)
 				assert.NoError(t, err)
@@ -150,12 +143,9 @@ func TestHandlerInvalidManufacturerDataLengthError(t *testing.T) {
 	t.Parallel()
 
 	l, hook := logtest.NewNullLogger()
-	device := &linux.Device{}
 	ctx, stop := context.WithCancel(context.Background())
 
 	scannerMock := &mocks.Scanner{}
-	scannerMock.On("NewDevice").Return(device, nil)
-	scannerMock.On("SetDefaultDevice", device).Return()
 	scannerMock.On("WithSigHandler", mock.Anything, mock.Anything).Return(ctx)
 
 	monitor := NewMonitor(scannerMock, l)

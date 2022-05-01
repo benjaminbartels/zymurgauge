@@ -24,7 +24,8 @@ type ChambersHandler struct {
 }
 
 func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
-	p httprouter.Params) error {
+	p httprouter.Params,
+) error {
 	chambers, err := h.ChamberController.GetAll()
 
 	for _, c := range chambers {
@@ -100,7 +101,8 @@ func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *ht
 }
 
 func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request,
-	p httprouter.Params) error {
+	p httprouter.Params,
+) error {
 	id := p.ByName("id")
 
 	if err := h.ChamberController.Delete(id); err != nil {
@@ -122,7 +124,8 @@ func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *
 }
 
 func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *http.Request,
-	p httprouter.Params) error {
+	p httprouter.Params,
+) error {
 	id := p.ByName("id")
 
 	step := r.URL.Query().Get("step")
