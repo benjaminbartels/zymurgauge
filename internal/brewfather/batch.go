@@ -1,5 +1,5 @@
 //nolint:tagliatelle // this file was manual generated and includes minor changes
-package model
+package brewfather
 
 type BatchSummary struct {
 	ID       string        `json:"_id"`

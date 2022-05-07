@@ -152,7 +152,7 @@ func (m *Manager) StartFermentation(chamberID string, step string) error {
 		return errors.Wrap(err, "could not start fermentation")
 	}
 
-	chamber.CurrentFermentationStep = &step
+	chamber.CurrentFermentationStep = step
 
 	m.chambers[chamber.ID] = chamber
 
@@ -173,7 +173,7 @@ func (m *Manager) StopFermentation(chamberID string) error {
 		return errors.Wrap(err, "could not stop fermentation")
 	}
 
-	chamber.CurrentFermentationStep = nil
+	chamber.CurrentFermentationStep = ""
 
 	m.chambers[chamber.ID] = chamber
 

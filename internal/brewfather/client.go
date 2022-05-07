@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/brewfather/model"
 	"github.com/pkg/errors"
 )
 
@@ -55,7 +54,7 @@ func createHTTPClient(userID, apiKey string) *http.Client {
 	return &http.Client{Transport: t}
 }
 
-func (s *ServiceClient) GetAllSummaries(ctx context.Context) ([]BatchSummary, error) {
+func (s *ServiceClient) GetAllBatchSummaries(ctx context.Context) ([]BatchSummary, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", APIURL, batchesPath), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batches")
@@ -72,15 +71,15 @@ func (s *ServiceClient) GetAllSummaries(ctx context.Context) ([]BatchSummary, er
 		return nil, err
 	}
 
-	var batches []model.BatchSummary
+	var batches []BatchSummary
 	if err = json.NewDecoder(resp.Body).Decode(&batches); err != nil {
 		return nil, errors.Wrap(err, "could not decode Batches")
 	}
 
-	return convertBatchSummaries(batches), nil
+	return batches, nil
 }
 
-func (s *ServiceClient) GetDetail(ctx context.Context, id string) (*BatchDetail, error) {
+func (s *ServiceClient) GetBatchDetail(ctx context.Context, id string) (*BatchDetail, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", APIURL, batchesPath, id), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batch")
@@ -97,14 +96,12 @@ func (s *ServiceClient) GetDetail(ctx context.Context, id string) (*BatchDetail,
 		return nil, err
 	}
 
-	var batch model.BatchDetail
+	var batch BatchDetail
 	if err = json.NewDecoder(resp.Body).Decode(&batch); err != nil {
 		return nil, errors.Wrap(err, "could not decode Batch")
 	}
 
-	b := convertBatchDetail(batch)
-
-	return &b, nil
+	return &batch, nil
 }
 
 func (s *ServiceClient) Log(ctx context.Context, log LogEntry) error {
@@ -180,66 +177,5 @@ func parseStatusCode(code int) error {
 		return ErrTooManyRequests
 	default:
 		return nil
-	}
-}
-
-func convertBatchSummaries(batches []model.BatchSummary) []BatchSummary {
-	s := []BatchSummary{}
-	for i := 0; i < len(batches); i++ {
-		s = append(s, convertBatchSummary(batches[i]))
-	}
-
-	return s
-}
-
-func convertBatchSummary(b model.BatchSummary) BatchSummary {
-	return BatchSummary{
-		ID:         b.ID,
-		Name:       b.Name,
-		Number:     b.BatchNo,
-		RecipeName: b.Recipe.Name,
-	}
-}
-
-func convertBatchDetail(b model.BatchDetail) BatchDetail {
-	return BatchDetail{
-		ID:     b.ID,
-		Name:   b.Name,
-		Number: b.BatchNo,
-		Recipe: convertRecipe(b.Recipe),
-	}
-}
-
-func convertRecipe(recipe model.Recipe) Recipe {
-	return Recipe{
-		Name:         recipe.Name,
-		Fermentation: convertFermentation(recipe.Fermentation),
-		OG:           recipe.Og,
-		FG:           recipe.Fg,
-	}
-}
-
-func convertFermentation(fermentation model.Fermentation) Fermentation {
-	return Fermentation{
-		Name:  fermentation.Name,
-		Steps: convertFermentationSteps(fermentation.Steps),
-	}
-}
-
-func convertFermentationSteps(steps []model.FermentationSteps) []FermentationStep {
-	s := []FermentationStep{}
-	for i := 0; i < len(steps); i++ {
-		s = append(s, convertFermentationStep(steps[i]))
-	}
-
-	return s
-}
-
-func convertFermentationStep(step model.FermentationSteps) FermentationStep {
-	return FermentationStep{
-		Type:            step.Type,
-		ActualTime:      step.ActualTime,
-		StepTemperature: step.StepTemp,
-		StepTime:        step.StepTime,
 	}
 }

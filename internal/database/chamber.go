@@ -91,7 +91,7 @@ func (r *ChamberRepo) Save(c *chamber.Chamber) error {
 	}
 
 	c.Readings = nil
-	c.CurrentFermentationStep = nil
+	c.CurrentFermentationStep = ""
 	c.ModTime = time.Now()
 
 	if err := r.db.Update(func(tx *bbolt.Tx) error {

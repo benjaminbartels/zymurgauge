@@ -1,5 +1,4 @@
 ---
-
 openapi: 3.0.0
 info:
   title: Zymurgauge API
@@ -10,43 +9,79 @@ servers:
     variables:
       host:
         enum:
-          - 'localhost'
-          - 'zymurgauge.local'
+          - "localhost"
+          - "zymurgauge.local"
         default: localhost
       port:
         enum:
-          - '8080'
-        default: '8080'
+          - "8080"
+        default: "8080"
       basePath:
         enum:
-          - 'v1'
+          - "v1"
         default: v1
 paths:
-  '/chambers':
+  "/login":
+    post:
+      description: Validates users credentials
+      operationId: login
+      responses:
+        "200":
+          description: OK response with auth token
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoginSuccess"
+              examples:
+                chambers:
+                  $ref: "#/components/examples/loginSuccess"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                incorrectUsername:
+                  $ref: "#/components/examples/incorrectUsernameError"
+                incorrectPassword:
+                  $ref: "#/components/examples/incorrectPasswordError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                error:
+                  $ref: "#/components/examples/internalServerError"
+  "/chambers":
     get:
       description: Returns all chambers
       operationId: getChambers
       responses:
-        '200':
+        "200":
           description: OK response with list of chambers
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Chamber'
+                  $ref: "#/components/schemas/Chamber"
               examples:
                 chambers:
-                  $ref: '#/components/examples/chambers'
-        '500':
+                  $ref: "#/components/examples/chambers"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
+                  $ref: "#/components/examples/internalServerError"
     post:
       description: Saves a chamber
       operationId: saveChamber
@@ -56,43 +91,43 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Chamber'
+              $ref: "#/components/schemas/Chamber"
             examples:
               newChamber:
-                $ref: '#/components/examples/newChamber'
+                $ref: "#/components/examples/newChamber"
               updateChamber:
-                $ref: '#/components/examples/updateChamber'
+                $ref: "#/components/examples/updateChamber"
       responses:
-        '200':
+        "200":
           description: OK response with saved chamber
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Chamber'
+                $ref: "#/components/schemas/Chamber"
               examples:
                 chamber:
-                  $ref: '#/components/examples/chamber'
-        '400':
-          description: Bad Request with invalid configuration
+                  $ref: "#/components/examples/chamber"
+        "400":
+          description: Bad Request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidConfigurationError:
-                  $ref: '#/components/examples/invalidConfigurationError'
+                  $ref: "#/components/examples/invalidConfigurationError"
                 fermentationInProgressError:
-                  $ref: '#/components/examples/invalidConfigurationError'
-        '500':
+                  $ref: "#/components/examples/fermentationInProgressError"
+        "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
-  '/chambers/{id}':
+                  $ref: "#/components/examples/internalServerError"
+  "/chambers/{id}":
     get:
       description: Returns a single chamber by id
       operationId: getChamberByID
@@ -106,33 +141,33 @@ paths:
             format: uuid
           example: 96f58a65-03c0-49f3-83ca-ab751bbf3768
       responses:
-        '200':
+        "200":
           description: OK response with a chamber
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Chamber'
+                $ref: "#/components/schemas/Chamber"
               examples:
                 chamber:
-                  $ref: '#/components/examples/chamber'
-        '404':
+                  $ref: "#/components/examples/chamber"
+        "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/chamberNotFoundError'
-        '500':
+                  $ref: "#/components/examples/chamberNotFoundError"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
+                  $ref: "#/components/examples/internalServerError"
     delete:
       description: Deletes a single chamber by id
       operationId: deleteChamberByID
@@ -146,34 +181,43 @@ paths:
             format: uuid
           example: 96f58a65-03c0-49f3-83ca-ab751bbf3768
       responses:
-        '200':
+        "200":
           description: OK response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: "#/components/schemas/Status"
               examples:
                 chamber:
-                  $ref: '#/components/examples/success'
-        '404':
+                  $ref: "#/components/examples/success"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                error:
+                  $ref: "#/components/examples/fermentationInProgressError"
+        "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/chamberNotFoundError'
-        '500':
+                  $ref: "#/components/examples/chamberNotFoundError"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
-  '/chambers/{id}/start':
+                  $ref: "#/components/examples/internalServerError"
+  "/chambers/{id}/start":
     post:
       description: Starts a fermentation at the given step
       operationId: startFermentation
@@ -191,49 +235,47 @@ paths:
           description: step of fermentation
           required: true
           schema:
-            type: number
-            format: integer
-          example: 1
+            type: string
       responses:
-        '200':
+        "200":
           description: OK response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: "#/components/schemas/Status"
               examples:
                 chamber:
-                  $ref: '#/components/examples/success'
-        '400':
+                  $ref: "#/components/examples/success"
+        "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 invalidStepError:
-                  $ref: '#/components/examples/invalidStepError'
-                noCurrentBatchError:
-                  $ref: '#/components/examples/noCurrentBatchError'
-        '404':
+                  $ref: "#/components/examples/invalidStepError"
+                noCurrentFermentationError:
+                  $ref: "#/components/examples/noCurrentFermentationError"
+        "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/chamberNotFoundError'
-        '500':
+                  $ref: "#/components/examples/chamberNotFoundError"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
-  '/chambers/{id}/stop':
+                  $ref: "#/components/examples/internalServerError"
+  "/chambers/{id}/stop":
     post:
       description: Stops a fermentation
       operationId: stopFermentation
@@ -247,48 +289,48 @@ paths:
             format: uuid
           example: 96f58a65-03c0-49f3-83ca-ab751bbf3768
       responses:
-        '200':
+        "200":
           description: OK response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Status'
+                $ref: "#/components/schemas/Status"
               examples:
                 chamber:
-                  $ref: '#/components/examples/success'
-        '400':
+                  $ref: "#/components/examples/success"
+        "400":
           description: Bad Request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 notFermentingError:
-                  $ref: '#/components/examples/notFermentingError'
-        '404':
+                  $ref: "#/components/examples/notFermentingError"
+        "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/chamberNotFoundError'
-        '500':
+                  $ref: "#/components/examples/chamberNotFoundError"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
-  '/thermometers':
+                  $ref: "#/components/examples/internalServerError"
+  "/thermometers":
     get:
       description: Returns all thermometer ids
       operationId: getThermometers
       responses:
-        '200':
+        "200":
           description: OK response with list of thermometer ids
           content:
             application/json:
@@ -297,162 +339,275 @@ paths:
                 items:
                   type: string
               example: [28-000006285484, 28-0000041ab222]
-        '500':
+        "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
-  '/batches':
+                  $ref: "#/components/examples/internalServerError"
+  "/fermentations":
     get:
-      description: Returns all batches
-      operationId: getBatches
+      description: Returns all fermentations
+      operationId: getFermentation
       responses:
-        '200':
-          description: OK response with list of batches
+        "200":
+          description: OK response with list of fermentations
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Batch'
+                  $ref: "#/components/schemas/FermentationSummary"
               examples:
                 error:
-                  $ref: '#/components/examples/batches'
-        '500':
+                  $ref: "#/components/examples/FermentationSummaries"
+        "500":
           description: Internal Server Error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
-  '/batches/{id}':
+                  $ref: "#/components/examples/internalServerError"
+  "/fermentations/{batchId}":
     get:
-      description: Returns a single batch by id
-      operationId: getBatchByID
+      description: Returns a single fermentation by batch id
+      operationId: getFermentationByBatchID
       parameters:
-        - name: id
+        - name: batchId
           in: path
-          description: ID of batch to get
+          description: batchID of fermentation to get
           required: true
           schema:
             type: string
           example: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
       responses:
-        '200':
-          description: OK response with a batch
+        "200":
+          description: OK response with a fermentation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Batch'
+                $ref: "#/components/schemas/FermentationDetail"
               examples:
                 error:
-                  $ref: '#/components/examples/batch'
-        '404':
+                  $ref: "#/components/examples/FermentationDetail"
+        "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/batchNotFoundError'
-        '500':
+                  $ref: "#/components/examples/fermentationNotFoundError"
+        "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: '#/components/examples/internalServerError'
+                  $ref: "#/components/examples/internalServerError"
+  "/settings":
+    get:
+      description: Get settings
+      operationId: getSettings
+      responses:
+        "200":
+          description: OK response with saved chamber
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+              examples:
+                chamber:
+                  $ref: "#/components/examples/settings"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                error:
+                  $ref: "#/components/examples/internalServerError"
 components:
   schemas:
+    LoginSuccess:
+      type: object
+      properties:
+        token:
+          type: string
     Chamber:
       type: object
+      required:
+        - name
+        - deviceConfig
+        - chillingDifferential
+        - heatingDifferential
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
-        deviceConfigs:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              type:
-                type: string
-                enum:
-                  - ds18b20
-                  - gpio
-                  - tilt
-              roles:
-                type: array
-                items:
-                  type: string
-                  enum:
-                    - beerThermometer
-                    - auxiliaryThermometer
-                    - externalThermometer
-                    - chiller
-                    - heater
-                    - hydrometer
-        chillerKp:
+        deviceConfig:
+          type: object
+          required:
+            - chillerGpio
+            - heaterGpio
+            - beerThermometerType
+            - beerThermometerId
+          properties:
+            chillerGpio:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 25
+            heaterGpio:
+              type: integer
+              format: int32
+              minimum: 0
+              maximum: 25
+            beerThermometerType:
+              type: string
+              enum:
+                - DS18B20
+                - Tilt
+            beerThermometerId:
+              type: string
+            auxiliaryThermometerType:
+              type: string
+              enum:
+                - DS18B20
+                - Tilt
+            auxiliaryThermometerId:
+              type: string
+            externalThermometerType:
+              type: string
+              enum:
+                - DS18B20
+                - Tilt
+            externalThermometerId:
+              type: string
+            hydrometerType:
+              type: string
+              enum:
+                - Tilt
+            hydrometerId:
+              type: string
+        chillingDifferential:
           type: number
           format: double
-        chillerKi:
+        heatingDifferential:
           type: number
           format: double
-        chillerKd:
-          type: number
-          format: double
-        heaterKp:
-          type: number
-          format: double
-        heaterKi:
-          type: number
-          format: double
-        heaterKd:
-          type: number
-          format: double
+        currentFermentation:
+          type: object
+          $ref: "#/components/schemas/FermentationDetail"
+        modTime:
+          type: string
+          format: date-time
+          readOnly: true
         readings:
           type: object
+          readOnly: true
           properties:
             beerTemperature:
               type: number
               format: double
+              readOnly: true
             auxiliaryTemperature:
               type: number
               format: double
+              readOnly: true
             externalTemperature:
               type: number
               format: double
+              readOnly: true
             hydrometerGravity:
               type: number
               format: double
-        currentFermentationStep:
-          type: string
-        modTime:
-          type: string
-          format: date-time
-    Batch:
+              readOnly: true
+    FermentationSummary:
       type: object
+      required:
+        - batchID
+        - batchNumber
+        - recipeName
       properties:
-        id:
+        batchId:
           type: string
+        batchNumber:
+          type: number
+          format: int32
+        recipeName:
+          type: string
+    FermentationDetail:
+      type: object
+      required:
+        - name
+        - batchID
+        - recipeName
+        - originalGravity
+        - finalGravity
+        - steps
+      properties:
         name:
           type: string
-        modTime:
+        batchId:
           type: string
-          format: date-time
+        recipeName:
+          type: string
+        originalGravity:
+          type: number
+          format: double
+        finalGravity:
+          type: number
+          format: double
+        steps:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - temperature
+              - days
+            properties:
+              name:
+                type: string
+              temperature:
+                type: number
+                format: double
+              days:
+                type: number
+                format: int32
+    Settings:
+      type: object
+      required:
+        - temperatureUnits
+        - authSecret
+      properties:
+        temperatureUnits:
+          type: string
+          enum:
+            - Celsius
+            - Fahrenheit
+        authSecret:
+          type: string
+        brewfatherApiUserId:
+          type: string
+        brewfatherApiKey:
+          type: string
+        brewfatherLogUrl:
+          type: string
+        statsDAddress:
+          type: string
     Status:
       type: object
       properties:
@@ -464,195 +619,138 @@ components:
         errMessage:
           type: string
   examples:
+    loginSuccess:
+      value:
+        token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
     chamber:
       value:
         id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
         name: My Fermentation Chamber
-        deviceConfigs:
-          - id: 28-000006285484
-            type: "ds18b20"
-            roles:
-              - "beerThermometer"
-          - id: GPIO22
-            type: "gpio"
-            roles:
-              - "chiller"
-          - id: GPIO17
-            type: "gpio"
-            roles:
-              - "heater"
-        chillerKp: -1.0
-        chillerKi: -1.0
-        chillerKd: -1.0
-        heaterKp: 1.0
-        heaterKi: 1.0
-        heaterKd: 1.0
-        currentBatch:
-          id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
-          name: My Pale Ale
-          fermentation:
-            Name: Imported
-            Steps:
-              - type: Primary
-                actualTime: 1635573600000
-                stepTemp: 19.4
-                stepTime: 4
-              - type: Secondary
-                actualTime: 1635919200000
-                stepTime: 10
-                stepTemp: 19.0
-              - type: Conditioning
-                actualTime: 1636786800000
-                stepTime: 30
-                stepTemp: 18.3
-        currentFermentationStep: Primary
+        deviceConfig:
+          chillerGpio: "22"
+          heaterGpio: "17"
+          beerThermometerType: "ds18b20"
+          beerThermometerId: "28-000006285484"
+          auxiliaryThermometerType: "tilt"
+          auxiliaryThermometerId: "orange"
+          externalThermometerType: "ds18b20"
+          externalThermometerId: "28-000003315552"
+          hydrometerType: "tilt"
+          hydrometerId: "orange"
+        chillingDifferential: 0.5
+        heatingDifferential: 0.5
+        currentFermentation:
+          name: Ale
+          batchId: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+          recipeName: My Pale Ale
+          originalGravity: 1.070853461
+          finalGravity: 1.016
+          steps:
+            - name: Primary
+              temperature: 19.4
+            - name: Secondary
+              temperature: 10
+            - name: Conditioning
+              temperature: 30
+          currentStep: Primary
+        modTime: "2021-10-28T09:54:07.155132Z"
         readings:
           beerTemperature: 20
           auxiliaryTemperature: 22.1
           externalTemperature: 23.1
           hydrometerGravity: 1.002
-        modTime: "2021-10-28T09:54:07.155132Z"
     chambers:
       value:
         - id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
           name: My Fermentation Chamber
-          deviceConfigs:
-            - id: 28-000006285484
-              type: "ds18b20"
-              roles:
-                - "beerThermometer"
-            - id: GPIO22
-              type: "gpio"
-              roles:
-                - "chiller"
-            - id: GPIO17
-              type: "gpio"
-              roles:
-                - "heater"
-          chillerKp: -1.0
-          chillerKi: -1.0
-          chillerKd: -1.0
-          heaterKp: 1.0
-          heaterKi: 1.0
-          heaterKd: 1.0
-          currentBatch:
-            id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
-            name: My Pale Ale
-            fermentation:
-              Name: Imported
-              Steps:
-                - type: Primary
-                  actualTime: 1635573600000
-                  stepTemp: 19.4
-                  stepTime: 4
-                - type: Secondary
-                  actualTime: 1635919200000
-                  stepTime: 10
-                  stepTemp: 19.
-                - type: Conditioning
-                  actualTime: 1636786800000
-                  stepTime: 30
-                  stepTemp: 18.3
+          deviceConfig:
+            chillerGpio: "22"
+            heaterGpio: "17"
+            beerThermometerType: "ds18b20"
+            beerThermometerId: "28-000006285484"
+            auxiliaryThermometerType: "tilt"
+            auxiliaryThermometerId: "orange"
+            externalThermometerType: "ds18b20"
+            externalThermometerId: "28-000003315552"
+            hydrometerType: "tilt"
+            hydrometerId: "orange"
+          chillingDifferential: 0.5
+          heatingDifferential: 0.5
+          currentFermentation:
+            name: Ale
+            batchId: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+            recipeName: My Pale Ale
+            originalGravity: 1.070853461
+            finalGravity: 1.016
+            steps:
+              - name: Primary
+                temperature: 19.4
+              - name: Secondary
+                temperature: 10
+              - name: Conditioning
+                temperature: 30
+            currentStep: Primary
+          modTime: "2021-10-28T09:54:07.155132Z"
           currentFermentationStep: Primary
           readings:
             beerTemperature: 20
             auxiliaryTemperature: 22.1
             externalTemperature: 23.1
             hydrometerGravity: 1.002
-          modTime: "2021-10-28T09:54:07.155132Z"
         - id: dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1
           name: My Fermentation Chamber
-          deviceConfigs:
-            - id: orange
-              type: "tilt"
-              roles:
-                - "beerThermometer"
-                - "hydrometer"
-            - id: GPIO22
-              type: "gpio"
-              roles:
-                - "chiller"
-            - id: GPIO17
-              type: "gpio"
-              roles:
-                - "heater"
-          chillerKp: -1.0
-          chillerKi: -1.0
-          chillerKd: -1.0
-          heaterKp: 1.0
-          heaterKi: 1.0
-          heaterKd: 1.0
+          deviceConfig:
+            chillerGpio: "22"
+            heaterGpio: "17"
+            beerThermometerType: "ds18b20"
+            beerThermometerId: "28-000006285484"
+            auxiliaryThermometerType: "tilt"
+            auxiliaryThermometerId: "orange"
+            externalThermometerType: "ds18b20"
+            externalThermometerId: "28-000003315552"
+            hydrometerType: "tilt"
+            hydrometerId: "orange"
+          chillingDifferential: 0.5
+          heatingDifferential: 0.5
           modTime: "2021-10-28T09:54:07.155132Z"
     newChamber:
       value:
         name: My Fermentation Chamber
-        deviceConfigs:
-          - id: 28-000006285484
-            type: "ds18b20"
-            roles:
-              - "beerThermometer"
-          - id: GPIO22
-            type: "gpio"
-            roles:
-              - "chiller"
-          - id: GPIO17
-            type: "gpio"
-            roles:
-              - "heater"
-        chillerKp: -1.0
-        chillerKi: -1.0
-        chillerKd: -1.0
-        heaterKp: 1.0
-        heaterKi: 1.0
-        heaterKd: 1.0
+        deviceConfig:
+          chillerGpio: "22"
+          heaterGpio: "17"
+          beerThermometerType: "ds18b20"
+          beerThermometerId: "28-000006285484"
+          auxiliaryThermometerType: "tilt"
+          auxiliaryThermometerId: "orange"
+          externalThermometerType: "ds18b20"
+          externalThermometerId: "28-000003315552"
+          hydrometerType: "tilt"
+          hydrometerId: "orange"
+        chillingDifferential: 0.5
+        heatingDifferential: 0.5
     updateChamber:
       value:
         id: 96f58a65-03c0-49f3-83ca-ab751bbf3768
         name: My Fermentation Chamber
-        deviceConfigs:
-          - id: 28-000006285484
-            type: "ds18b20"
-            roles:
-              - "beerThermometer"
-          - id: GPIO22
-            type: "gpio"
-            roles:
-              - "chiller"
-          - id: GPIO17
-            type: "gpio"
-            roles:
-              - "heater"
-        chillerKp: -1.0
-        chillerKi: -1.0
-        chillerKd: -1.0
-        heaterKp: 1.0
-        heaterKi: 1.0
-        heaterKd: 1.0
-    batch:
-      value:
-        id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
-        name: My Pale Ale
-        fermentation:
-          Name: Imported
-          Steps:
-            - type: Primary
-              actualTime: 1635573600000
-              stepTemp: 19.4
-              stepTime: 4
-            - type: Secondary
-              actualTime: 1635919200000
-              stepTime: 10
-              stepTemp: 19.
-            - type: Conditioning
-              actualTime: 1636786800000
-              stepTime: 30
-              stepTemp: 18.3
-    batches:
+        deviceConfig:
+          chillerGpio: "22"
+          heaterGpio: "17"
+          beerThermometerType: "ds18b20"
+          beerThermometerId: "28-000006285484"
+          auxiliaryThermometerType: "tilt"
+          auxiliaryThermometerId: "orange"
+          externalThermometerType: "ds18b20"
+          externalThermometerId: "28-000003315552"
+          hydrometerType: "tilt"
+          hydrometerId: "orange"
+        chillingDifferential: 0.5
+        heatingDifferential: 0.5
+    fermentationSummaries:
       value:
         - id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
-          name: My Pale Ale
           fermentation:
-            Name: Imported
+            Name: Ale
             Steps:
               - type: Primary
                 actualTime: 1635573600000
@@ -669,7 +767,7 @@ components:
         - id: qbFkFfeaJdL1ZibNLTu2lfRjIii1qW
           name: Stout
           fermentation:
-            Name: Imported
+            Name: Ale
             Steps:
               - type: Primary
                 actualTime: 1635573600000
@@ -679,27 +777,59 @@ components:
                 actualTime: 1636786800000
                 stepTime: 30
                 stepTemp: 18.3
+    fermentationDetail:
+      value:
+        name: Ale
+        batchId: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+        recipeName: My Pale Ale
+        originalGravity: 1.070853461
+        finalGravity: 1.016
+        steps:
+          - name: Primary
+            temperature: 19.4
+            days: 4
+          - name: Secondary
+            days: 10
+            temperature: 19.
+          - name: Conditioning
+            days: 30
+            temperature: 18.3
     success:
       value:
         message: Success
+    settings:
+      value:
+        temperatureUnits: "Celsius"
+        authSecret: "jfj39JH9fmm2HJHDFK9jsjmjgkJDKSNHF9kJHHDHJ88NJNJdkj1jnjjkDKJKdFJs"
+        brewfatherApiUserId: "hdklSUJ792KHGF5JDJut709MJDY1"
+        brewfatherApiKey: "hhdfokSJjh8ikkdfjKSKD9865SKKJD86SKJDH44q11dkdkdTJDHhhdlld997V6Sw"
+        brewfatherLogUrl: "http://log.brewfather.net/stream?id=hd912jhf6sjf0e"
+        influxDbUrl: "http://zymurgauge.local:8086"
+        statsDAddress: "localhost:8125"
+    incorrectUsernameError:
+      value:
+        error: incorrect username
+    incorrectPasswordError:
+      value:
+        error: incorrect password
     chamberNotFoundError:
       value:
         error: chamber '96f58a65-03c0-49f3-83ca-ab751bbf3768' not found
-    batchNotFoundError:
+    fermentationNotFoundError:
       value:
-        error: batch 'KBTM3F9soO5TtbAx0A5mBZTAUsNZyg' not found
+        error: fermentation 'KBTM3F9soO5TtbAx0A5mBZTAUsNZyg' not found
     invalidConfigurationError:
       value:
-        error: "configuration is invalid: invalid device type 'X', invalid device role 'Y'"
+        error: "configuration is invalid: ..."
     fermentationInProgressError:
       value:
         error: fermentation is in progress
     invalidStepError:
       value:
-        error: invalid step
-    noCurrentBatchError:
+        error: step 'Secondary' is invalid for chamber '96f58a65-03c0-49f3-83ca-ab751bbf3768'
+    noCurrentFermentationError:
       value:
-        error: chamber does not have a current batch
+        error: chamber does not have a current fermentation
     notFermentingError:
       value:
         error: fermentation has not started

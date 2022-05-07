@@ -40,12 +40,12 @@ func NewApp(chamberManager chamber.Controller, devicePath string, service brewfa
 
 	authMw := middleware.Authorize(s.AuthSecret, logger)
 
-	LoginHandler := &AuthHandler{
+	AuthHandler := &AuthHandler{
 		SettingsRepo: settingsRepo,
 		Logger:       logger,
 	}
 
-	api.Register(http.MethodPost, version, loginPath, LoginHandler.Login)
+	api.Register(http.MethodPost, version, loginPath, AuthHandler.Login)
 
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberManager,
