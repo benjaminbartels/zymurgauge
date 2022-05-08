@@ -174,9 +174,9 @@ type BatchYeasts struct {
 	Flocculation  string  `json:"flocculation"`
 	ProductID     string  `json:"productId"`
 	MinTemp       int     `json:"minTemp"`
-	DisplayAmount int     `json:"displayAmount"`
+	DisplayAmount float64 `json:"displayAmount"`
 	Name          string  `json:"name"`
-	Amount        int     `json:"amount"`
+	Amount        float64 `json:"amount"`
 	Inventory     float64 `json:"inventory"`
 }
 
@@ -416,10 +416,10 @@ type Total struct {
 }
 
 type MashAdjustmentsAcids struct {
-	Type           string `json:"type"`
-	AlkalinityMeqL int    `json:"alkalinityMeqL"`
-	Concentration  int    `json:"concentration"`
-	Amount         int    `json:"amount"`
+	Type           string  `json:"type"`
+	AlkalinityMeqL float64 `json:"alkalinityMeqL"`
+	Concentration  int     `json:"concentration"`
+	Amount         int     `json:"amount"`
 }
 
 type MashAdjustments struct {
@@ -591,7 +591,7 @@ type Water struct {
 	Total                   Total             `json:"total"`
 	MashAdjustments         MashAdjustments   `json:"mashAdjustments"`
 	MashWaterAmount         interface{}       `json:"mashWaterAmount"`
-	AcidPhAdjustment        int               `json:"acidPhAdjustment"`
+	AcidPhAdjustment        float64           `json:"acidPhAdjustment"`
 	SpargeAcidPhAdjustment  int               `json:"spargeAcidPhAdjustment"`
 	Diluted                 interface{}       `json:"diluted"`
 	DilutionPercentage      interface{}       `json:"dilutionPercentage"`
@@ -669,7 +669,7 @@ type Yeasts struct {
 	MinAttenuation     interface{} `json:"minAttenuation"`
 	Description        string      `json:"description"`
 	Form               string      `json:"form"`
-	Amount             int         `json:"amount"`
+	Amount             int         `json:"float64"`
 	Name               string      `json:"name"`
 	Attenuation        int         `json:"attenuation"`
 	FermentsAll        bool        `json:"fermentsAll"`
@@ -742,7 +742,7 @@ type Yeast struct {
 	Og                float64      `json:"og"`
 	StartType         string       `json:"startType"`
 	OverbuildCells    interface{}  `json:"overbuildCells"`
-	StarterPackages   int          `json:"starterPackages"`
+	StarterPackages   float64      `json:"starterPackages"`
 	CalcStarterVol    bool         `json:"calcStarterVol"`
 	PacksPitchCells   int          `json:"packsPitchCells"`
 	Rehydrate         bool         `json:"rehydrate"`
@@ -758,7 +758,7 @@ type Yeast struct {
 	PitchRateActual   float64      `json:"pitchRateActual"`
 	ActualPacks       float64      `json:"actualPacks"`
 	PitchCells        float64      `json:"pitchCells"`
-	Rate              int          `json:"rate"`
+	Rate              float64      `json:"rate"`
 	Steps             []YeastSteps `json:"steps"`
 }
 
