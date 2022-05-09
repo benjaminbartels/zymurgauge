@@ -4,14 +4,14 @@ info:
   title: Zymurgauge API
   version: 0.1.0
 servers:
-  - url: http://{host}:{port}/{basePath}
+  - url: http://{host}:{port}/api/{basePath}
     description: The production API server
     variables:
       host:
         enum:
           - "localhost"
           - "zymurgauge.local"
-        default: localhost
+        default: zymurgauge.local
       port:
         enum:
           - "8080"
@@ -25,15 +25,23 @@ paths:
     post:
       description: Validates users credentials
       operationId: login
+      requestBody:
+        description: Users credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginCredentials"
+            examples:
+              credentials:
+                $ref: "#/components/examples/loginCredentials"
       responses:
         "200":
           description: OK response with auth token
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LoginSuccess"
+                $ref: "#/components/schemas/LoginSuccess"
               examples:
                 chambers:
                   $ref: "#/components/examples/loginSuccess"
@@ -348,22 +356,22 @@ paths:
               examples:
                 error:
                   $ref: "#/components/examples/internalServerError"
-  "/fermentations":
+  "/batches":
     get:
-      description: Returns all fermentations
-      operationId: getFermentation
+      description: Returns all batches
+      operationId: getBatches
       responses:
         "200":
-          description: OK response with list of fermentations
+          description: OK response with list of batches
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/FermentationSummary"
+                  $ref: "#/components/schemas/BatchSummary"
               examples:
                 error:
-                  $ref: "#/components/examples/FermentationSummaries"
+                  $ref: "#/components/examples/batchSummaries"
         "500":
           description: Internal Server Error
           content:
@@ -373,28 +381,28 @@ paths:
               examples:
                 error:
                   $ref: "#/components/examples/internalServerError"
-  "/fermentations/{batchId}":
+  "/batches/{id}":
     get:
-      description: Returns a single fermentation by batch id
-      operationId: getFermentationByBatchID
+      description: Returns a single batch by id
+      operationId: getBatchByID
       parameters:
-        - name: batchId
+        - name: id
           in: path
-          description: batchID of fermentation to get
+          description: ID of batch to get
           required: true
           schema:
             type: string
           example: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
       responses:
         "200":
-          description: OK response with a fermentation
+          description: OK response with a batch
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FermentationDetail"
+                $ref: "#/components/schemas/BatchDetail"
               examples:
                 error:
-                  $ref: "#/components/examples/FermentationDetail"
+                  $ref: "#/components/examples/batchDetail"
         "404":
           description: Not found
           content:
@@ -403,7 +411,7 @@ paths:
                 $ref: "#/components/schemas/Error"
               examples:
                 error:
-                  $ref: "#/components/examples/fermentationNotFoundError"
+                  $ref: "#/components/examples/batchNotFoundError"
         "500":
           description: Internal server error
           content:
@@ -438,6 +446,13 @@ paths:
                   $ref: "#/components/examples/internalServerError"
 components:
   schemas:
+    LoginCredentials:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
     LoginSuccess:
       type: object
       properties:
@@ -507,9 +522,9 @@ components:
         heatingDifferential:
           type: number
           format: double
-        currentFermentation:
+        currentBatch:
           type: object
-          $ref: "#/components/schemas/FermentationDetail"
+          $ref: "#/components/schemas/BatchDetail"
         modTime:
           type: string
           format: date-time
@@ -534,7 +549,7 @@ components:
               type: number
               format: double
               readOnly: true
-    FermentationSummary:
+    BatchSummary:
       type: object
       required:
         - batchID
@@ -548,45 +563,67 @@ components:
           format: int32
         recipeName:
           type: string
-    FermentationDetail:
+    BatchDetail:
+      type: object
+      required:
+        - id
+        - number
+        - recipe
+      properties:
+        id:
+          type: string
+        number:
+          type: number
+          format: int32
+        recipe:
+          type: object
+          $ref: "#/components/schemas/Recipe"
+    Recipe:
       type: object
       required:
         - name
-        - batchID
-        - recipeName
+        - fermentation
         - originalGravity
         - finalGravity
-        - steps
       properties:
         name:
           type: string
-        batchId:
-          type: string
-        recipeName:
-          type: string
+        fermentation:
+          type: object
+          $ref: "#/components/schemas/Fermentation"
         originalGravity:
           type: number
           format: double
         finalGravity:
           type: number
           format: double
+    Fermentation:
+      type: object
+      required:
+        - name
+        - steps
+      properties:
+        name:
+          type: string
         steps:
-          type: array
           items:
             type: object
-            required:
-              - name
-              - temperature
-              - days
-            properties:
-              name:
-                type: string
-              temperature:
-                type: number
-                format: double
-              days:
-                type: number
-                format: int32
+            $ref: "#/components/schemas/FermentationStep"
+    FermentationStep:
+      type: object
+      required:
+        - name
+        - temperature
+        - duration
+      properties:
+        name:
+          type: string
+        temperature:
+          type: number
+          format: double
+        duration:
+          type: number
+          format: int32
     Settings:
       type: object
       required:
@@ -619,6 +656,10 @@ components:
         errMessage:
           type: string
   examples:
+    loginCredentials:
+      value:
+        username: your_username
+        password: your_password
     loginSuccess:
       value:
         token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
@@ -639,20 +680,23 @@ components:
           hydrometerId: "orange"
         chillingDifferential: 0.5
         heatingDifferential: 0.5
-        currentFermentation:
-          name: Ale
-          batchId: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
-          recipeName: My Pale Ale
+        currentBatch:
+          id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+          number: 1
+          recipe:
+          name: My Pale Ale
+          fermentation:
+            name: ale
+            steps:
+              - name: Primary
+                temperature: 19.4
+              - name: Secondary
+                temperature: 10
+              - name: Conditioning
+                temperature: 30
           originalGravity: 1.070853461
           finalGravity: 1.016
-          steps:
-            - name: Primary
-              temperature: 19.4
-            - name: Secondary
-              temperature: 10
-            - name: Conditioning
-              temperature: 30
-          currentStep: Primary
+        currentFermentationStep: Primary
         modTime: "2021-10-28T09:54:07.155132Z"
         readings:
           beerTemperature: 20
@@ -676,27 +720,34 @@ components:
             hydrometerId: "orange"
           chillingDifferential: 0.5
           heatingDifferential: 0.5
-          currentFermentation:
-            name: Ale
-            batchId: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
-            recipeName: My Pale Ale
+          currentBatch:
+            id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
+            number: 1
+            recipe:
+            name: My Pale Ale
+            fermentation:
+              name: ale
+              steps:
+                - name: Primary
+                  temperature: 19.4
+                - name: Secondary
+                  temperature: 10
+                - name: Conditioning
+                  temperature: 30
             originalGravity: 1.070853461
             finalGravity: 1.016
-            steps:
-              - name: Primary
-                temperature: 19.4
-              - name: Secondary
-                temperature: 10
-              - name: Conditioning
-                temperature: 30
-            currentStep: Primary
-          modTime: "2021-10-28T09:54:07.155132Z"
           currentFermentationStep: Primary
+          modTime: "2021-10-28T09:54:07.155132Z"
           readings:
             beerTemperature: 20
             auxiliaryTemperature: 22.1
             externalTemperature: 23.1
             hydrometerGravity: 1.002
+            readings:
+              beerTemperature: 20
+              auxiliaryTemperature: 22.1
+              externalTemperature: 23.1
+              hydrometerGravity: 1.002
         - id: dd2610fe-95fc-45f3-8dd8-3051fb1bd4c1
           name: My Fermentation Chamber
           deviceConfig:
@@ -746,38 +797,33 @@ components:
           hydrometerId: "orange"
         chillingDifferential: 0.5
         heatingDifferential: 0.5
-    fermentationSummaries:
+    batchSummaries:
       value:
         - id: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
           fermentation:
             Name: Ale
             Steps:
               - type: Primary
-                actualTime: 1635573600000
-                stepTemp: 19.4
-                stepTime: 4
+                temperature: 19.4
+                duration: 4
               - type: Secondary
-                actualTime: 1635919200000
-                stepTime: 10
-                stepTemp: 19.
+                duration: 10
+                temperature: 19.
               - type: Conditioning
-                actualTime: 1636786800000
-                stepTime: 30
-                stepTemp: 18.3
+                duration: 30
+                temperature: 18.3
         - id: qbFkFfeaJdL1ZibNLTu2lfRjIii1qW
           name: Stout
           fermentation:
             Name: Ale
             Steps:
               - type: Primary
-                actualTime: 1635573600000
-                stepTemp: 19.4
-                stepTime: 4
+                temperature: 19.4
+                duration: 4
               - type: Conditioning
-                actualTime: 1636786800000
-                stepTime: 30
-                stepTemp: 18.3
-    fermentationDetail:
+                duration: 30
+                temperature: 18.3
+    batchDetail:
       value:
         name: Ale
         batchId: KBTM3F9soO5TtbAx0A5mBZTAUsNZyg
@@ -787,12 +833,12 @@ components:
         steps:
           - name: Primary
             temperature: 19.4
-            days: 4
+            duration: 4
           - name: Secondary
-            days: 10
+            duration: 10
             temperature: 19.
           - name: Conditioning
-            days: 30
+            duration: 30
             temperature: 18.3
     success:
       value:
@@ -815,9 +861,9 @@ components:
     chamberNotFoundError:
       value:
         error: chamber '96f58a65-03c0-49f3-83ca-ab751bbf3768' not found
-    fermentationNotFoundError:
+    batchNotFoundError:
       value:
-        error: fermentation 'KBTM3F9soO5TtbAx0A5mBZTAUsNZyg' not found
+        error: batch 'KBTM3F9soO5TtbAx0A5mBZTAUsNZyg' not found
     invalidConfigurationError:
       value:
         error: "configuration is invalid: ..."
