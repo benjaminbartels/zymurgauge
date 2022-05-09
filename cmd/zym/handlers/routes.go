@@ -70,7 +70,7 @@ func NewApp(chamberManager chamber.Controller, devicePath string, service brewfa
 		DevicePath: devicePath,
 	}
 
-	api.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll)
+	api.Register(http.MethodGet, version, thermometersPath, thermometersHandler.GetAll, authMw)
 
 	settingsHandler := &SettingsHandler{
 		SettingsRepo: settingsRepo,
