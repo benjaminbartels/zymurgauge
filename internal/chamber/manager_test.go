@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
 	"github.com/benjaminbartels/zymurgauge/internal/test/stubs"
@@ -31,17 +31,18 @@ func createTestChambers() []*chamber.Chamber {
 	chamber1 := &chamber.Chamber{
 		ID:   chamberID1,
 		Name: "ChamberWithCompleteConfigWithBatch",
-		CurrentBatch: &brewfather.BatchDetail{
-			Recipe: brewfather.Recipe{
-				Fermentation: brewfather.Fermentation{
-					Steps: []brewfather.FermentationStep{
+		CurrentBatch: &batch.Detail{
+			Recipe: batch.Recipe{
+				Name: "Pale Ale",
+				Fermentation: batch.Fermentation{
+					Steps: []batch.FermentationStep{
 						{
-							Type:            "Primary",
-							StepTemperature: 22,
+							Name:        "Primary",
+							Temperature: 22,
 						},
 						{
-							Type:            "Secondary",
-							StepTemperature: 20,
+							Name:        "Secondary",
+							Temperature: 20,
 						},
 					},
 				},
@@ -79,17 +80,18 @@ func createTestChambers() []*chamber.Chamber {
 			BeerThermometerType: "ds18b20",
 			BeerThermometerID:   "28-0000071cbc72",
 		},
-		CurrentBatch: &brewfather.BatchDetail{
-			Recipe: brewfather.Recipe{
-				Fermentation: brewfather.Fermentation{
-					Steps: []brewfather.FermentationStep{
+		CurrentBatch: &batch.Detail{
+			Recipe: batch.Recipe{
+				Name: "Stout",
+				Fermentation: batch.Fermentation{
+					Steps: []batch.FermentationStep{
 						{
-							Type:            "Primary",
-							StepTemperature: 22,
+							Name:        "Primary",
+							Temperature: 22,
 						},
 						{
-							Type:            "Secondary",
-							StepTemperature: 20,
+							Name:        "Secondary",
+							Temperature: 20,
 						},
 					},
 				},

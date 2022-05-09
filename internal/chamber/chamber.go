@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
@@ -19,15 +20,15 @@ import (
 // Chamber represents an insulated box (fridge) with internal heating/cooling elements that reacts to changes in
 // monitored temperatures, by correcting small deviations from your desired fermentation temperature.
 type Chamber struct {
-	ID                      string                  `json:"id"` // TODO: omit empty?
-	Name                    string                  `json:"name"`
-	DeviceConfig            DeviceConfig            `json:"deviceConfig"`
-	ChillingDifferential    float64                 `json:"chillingDifferential"`
-	HeatingDifferential     float64                 `json:"heatingDifferential"`
-	CurrentBatch            *brewfather.BatchDetail `json:"currentBatch,omitempty"`
-	ModTime                 time.Time               `json:"modTime"`
-	CurrentFermentationStep *string                 `json:"currentFermentationStep,omitempty"`
-	Readings                *Readings               `json:"readings,omitempty"`
+	ID                      string        `json:"id,omitempty"`
+	Name                    string        `json:"name"`
+	DeviceConfig            DeviceConfig  `json:"deviceConfig"`
+	ChillingDifferential    float64       `json:"chillingDifferential"`
+	HeatingDifferential     float64       `json:"heatingDifferential"`
+	CurrentBatch            *batch.Detail `json:"currentBatch,omitempty"`
+	CurrentFermentationStep string        `json:"currentFermentationStep,omitempty"`
+	ModTime                 time.Time     `json:"modTime"`
+	Readings                *Readings     `json:"readings,omitempty"` // TODO: validate required fields
 	logger                  *logrus.Logger
 	metrics                 metrics.Metrics
 	beerThermometer         device.Thermometer
@@ -49,12 +50,12 @@ type DeviceConfig struct {
 	HeaterGPIO               string `json:"heaterGpio"`
 	BeerThermometerType      string `json:"beerThermometerType"`
 	BeerThermometerID        string `json:"beerThermometerId"`
-	AuxiliaryThermometerType string `json:"auxiliaryThermometerType"`
-	AuxiliaryThermometerID   string `json:"auxiliaryThermometerId"`
-	ExternalThermometerType  string `json:"externalThermometerType"`
-	ExternalThermometerID    string `json:"externalThermometerId"`
-	HydrometerType           string `json:"hydrometerType"`
-	HydrometerID             string `json:"hydrometerId"`
+	AuxiliaryThermometerType string `json:"auxiliaryThermometerType,omitempty"`
+	AuxiliaryThermometerID   string `json:"auxiliaryThermometerId,omitempty"`
+	ExternalThermometerType  string `json:"externalThermometerType,omitempty"`
+	ExternalThermometerID    string `json:"externalThermometerId,omitempty"`
+	HydrometerType           string `json:"hydrometerType,omitempty"`
+	HydrometerID             string `json:"hydrometerId,omitempty"`
 }
 
 type Readings struct {
@@ -229,7 +230,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 		c.cancelFunc()
 	}
 
-	temp := step.StepTemperature
+	temp := step.Temperature
 	ctx, cancelFunc := context.WithCancel(ctx)
 	c.cancelFunc = cancelFunc
 
@@ -394,11 +395,11 @@ func (c *Chamber) getHydrometerGravity() (*float64, error) {
 	return &t, nil
 }
 
-func (c *Chamber) getStep(stepID string) *brewfather.FermentationStep {
-	var step *brewfather.FermentationStep
+func (c *Chamber) getStep(name string) *batch.FermentationStep {
+	var step *batch.FermentationStep
 
 	for i := range c.CurrentBatch.Recipe.Fermentation.Steps {
-		if c.CurrentBatch.Recipe.Fermentation.Steps[i].Type == stepID {
+		if c.CurrentBatch.Recipe.Fermentation.Steps[i].Name == name {
 			step = &c.CurrentBatch.Recipe.Fermentation.Steps[i]
 
 			break
@@ -417,6 +418,9 @@ func (c *Chamber) sendData(ctx context.Context) {
 }
 
 func (c *Chamber) emitMetrics() {
+	c.readingsMutex.Lock()
+	defer c.readingsMutex.Unlock()
+
 	name := strings.ReplaceAll(c.Name, " ", "")
 
 	if c.Readings.BeerTemperature != nil {
@@ -441,6 +445,9 @@ func (c *Chamber) emitMetrics() {
 }
 
 func (c *Chamber) sendToBrewFather(ctx context.Context) error {
+	c.readingsMutex.Lock()
+	defer c.readingsMutex.Unlock()
+
 	l := brewfather.LogEntry{
 		DeviceName:      c.Name,
 		Beer:            c.CurrentBatch.Recipe.Name,

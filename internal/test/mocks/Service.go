@@ -16,7 +16,7 @@ type Service struct {
 }
 
 // Get provides a mock function with given fields: ctx, id
-func (_m *Service) GetDetail(ctx context.Context, id string) (*brewfather.BatchDetail, error) {
+func (_m *Service) GetBatchDetail(ctx context.Context, id string) (*brewfather.BatchDetail, error) {
 	ret := _m.Called(ctx, id)
 
 	var r0 *brewfather.BatchDetail
@@ -39,7 +39,7 @@ func (_m *Service) GetDetail(ctx context.Context, id string) (*brewfather.BatchD
 }
 
 // GetAll provides a mock function with given fields: ctx
-func (_m *Service) GetAllSummaries(ctx context.Context) ([]brewfather.BatchSummary, error) {
+func (_m *Service) GetAllBatchSummaries(ctx context.Context) ([]brewfather.BatchSummary, error) {
 	ret := _m.Called(ctx)
 
 	var r0 []brewfather.BatchSummary
