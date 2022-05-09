@@ -23,7 +23,6 @@ export default function Chambers() {
         console.log(e);
       });
   }, []);
-
   // TODO: Use redux to store
   return (
     <>

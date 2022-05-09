@@ -1,5 +1,5 @@
 //nolint:tagliatelle // this file was manual generated and includes minor changes
-package model
+package brewfather
 
 type BatchSummary struct {
 	ID       string        `json:"_id"`
@@ -173,7 +173,7 @@ type BatchYeasts struct {
 	Form          string  `json:"form"`
 	Flocculation  string  `json:"flocculation"`
 	ProductID     string  `json:"productId"`
-	MinTemp       int     `json:"minTemp"`
+	MinTemp       float64 `json:"minTemp"`
 	DisplayAmount float64 `json:"displayAmount"`
 	Name          string  `json:"name"`
 	Amount        float64 `json:"amount"`
@@ -676,7 +676,7 @@ type Yeasts struct {
 	BestBeforeDate     interface{} `json:"bestBeforeDate"`
 	UserNotes          string      `json:"userNotes"`
 	Type               string      `json:"type"`
-	MinTemp            int         `json:"minTemp"`
+	MinTemp            float64     `json:"minTemp"`
 	Flocculation       string      `json:"flocculation"`
 	ID                 string      `json:"_id"`
 	ProductID          string      `json:"productId"`
@@ -886,7 +886,7 @@ type Data struct {
 	TotalWaterAmount        float64             `json:"totalWaterAmount"`
 	BatchSpargeWaterAmount3 interface{}         `json:"batchSpargeWaterAmount3"`
 	BatchSpargeWaterAmount2 interface{}         `json:"batchSpargeWaterAmount2"`
-	TotalDiastaticPower     int                 `json:"totalDiastaticPower"`
+	TotalDiastaticPower     float64             `json:"totalDiastaticPower"`
 }
 
 type Calories struct {

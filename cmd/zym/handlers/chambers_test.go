@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
-	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/test/mocks"
@@ -36,13 +36,13 @@ func getTestChamber() chamber.Chamber {
 			BeerThermometerType: "ds18b20",
 			BeerThermometerID:   "1",
 		},
-		CurrentBatch: &brewfather.BatchDetail{
-			Recipe: brewfather.Recipe{
-				Fermentation: brewfather.Fermentation{
-					Steps: []brewfather.FermentationStep{
+		CurrentBatch: &batch.Detail{
+			Recipe: batch.Recipe{
+				Fermentation: batch.Fermentation{
+					Steps: []batch.FermentationStep{
 						{
-							Type:            primaryStep,
-							StepTemperature: 22,
+							Name:        primaryStep,
+							Temperature: 22,
 						},
 					},
 				},

@@ -13,6 +13,7 @@ import (
 
 	"github.com/benjaminbartels/zymurgauge/cmd/zym/handlers"
 	"github.com/benjaminbartels/zymurgauge/internal/auth"
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/chamber"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/debug"
@@ -69,17 +70,17 @@ func TestRoutes(t *testing.T) {
 				BeerThermometerType: "ds18b20",
 				BeerThermometerID:   "1",
 			},
-			CurrentBatch: &brewfather.BatchDetail{
-				Recipe: brewfather.Recipe{
-					Fermentation: brewfather.Fermentation{
-						Steps: []brewfather.FermentationStep{
+			CurrentBatch: &batch.Detail{
+				Recipe: batch.Recipe{
+					Fermentation: batch.Fermentation{
+						Steps: []batch.FermentationStep{
 							{
-								Type:            "A",
-								StepTemperature: 22,
+								Name:        "A",
+								Temperature: 22,
 							},
 							{
-								Type:            "B",
-								StepTemperature: 20,
+								Name:        "B",
+								Temperature: 20,
 							},
 						},
 					},
@@ -95,8 +96,8 @@ func TestRoutes(t *testing.T) {
 		r := brewfather.BatchDetail{ID: batchID}
 
 		serviceMock := &mocks.Service{}
-		serviceMock.On("GetAllSummaries", mock.Anything).Return([]brewfather.BatchSummary{}, nil)
-		serviceMock.On("GetDetail", mock.Anything, batchID).Return(&r, nil)
+		serviceMock.On("GetAllBatchSummaries", mock.Anything).Return([]brewfather.BatchSummary{}, nil)
+		serviceMock.On("GetBatchDetail", mock.Anything, batchID).Return(&r, nil)
 		serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
 		err := c.Configure(configuratorMock, serviceMock, l, m, readingUpdateInterval)

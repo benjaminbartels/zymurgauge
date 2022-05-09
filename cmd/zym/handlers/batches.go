@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/benjaminbartels/zymurgauge/internal/batch"
 	"github.com/benjaminbartels/zymurgauge/internal/brewfather"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/julienschmidt/httprouter"
@@ -18,12 +19,14 @@ type BatchesHandler struct {
 func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
 	p httprouter.Params,
 ) error {
-	batches, err := h.Service.GetAllSummaries(ctx)
+	batchSummaries, err := h.Service.GetAllBatchSummaries(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not get all batches from repository")
 	}
 
-	if err = web.Respond(ctx, w, batches, http.StatusOK); err != nil {
+	summaries := batch.ConvertSummaries(batchSummaries)
+
+	if err = web.Respond(ctx, w, summaries, http.StatusOK); err != nil {
 		return errors.Wrap(err, "problem responding to client")
 	}
 
@@ -33,7 +36,7 @@ func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *h
 func (h *BatchesHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
-	batch, err := h.Service.GetDetail(ctx, id)
+	batchDetail, err := h.Service.GetBatchDetail(ctx, id)
 	if err != nil {
 		if errors.Is(err, brewfather.ErrNotFound) {
 			return web.NewRequestError(fmt.Sprintf("batch '%s' not found", id), http.StatusNotFound)
@@ -42,11 +45,13 @@ func (h *BatchesHandler) Get(ctx context.Context, w http.ResponseWriter, r *http
 		return errors.Wrap(err, "could not get batch from repository")
 	}
 
-	if batch == nil {
+	if batchDetail == nil {
 		return web.NewRequestError(fmt.Sprintf("batch '%s' not found", id), http.StatusNotFound)
 	}
 
-	if err = web.Respond(ctx, w, batch, http.StatusOK); err != nil {
+	detail := batch.ConvertDetail(batchDetail)
+
+	if err = web.Respond(ctx, w, detail, http.StatusOK); err != nil {
 		return errors.Wrap(err, "problem responding to client")
 	}
 

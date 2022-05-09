@@ -4,42 +4,9 @@ package brewfather
 import "context"
 
 type Service interface { // TODO: needs better name
-	GetAllSummaries(ctx context.Context) ([]BatchSummary, error)
-	GetDetail(ctx context.Context, id string) (*BatchDetail, error)
+	GetAllBatchSummaries(ctx context.Context) ([]BatchSummary, error)
+	GetBatchDetail(ctx context.Context, id string) (*BatchDetail, error)
 	Log(ctx context.Context, log LogEntry) error
-}
-
-type BatchSummary struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Number     int    `json:"number"`
-	RecipeName string `json:"recipeName"`
-}
-
-type BatchDetail struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Number int    `json:"number"`
-	Recipe Recipe `json:"recipe"`
-}
-
-type Recipe struct {
-	Name         string       `json:"name"`
-	Fermentation Fermentation `json:"fermentation"`
-	OG           float64      `json:"og"`
-	FG           float64      `json:"fg"`
-}
-
-type Fermentation struct {
-	Name  string             `json:"name"`
-	Steps []FermentationStep `json:"steps"`
-}
-
-type FermentationStep struct {
-	Type            string  `json:"type"`
-	ActualTime      int64   `json:"actualTime"`
-	StepTemperature float64 `json:"stepTemperature"`
-	StepTime        int     `json:"stepTime"`
 }
 
 type LogEntry struct {

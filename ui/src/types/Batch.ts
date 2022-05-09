@@ -1,13 +1,11 @@
 export interface BatchSummary {
   id: string;
-  name: string;
   number: number;
   recipeName: string;
 }
 
 export interface BatchDetail {
   id: string;
-  name: string;
   number: number;
   recipe: Recipe;
 }
@@ -15,8 +13,8 @@ export interface BatchDetail {
 export interface Recipe {
   name: string;
   fermentation: Fermentation;
-  og: number;
-  fg: number;
+  originalGravity: number;
+  finalGravity: number;
 }
 
 export interface Fermentation {
@@ -25,8 +23,7 @@ export interface Fermentation {
 }
 
 export interface FermentationStep {
-  type: string;
-  actualTime: number;
-  stepTemperature: number;
-  stepTime: number;
+  name: string;
+  temperature: number;
+  duration: number;
 }
