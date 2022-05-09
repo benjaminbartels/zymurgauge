@@ -29,7 +29,7 @@ type Fermentation struct {
 type FermentationStep struct {
 	Name        string  `json:"name"`
 	Temperature float64 `json:"temperature"`
-	Time        int     `json:"time"`
+	Duration    int     `json:"duration"`
 }
 
 func ConvertSummaries(batches []brewfather.BatchSummary) []Summary {
@@ -86,6 +86,6 @@ func convertFermentationStep(step brewfather.FermentationSteps) FermentationStep
 	return FermentationStep{
 		Name:        step.Type,
 		Temperature: step.StepTemp,
-		Time:        step.StepTime,
+		Duration:    step.StepTime,
 	}
 }
