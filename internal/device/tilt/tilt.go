@@ -4,14 +4,14 @@ import (
 	"math"
 
 	"github.com/benjaminbartels/zymurgauge/internal/device"
-	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth/ibeacon"
 	"github.com/pkg/errors"
 )
 
 var _ device.ThermometerAndHydrometer = (*Tilt)(nil)
 
 type Tilt struct {
-	ibeacon *bluetooth.IBeacon
+	ibeacon *ibeacon.IBeacon
 	color   Color
 }
 
@@ -26,7 +26,7 @@ func (t *Tilt) GetTemperature() (float64, error) {
 		return 0, ErrIBeaconIsNil
 	}
 
-	return math.Round(float64(t.ibeacon.GetMajor()-32)/1.8*100) / 100, nil
+	return math.Round(float64(t.ibeacon.Major-32)/1.8*100) / 100, nil
 }
 
 func (t *Tilt) GetGravity() (float64, error) {
@@ -34,5 +34,5 @@ func (t *Tilt) GetGravity() (float64, error) {
 		return 0, ErrIBeaconIsNil
 	}
 
-	return float64(t.ibeacon.GetMinor()) / 1000, nil
+	return float64(t.ibeacon.Minor) / 1000, nil
 }
