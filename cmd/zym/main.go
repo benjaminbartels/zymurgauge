@@ -19,6 +19,7 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/database"
 	"github.com/benjaminbartels/zymurgauge/internal/device/onewire"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
+	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth/ibeacon"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/debug"
 	"github.com/benjaminbartels/zymurgauge/internal/settings"
 	"github.com/benjaminbartels/zymurgauge/ui"
@@ -180,14 +181,12 @@ func run(logger *logrus.Logger, cfg config) error {
 }
 
 func createTiltMonitor(ctx context.Context, logger *logrus.Logger, errCh chan error) (*tilt.Monitor, error) {
-	// scanner, err := bluetooth.NewBLEScanner()
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "could create BLE scanner")
-	// }
+	discoverer, err := ibeacon.NewDiscoverer(logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create new ibeacon discoverer")
+	}
 
-	// monitor := tilt.NewMonitor(scanner, logger)
-
-	monitor := tilt.NewMonitor(logger)
+	monitor := tilt.NewMonitor(discoverer, logger)
 
 	go func() {
 		errCh <- monitor.Run(ctx)
