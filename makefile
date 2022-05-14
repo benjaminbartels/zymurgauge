@@ -77,14 +77,13 @@ endif
 ## Lint:
 lint: lint-go lint-yaml  ## Run all linters
 
-# DOCKER NOT WORKING
-# lint-dockerfile: ## Lint your Dockerfile
-# ifeq ($(shell test -e ./Dockerfile && echo yes),yes)
-# 	$(eval CONFIG_OPTION = $(shell [ -e $(shell pwd)/.hadolint.yaml ] && echo "-v $(shell pwd)/.hadolint.yaml:/root/.config/hadolint.yaml" || echo "" ))
-# 	$(eval OUTPUT_OPTIONS = $(shell [ "${EXPORT_RESULT}" == "true" ] && echo "--format checkstyle" || echo "" ))
-# 	$(eval OUTPUT_FILE = $(shell [ "${EXPORT_RESULT}" == "true" ] && echo "| tee /dev/tty > checkstyle-report.xml" || echo "" ))
-# 	docker run --rm -i $(CONFIG_OPTION) hadolint/hadolint hadolint $(OUTPUT_OPTIONS) - < ./Dockerfile $(OUTPUT_FILE)
-# endif
+lint-dockerfile: ## Lint your Dockerfile
+ifeq ($(shell test -e ./Dockerfile && echo yes),yes)
+	$(eval CONFIG_OPTION = $(shell [ -e $(shell pwd)/.hadolint.yaml ] && echo "-v $(shell pwd)/.hadolint.yaml:/root/.config/hadolint.yaml" || echo "" ))
+	$(eval OUTPUT_OPTIONS = $(shell [ "${EXPORT_RESULT}" == "true" ] && echo "--format checkstyle" || echo "" ))
+	$(eval OUTPUT_FILE = $(shell [ "${EXPORT_RESULT}" == "true" ] && echo "| tee /dev/tty > checkstyle-report.xml" || echo "" ))
+	docker run --rm -i $(CONFIG_OPTION) hadolint/hadolint hadolint $(OUTPUT_OPTIONS) - < ./Dockerfile $(OUTPUT_FILE)
+endif
 
 lint-go: ## Lint go files
 # TODO: Fix this
@@ -98,17 +97,16 @@ ifeq ($(EXPORT_RESULT),true)
 endif
 	docker run --rm -it -v $(shell pwd):/data cytopia/yamllint -f parsable $(shell git ls-files '*.yml' '*.yaml') $(OUTPUT_OPTIONS)
 
-# DOCKER NOT WORKING
-# ## Docker:
-# docker-build: ## Use the dockerfile to build the container
-# 	DOCKER_BUILDKIT=1 docker build -t $(BINARY_NAME) --target production .
+## Docker:
+docker-build: ## Use the dockerfile to build the container
+	DOCKER_BUILDKIT=1 docker build -t $(BINARY_NAME) -f build/Dockerfile --target production .
 
-# docker-release: ## Release the container with tag latest and version
-# 	docker tag $(BINARY_NAME) $(DOCKER_REGISTRY)$(BINARY_NAME):latest
-# 	docker tag $(BINARY_NAME) $(DOCKER_REGISTRY)$(BINARY_NAME):$(VERSION)
-# 	# Push the docker images
-# 	docker push $(DOCKER_REGISTRY)$(BINARY_NAME):latest
-# 	docker push $(DOCKER_REGISTRY)$(BINARY_NAME):$(VERSION)
+docker-release: ## Release the container with tag latest and version
+	docker tag $(BINARY_NAME) $(DOCKER_REGISTRY)$(BINARY_NAME):latest
+	docker tag $(BINARY_NAME) $(DOCKER_REGISTRY)$(BINARY_NAME):$(VERSION)
+	# Push the docker images
+	docker push $(DOCKER_REGISTRY)$(BINARY_NAME):latest
+	docker push $(DOCKER_REGISTRY)$(BINARY_NAME):$(VERSION)
 
 ## Help:
 help: ## Show this help

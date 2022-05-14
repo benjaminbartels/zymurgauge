@@ -1,19 +1,21 @@
 ---
 version: "3.9"
 services:
-  # TODO: Docker is not working at the moment. Need access to Bluetooth, GPIO and onewire bus 
-  # zymurgauge:
-  #   image: zym
-  #   privileged: true
-  #   network_mode: host
-  #   volumes:
-  #     - ${HOME}/.zymurgauge/data:/data
+  zymurgauge:
+    image: benjaminbartels/zymurgauge
+    environment:
+      - ZYM_DEBUG=true
+    volumes:
+      - ${HOME}/.zymurgauge/data:/data
+      - /var/run/dbus/:/var/run/dbus/:z
+      - /sys:/sys
 
   nginx-proxy:
     restart: always
     image: nginx:1.21.6
     container_name: nginx-proxy
     ports:
+      - "8080:8080" # zymurgauge
       - "8086:8086" # influxdb
       - "8888:8888" # chronograf
     volumes:
@@ -34,8 +36,8 @@ services:
     container_name: telegraf
     depends_on:
       - influxdb
-    ports:
-      - "8125:8125/udp"
+    expose:
+      - "8125"
     # TODO: Find better solution. This allows for collection of docker metrics which might be out of scope
     user: telegraf:${GROUP_ID:?"Please run as follows 'GROUP_ID=$(stat -c '%g' /var/run/docker.sock) docker-compose up'"}
     volumes:
