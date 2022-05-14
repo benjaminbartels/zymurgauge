@@ -40,7 +40,7 @@ const (
 type config struct {
 	Host                   string        `default:":8080"`
 	DebugHost              string        `default:":4000"`
-	DBPath                 string        `default:"zymurgaugedb"`
+	DBPath                 string        `default:"data/zymurgaugedb"`
 	ReadTimeout            time.Duration `default:"5s"`
 	WriteTimeout           time.Duration `default:"10s"`
 	IdleTimeout            time.Duration `default:"120s"`
