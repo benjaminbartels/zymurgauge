@@ -443,8 +443,7 @@ export default function ChamberFormView() {
                             {batchSummaries != null &&
                               batchSummaries.map((option) => (
                                 <MenuItem key={option.id} value={option.id}>
-                                  {option.name} #{option.number} -{" "}
-                                  {option.recipeName}
+                                  Batch #{option.number} - {option.recipeName}
                                 </MenuItem>
                               ))}
                           </Select>
@@ -489,12 +488,12 @@ export default function ChamberFormView() {
                                       },
                                     }}
                                   >
-                                    <TableCell>{step.type}</TableCell>
+                                    <TableCell>{step.name}</TableCell>
                                     <TableCell align="right">
-                                      {step.stepTemperature}
+                                      {step.temperature}
                                     </TableCell>
                                     <TableCell align="right">
-                                      {step.stepTime}
+                                      {step.duration}
                                     </TableCell>
                                   </TableRow>
                                 )

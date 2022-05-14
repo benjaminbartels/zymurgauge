@@ -71,8 +71,12 @@ export default function ChamberView() {
           setChamber(response.data);
           setCurrentFermentationStep(response.data.currentFermentationStep);
 
-          const og = parseFloat(response.data.currentBatch.recipe.og);
-          const fg = parseFloat(response.data.currentBatch.recipe.fg);
+          const originalGravity = parseFloat(
+            response.data.currentBatch.recipe.originalGravity
+          );
+          const finalGravity = parseFloat(
+            response.data.currentBatch.recipe.finalGravity
+          );
 
           const influxQuery = async (url: string) => {
             const beerTemperatureData: { x: any; y: any }[] = [];
@@ -134,8 +138,8 @@ export default function ChamberView() {
                         og: {
                           type: "line",
                           yScaleID: "y1",
-                          yMin: og,
-                          yMax: og,
+                          yMin: originalGravity,
+                          yMax: originalGravity,
                           borderDash: [2, 2],
                           label: {
                             backgroundColor: "rgba(0, 0, 0, 0.0)",
@@ -150,8 +154,8 @@ export default function ChamberView() {
                         fg: {
                           type: "line",
                           yScaleID: "y1",
-                          yMin: fg,
-                          yMax: fg,
+                          yMin: finalGravity,
+                          yMax: finalGravity,
                           borderDash: [2, 2],
                           label: {
                             backgroundColor: "rgba(0, 0, 0, 0.0)",
@@ -192,8 +196,8 @@ export default function ChamberView() {
                       type: "linear" as const,
                       display: true,
                       position: "right" as const,
-                      suggestedMax: og + 0.001,
-                      suggestedMin: fg - 0.001,
+                      suggestedMax: originalGravity + 0.001,
+                      suggestedMin: finalGravity - 0.001,
                     },
                   },
                 };
@@ -391,11 +395,11 @@ export default function ChamberView() {
                               },
                             }}
                           >
-                            <TableCell>{step.type}</TableCell>
+                            <TableCell>{step.name}</TableCell>
                             <TableCell align="right">
-                              {step.stepTemperature}
+                              {step.temperature}
                             </TableCell>
-                            <TableCell align="right">{step.stepTime}</TableCell>
+                            <TableCell align="right">{step.duration}</TableCell>
                             <TableCell align="right">
                               <Stack
                                 direction="row"
@@ -405,9 +409,9 @@ export default function ChamberView() {
                                 <Button
                                   variant="contained"
                                   size="small"
-                                  onClick={() => startFermentation(step.type)}
+                                  onClick={() => startFermentation(step.name)}
                                   disabled={
-                                    currentFermentationStep === step.type
+                                    currentFermentationStep === step.name
                                   }
                                 >
                                   Start
@@ -417,7 +421,7 @@ export default function ChamberView() {
                                   size="small"
                                   onClick={stopFermentation}
                                   disabled={
-                                    currentFermentationStep !== step.type
+                                    currentFermentationStep !== step.name
                                   }
                                 >
                                   Stop

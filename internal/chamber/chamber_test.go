@@ -158,6 +158,7 @@ func log(t *testing.T) {
 	doneCh := make(chan struct{}, 1)
 
 	expected := brewfather.LogEntry{
+		Beer:                 "Pale Ale",
 		DeviceName:           "ChamberWithCompleteConfigWithBatch",
 		BeerTemperature:      "25.000000",
 		AuxiliaryTemperature: "25.000000",
@@ -241,6 +242,7 @@ func logDeviceErrors(t *testing.T) {
 	ctx, stop := context.WithCancel(context.Background())
 
 	expected := brewfather.LogEntry{
+		Beer:            "Pale Ale",
 		DeviceName:      "ChamberWithCompleteConfigWithBatch",
 		TemperatureUnit: "C",
 		GravityUnit:     "G",
