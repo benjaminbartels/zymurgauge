@@ -49,7 +49,7 @@ WORKDIR /
 COPY --from=go-builder /src/out/bin/zym . 
 COPY --from=go-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-USER 1001:1001
+# USER 1000:1000
 
 EXPOSE 8080
 
