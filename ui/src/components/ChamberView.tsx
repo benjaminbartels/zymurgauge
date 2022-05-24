@@ -87,7 +87,7 @@ export default function ChamberView() {
             const chamberName = response.data.name.replace(" ", "");
 
             let query =
-              `from(bucket: "telegraf/autogen")
+              `from(bucket: "telegraf")
               |> range(start: -12h)
               |> filter(fn: (r) => r._measurement == "zymurgauge_` +
               chamberName +
@@ -96,11 +96,12 @@ export default function ChamberView() {
 
             const clientOptions: ClientOptions = {
               url: url,
-              // token: process.env.REACT_APP_INFLUXDB_TOKEN,
-              // headers: { Authorization: "Bearer " + token },
+              token: "mytoken",
             };
 
-            const queryApi = await new InfluxDB(clientOptions).getQueryApi("");
+            const queryApi = await new InfluxDB(clientOptions).getQueryApi(
+              "zymurgauge"
+            );
 
             await queryApi.queryRows(query, {
               next(row, tableMeta) {
