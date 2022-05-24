@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth/ibeacon"
-	"github.com/muka/go-bluetooth/bluez/profile/adapter"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -62,9 +61,6 @@ func (m *Monitor) Run(ctx context.Context) error {
 }
 
 func (m *Monitor) startCycle(ctx context.Context) error {
-	filter := &adapter.DiscoveryFilter{}
-	filter.Transport = "le"
-
 	discovery, err := m.ibeaconDiscoverer.Discover(ctx)
 	if err != nil {
 		return errors.Wrap(err, "could not start discovery")
