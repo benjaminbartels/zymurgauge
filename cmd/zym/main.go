@@ -32,9 +32,11 @@ import (
 )
 
 const (
-	build             = "development"
-	dbFilePermissions = 0o600
-	bboltReadTimeout  = 1 * time.Second
+	build                = "development"
+	dbFilePermissions    = 0o600
+	bboltReadTimeout     = 1 * time.Second
+	statsDConnectTimeout = 5 * time.Second
+	statsDRetryCount     = 5
 )
 
 type config struct {
@@ -137,9 +139,9 @@ func run(logger *logrus.Logger, cfg config) error {
 	var statsdClient *statsd.Client
 
 	if s.StatsDAddress != "" {
-		statsdClient, err = statsd.New(statsd.Address(s.StatsDAddress))
+		statsdClient, err = createStatDClient(s.StatsDAddress, logger)
 		if err != nil {
-			logger.WithError(err).Warn("Could not create statsd client.")
+			logger.WithError(err).Error("could not create statsd client")
 		}
 	}
 
@@ -178,6 +180,32 @@ func run(logger *logrus.Logger, cfg config) error {
 	}()
 
 	return wait(ctx, httpServer, errCh, cfg.ShutdownTimeout, logger)
+}
+
+func createStatDClient(addr string, logger *logrus.Logger) (*statsd.Client, error) {
+	var (
+		statsdClient *statsd.Client
+		err          error
+	)
+
+	for i := 0; i < statsDRetryCount; i++ {
+		statsdClient, err = statsd.New(statsd.Address(addr))
+		if err != nil {
+			logger.WithError(err).Warnf("Could not connect to statsd. Will retry in %s.", statsDConnectTimeout)
+
+			if i == statsDRetryCount-1 {
+				return nil, errors.Wrapf(err, "could not connect to statsd after %d attempts", statsDRetryCount)
+			}
+
+			<-time.After(statsDConnectTimeout)
+
+			continue
+		}
+
+		break
+	}
+
+	return statsdClient, nil
 }
 
 func createTiltMonitor(ctx context.Context, logger *logrus.Logger, errCh chan error) (*tilt.Monitor, error) {
