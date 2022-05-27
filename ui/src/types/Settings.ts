@@ -10,5 +10,6 @@ export interface AppSettings {
   brewfatherApiKey: string;
   brewfatherLogUrl: string;
   influxDbUrl: string;
+  influxDbReadToken: string;
   statsDAddress: string;
 }

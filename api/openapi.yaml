@@ -643,6 +643,10 @@ components:
           type: string
         brewfatherLogUrl:
           type: string
+        influxDbUrl:
+          type: string
+        influxDbReadToken:
+          type: string
         statsDAddress:
           type: string
     Status:
@@ -851,6 +855,7 @@ components:
         brewfatherApiKey: "hhdfokSJjh8ikkdfjKSKD9865SKKJD86SKJDH44q11dkdkdTJDHhhdlld997V6Sw"
         brewfatherLogUrl: "http://log.brewfather.net/stream?id=hd912jhf6sjf0e"
         influxDbUrl: "http://zymurgauge.local:8086"
+        influxDbReadToken: "dj3kFj2jfFjshFkduwJGIQdyt54jy2321"
         statsDAddress: "localhost:8125"
     incorrectUsernameError:
       value:

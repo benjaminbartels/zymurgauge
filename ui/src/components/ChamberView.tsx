@@ -56,10 +56,12 @@ export default function ChamberView() {
 
   useEffect(() => {
     var influxDbUrl: string;
+    var influxDbReadToken: string;
 
     SettingsService.get()
       .then((response: any) => {
         influxDbUrl = response.data.influxDbUrl;
+        influxDbReadToken = response.data.influxDbReadToken;
       })
       .catch((e: Error) => {
         console.log(e);
@@ -96,7 +98,7 @@ export default function ChamberView() {
 
             const clientOptions: ClientOptions = {
               url: url,
-              token: "mytoken",
+              token: influxDbReadToken,
             };
 
             const queryApi = await new InfluxDB(clientOptions).getQueryApi(

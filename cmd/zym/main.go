@@ -56,6 +56,8 @@ type cli struct {
 	Init struct {
 		AdminUsername string `kong:"arg,help:'Admin username.'"`
 		AdminPassword string `kong:"arg,help:'Admin password.'"`
+		InfluxDBUrl   string `kong:"arg,help:'InfluxDB url.'"`
+		InfluxDBToken string `kong:"arg,help:'InfluxDB token.'"`
 	} `kong:"cmd,help:'Initialize admin credentials.'"`
 }
 
@@ -85,18 +87,21 @@ func main() {
 			logger.Error(err)
 			os.Exit(1)
 		}
-	case "init <admin-username> <admin-password>":
+	case "init <admin-username> <admin-password> <influx-db-url> <influx-db-token>":
 		_, settingsRepo, err := createRepos(cfg.DBPath)
 		if err != nil {
 			logger.Error(err)
 			os.Exit(1)
 		}
 
-		if err := checkAndInitSettings(cli.Init.AdminUsername, cli.Init.AdminPassword, settingsRepo,
-			logger); err != nil {
+		if err := checkAndInitSettings(cli.Init.AdminUsername, cli.Init.AdminPassword, cli.Init.InfluxDBUrl,
+			cli.Init.InfluxDBToken, settingsRepo, logger); err != nil {
 			logger.Error(err)
 			os.Exit(1)
 		}
+	default:
+		logger.Error("command not recognized:")
+		os.Exit(1)
 	}
 }
 
@@ -256,25 +261,21 @@ func createRepos(path string) (chamberRepo *database.ChamberRepo, settingsRepo *
 	return
 }
 
-func checkAndInitSettings(username, password string, settingsRepo *database.SettingsRepo, logger *logrus.Logger) error {
-	user, err := settingsRepo.Get()
+func checkAndInitSettings(username, password, influxURL, influxReadToken string, settingsRepo *database.SettingsRepo,
+	logger *logrus.Logger,
+) error {
+	s, err := settingsRepo.Get()
 	if err != nil {
 		return errors.Wrap(err, "could not get settings")
 	}
 
 	// settings exist
-	if user != nil {
-		if username != "" && password != "" {
+	if s != nil {
+		if s.Username != "" && s.Password != "" {
 			logger.Warn("Admin credentials have already been set.")
 		}
 
 		return nil
-	}
-
-	// settings do not exist
-
-	if username == "" || password == "" {
-		return errors.New("initial credentials have not been set, please set them by running 'zym init'")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -292,10 +293,13 @@ func checkAndInitSettings(username, password string, settingsRepo *database.Sett
 		b[i] = letters[num.Int64()]
 	}
 
-	s := &settings.Settings{
+	s = &settings.Settings{
 		AppSettings: settings.AppSettings{
-			AuthSecret:       string(b),
-			TemperatureUnits: "Celsius",
+			AuthSecret:        string(b),
+			InfluxDBURL:       influxURL,
+			InfluxDBReadToken: influxReadToken,
+			TemperatureUnits:  "Celsius",
+			StatsDAddress:     "telegraf:8125",
 		},
 		Credentials: auth.Credentials{
 			Username: username,
