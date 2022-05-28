@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -13,9 +14,12 @@ import (
 )
 
 const (
-	APIURL      = "https://api.brewfather.app/v1"
-	batchesPath = "batches"
-	logInterval = 15 * time.Minute
+	apiURL              = "https://api.brewfather.app/v1"
+	batchesPath         = "batches"
+	logInterval         = 15 * time.Minute
+	requestTimeout      = 10 * time.Second
+	dialTimeout         = 5 * time.Second
+	tlsHandshakeTimeout = 5 * time.Second
 )
 
 var (
@@ -49,13 +53,22 @@ func createHTTPClient(userID, apiKey string) *http.Client {
 	t := &transport{
 		userID: userID,
 		apiKey: apiKey,
+		roundTripper: &http.Transport{
+			Dial: (&net.Dialer{
+				Timeout: dialTimeout,
+			}).Dial,
+			TLSHandshakeTimeout: tlsHandshakeTimeout,
+		},
 	}
 
-	return &http.Client{Transport: t}
+	return &http.Client{
+		Timeout:   requestTimeout,
+		Transport: t,
+	}
 }
 
 func (s *ServiceClient) GetAllBatchSummaries(ctx context.Context) ([]BatchSummary, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", APIURL, batchesPath), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", apiURL, batchesPath), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batches")
 	}
@@ -80,7 +93,7 @@ func (s *ServiceClient) GetAllBatchSummaries(ctx context.Context) ([]BatchSummar
 }
 
 func (s *ServiceClient) GetBatchDetail(ctx context.Context, id string) (*BatchDetail, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", APIURL, batchesPath, id), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", apiURL, batchesPath, id), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batch")
 	}
@@ -142,8 +155,9 @@ func (s *ServiceClient) UpdateSettings(userID, apiKey, tiltURL string) {
 }
 
 type transport struct {
-	userID string
-	apiKey string
+	userID       string
+	apiKey       string
+	roundTripper http.RoundTripper
 }
 
 func (t *transport) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -152,7 +166,7 @@ func (t *transport) RoundTrip(r *http.Request) (*http.Response, error) {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Authorization", "Basic "+basicAuth(t.userID, t.apiKey))
 
-	res, err := http.DefaultTransport.RoundTrip(req)
+	res, err := t.roundTripper.RoundTrip(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not perform RoundTrip")
 	}
