@@ -19,5 +19,6 @@ type AppSettings struct {
 	BrewfatherAPIKey    string `json:"brewfatherApiKey,omitempty"`
 	BrewfatherLogURL    string `json:"brewfatherLogUrl,omitempty"`
 	InfluxDBURL         string `json:"influxDbUrl,omitempty"`
+	InfluxDBReadToken   string `json:"influxDbReadToken,omitempty"`
 	StatsDAddress       string `json:"statsDAddress,omitempty"`
 }

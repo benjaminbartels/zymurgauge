@@ -1,43 +1,60 @@
 ---
 version: "3.9"
 services:
-  # TODO: Docker is not working at the moment. Need access to Bluetooth, GPIO and onewire bus 
-  # zymurgauge:
-  #   image: zym
-  #   privileged: true
-  #   network_mode: host
-  #   volumes:
-  #     - ${HOME}/.zymurgauge/data:/data
+  zymurgauge:
+    restart: always
+    image: benjaminbartels/zymurgauge
+    container_name: zymurgauge
+    depends_on:
+      - telegraf
+    environment:
+      - ZYM_DEBUG=true
+    volumes:
+      - ${HOME}/.zymurgauge/data:/data
+      - /var/run/dbus/:/var/run/dbus/:z
+      - /sys:/sys
 
   nginx-proxy:
     restart: always
     image: nginx:1.21.6
     container_name: nginx-proxy
+    depends_on:
+      - influxdb
+      - zymurgauge
     ports:
+      - "8080:8080" # zymurgauge
       - "8086:8086" # influxdb
-      - "8888:8888" # chronograf
     volumes:
       - ${HOME}/.zymurgauge/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
   influxdb:
     restart: always
-    image: arm32v7/influxdb:1.8.10
+    image: influxdb:2.2.0
     container_name: influxdb
     volumes:
-      - ${HOME}/.zymurgauge/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf:ro
-      - ${HOME}/.zymurgauge/influxdb/data:/var/lib/influxdb
+      - ${HOME}/.zymurgauge/influxdb/data:/var/lib/influxdb2
+      - ${HOME}/.zymurgauge/influxdb/config:/etc/influxdb2
       - ${HOME}/.zymurgauge/influxdb/init:/docker-entrypoint-initdb.d
+    environment: 
+      - DOCKER_INFLUXDB_INIT_MODE=setup 
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password
+      - DOCKER_INFLUXDB_INIT_ORG=zymurgauge
+      - DOCKER_INFLUXDB_INIT_BUCKET=telegraf
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
+      - V1_DB_NAME=telegraf
+      - V1_RP_NAME=autogen
 
   telegraf:
     restart: always
-    image: telegraf:1.21.4
+    image: telegraf:1.22.3
     container_name: telegraf
     depends_on:
       - influxdb
     ports:
       - "8125:8125/udp"
     # TODO: Find better solution. This allows for collection of docker metrics which might be out of scope
-    user: telegraf:${GROUP_ID:?"Please run as follows 'GROUP_ID=$(stat -c '%g' /var/run/docker.sock) docker-compose up'"}
+    user: telegraf:${GROUP_ID:?"Please run as follows 'GROUP_ID=$$(stat -c '%g' /var/run/docker.sock) docker-compose up'"}
     volumes:
       - ${HOME}/.zymurgauge/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -45,15 +62,9 @@ services:
       - /proc:/host/proc:ro
       - /etc:/host/etc:ro
     environment:
+      - DOCKER_INFLUXDB_INIT_ORG=zymurgauge
+      - DOCKER_INFLUXDB_INIT_BUCKET=telegraf
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
       - HOST_PROC=/host/proc
       - HOST_SYS=/host/sys
       - HOST_ETC=/host/etc
-
-  chronograf:
-    restart: always
-    container_name: chronograf
-    image: chronograf:1.9.3
-    depends_on:
-      - influxdb
-    environment:
-      - INFLUXDB_URL=http://influxdb:8086

@@ -1,0 +1,11 @@
+.github
+.vscode
+api
+build
+config
+deployments
+# out
+ui/node_modules
+ui/build
+scripts
+*/zymurgaugedb

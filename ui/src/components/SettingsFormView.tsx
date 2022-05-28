@@ -39,6 +39,7 @@ export default function SettingsView() {
       brewfatherApiKey: data.brewfatherApiKey,
       brewfatherLogUrl: data.brewfatherLogUrl,
       influxDbUrl: data.influxDbUrl,
+      influxDbReadToken: data.influxDbReadToken,
       statsDAddress: data.statsDAddress,
     };
 
@@ -188,6 +189,28 @@ export default function SettingsView() {
                       <TextField
                         fullWidth
                         label="InfluxDB URL"
+                        type="text"
+                        value={value}
+                        onChange={onChange}
+                        error={!!error}
+                        helperText={error ? error.message : null}
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Controller
+                    name="influxDbReadToken"
+                    control={control}
+                    defaultValue={settings?.influxDbReadToken || ""}
+                    render={({
+                      field: { onChange, value },
+                      fieldState: { error },
+                    }) => (
+                      <TextField
+                        fullWidth
+                        label="InfluxDB Token"
                         type="text"
                         value={value}
                         onChange={onChange}

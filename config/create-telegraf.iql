@@ -1,3 +1,0 @@
-CREATE DATABASE telegraf WITH DURATION 365d
-CREATE USER telegraf WITH PASSWORD 'metricsmetricsmetricsmetrics'
-GRANT WRITE ON telegraf to telegraf

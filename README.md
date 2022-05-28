@@ -15,24 +15,8 @@ Run the following
 ./scripts/setup.sh
 ```
 
-## To run infrastructure
-
-Replace `<YOUR_USERNAME>` and `<YOUR_PASSWORD>` with whatever admin credentials you want to use and run the following:
+## Running
 
 ```sh
-INFLUXDB_USER=<YOUR_USERNAME> INFLUXDB_PASSWORD=<YOUR_PASSWORD> GROUP_ID=$(stat -c '%g' /var/run/docker.sock) docker-compose -f deployments/docker-compose.yml -p zymurgauge up
-```
-
-## To build zymurgauge app
-
-Replace `<YOUR_USERNAME>` and `<YOUR_PASSWORD>` with whatever admin credentials you want to use and run the following:
-
-```sh
-REACT_APP_INFLUXDB_TOKEN=<YOUR_USERNAME>:<YOUR_PASSWORD> make build
-```
-
-## To run zymurgauge app
-
-```sh
-ZYM_STATSDADDRESS=zymurgauge.local:8125 zym 
+GROUP_ID=$(stat -c '%g' /var/run/docker.sock) docker compose -f deployments/docker-compose.yml -p zymurgauge up
 ```
