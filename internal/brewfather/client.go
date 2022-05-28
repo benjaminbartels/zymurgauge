@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	apiUrl              = "https://api.brewfather.app/v1"
+	apiURL              = "https://api.brewfather.app/v1"
 	batchesPath         = "batches"
 	logInterval         = 15 * time.Minute
 	requestTimeout      = 10 * time.Second
@@ -68,7 +68,7 @@ func createHTTPClient(userID, apiKey string) *http.Client {
 }
 
 func (s *ServiceClient) GetAllBatchSummaries(ctx context.Context) ([]BatchSummary, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", apiUrl, batchesPath), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", apiURL, batchesPath), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batches")
 	}
@@ -93,7 +93,7 @@ func (s *ServiceClient) GetAllBatchSummaries(ctx context.Context) ([]BatchSummar
 }
 
 func (s *ServiceClient) GetBatchDetail(ctx context.Context, id string) (*BatchDetail, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", apiUrl, batchesPath, id), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/%s", apiURL, batchesPath, id), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create GET request for Batch")
 	}
