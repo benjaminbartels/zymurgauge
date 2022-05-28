@@ -1,5 +1,4 @@
 ---
-
 run:
   timeout: 1m
   issues-exit-code: 1
@@ -89,13 +88,13 @@ linters:
     - wrapcheck
     - wsl
   disable:
-    - exhaustivestruct          # Not recommended globally
-    - godox                     # Need to be able to commit code with TODO
-    - golint                    # Deprecated
-    - interfacer                # Deprecated
-    - maligned                  # Deprecated
-    - scopelint                 # Deprecated
-    - varnamelen                # Way too opinionated
+    - exhaustivestruct # Not recommended globally
+    - godox # Need to be able to commit code with TODO
+    - golint # Deprecated
+    - interfacer # Deprecated
+    - maligned # Deprecated
+    - scopelint # Deprecated
+    - varnamelen # Way too opinionated
 linters-settings:
   funlen:
     lines: -1
@@ -124,17 +123,20 @@ linters-settings:
       - .WithMessage(
       - .WithMessagef(
       - .WithStack(
-      - .NewRequestError(       # used in create RequestError
+      - .NewRequestError( # used in create RequestError
+  gomoddirectives: # TODO: false positive (the replacement is not local)
+    replace-allow-list:
+      - github.com/muka/go-bluetooth
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-use-default: true
   exclude-rules:
-    - path: _test\.go     # Exclude some linters from running on tests files.
+    - path: _test\.go # Exclude some linters from running on tests files.
       linters:
-        - funlen          # Tests are long sometimes
-        - goerr113        # Tests can return dynamic errors
-        - ifshort         # 'expected' variables don't need use short syntax
+        - funlen # Tests are long sometimes
+        - goerr113 # Tests can return dynamic errors
+        - ifshort # 'expected' variables don't need use short syntax
     - linters:
-        - lll             # Exclude lll issues for long lines with go:generate
+        - lll # Exclude lll issues for long lines with go:generate
       source: "^//go:generate "
