@@ -26,13 +26,15 @@ services:
       - "8086:8086" # influxdb
     volumes:
       - ${HOME}/.zymurgauge/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${HOME}/.zymurgauge/nginx/cert.pem:/etc/nginx/conf.d/cert.pem:ro
+      - ${HOME}/.zymurgauge/nginx/cert.key:/etc/nginx/conf.d/cert.key:ro
 
   influxdb:
     restart: always
     image: influxdb:2.2.0
     container_name: influxdb
     volumes:
-      - ${HOME}/.zymurgauge/influxdb/data:/var/lib/influxdb2
+      - ${HOME}/.zymurgauge/influxdb:/var/lib/influxdb2
 
   telegraf:
     restart: always
