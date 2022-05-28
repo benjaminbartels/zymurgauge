@@ -33,17 +33,6 @@ services:
     container_name: influxdb
     volumes:
       - ${HOME}/.zymurgauge/influxdb/data:/var/lib/influxdb2
-      - ${HOME}/.zymurgauge/influxdb/config:/etc/influxdb2
-      - ${HOME}/.zymurgauge/influxdb/init:/docker-entrypoint-initdb.d
-    environment: 
-      - DOCKER_INFLUXDB_INIT_MODE=setup 
-      - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=password
-      - DOCKER_INFLUXDB_INIT_ORG=zymurgauge
-      - DOCKER_INFLUXDB_INIT_BUCKET=telegraf
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
-      - V1_DB_NAME=telegraf
-      - V1_RP_NAME=autogen
 
   telegraf:
     restart: always
@@ -62,9 +51,6 @@ services:
       - /proc:/host/proc:ro
       - /etc:/host/etc:ro
     environment:
-      - DOCKER_INFLUXDB_INIT_ORG=zymurgauge
-      - DOCKER_INFLUXDB_INIT_BUCKET=telegraf
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mytoken
       - HOST_PROC=/host/proc
       - HOST_SYS=/host/sys
       - HOST_ETC=/host/etc
