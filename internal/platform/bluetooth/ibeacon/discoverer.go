@@ -16,36 +16,18 @@ import (
 
 const (
 	ErrAlreadyDiscovering = bluetooth.Error("ibeacon discoverer is already running")
-	WatchTimeout          = 60 * time.Second
+	WatchTimeout          = 180 * time.Second
 )
 
 var _ Discoverer = (*BluezDiscoverer)(nil)
 
 type BluezDiscoverer struct {
-	logger            *logrus.Logger
-	ch                chan Event
-	adapter           *adapter.Adapter1
-	ibeacons          map[string]IBeacon
-	isRunning         bool
-	runMutex          sync.Mutex
-	routineCount      int
-	routineCountMutex sync.Mutex
-}
-
-func (d *BluezDiscoverer) incrementCounter() {
-	d.routineCountMutex.Lock()
-
-	defer d.routineCountMutex.Unlock()
-
-	d.routineCount++
-}
-
-func (d *BluezDiscoverer) decrementCounter() {
-	d.routineCountMutex.Lock()
-
-	defer d.routineCountMutex.Unlock()
-
-	d.routineCount--
+	logger    *logrus.Logger
+	ch        chan Event
+	adapter   *adapter.Adapter1
+	ibeacons  map[string]IBeacon
+	isRunning bool
+	runMutex  sync.Mutex
 }
 
 func NewDiscoverer(logger *logrus.Logger) (*BluezDiscoverer, error) {
@@ -102,8 +84,6 @@ func (d *BluezDiscoverer) Discover(ctx context.Context) (chan Event, error) { //
 							UUID: ibeacon.ProximityUUID,
 							Type: Offline,
 						}
-					} else {
-						d.logger.Debugf("No online IBeacon for %s.", event.Path)
 					}
 
 					continue
@@ -141,20 +121,20 @@ func (d *BluezDiscoverer) Discover(ctx context.Context) (chan Event, error) { //
 }
 
 func (d *BluezDiscoverer) processDevice(ctx context.Context, device *device.Device1) {
-	d.incrementCounter()
-	d.logger.Debugf("Processing device %s. Count = %d", device.Properties.Address, d.routineCount)
+	d.logger.Debugf("Processing device %s.", device.Properties.Address)
 
-	defer func() {
-		d.decrementCounter()
-		d.logger.Debugf("End processing for device %s. Count = %d", device.Properties.Address, d.routineCount)
-	}()
-
-	beacon, err := beacon.NewBeacon(device)
+	b, err := beacon.NewBeacon(device)
 	if err != nil {
 		d.logger.WithError(err).Errorf("Problem creating new beacon from device %s.", device.Properties.Address)
 	}
 
-	propChanged, err := beacon.WatchDeviceChanges(ctx)
+	defer func() {
+		if err := b.UnwatchDeviceChanges(); err != nil {
+			d.logger.WithError(err).Errorf("Problem un-watching for device changes on device %s.", device.Properties.Address)
+		}
+	}()
+
+	propChanged, err := b.WatchDeviceChanges(ctx)
 	if err != nil {
 		d.logger.WithError(err).Errorf("Problem watching for device changes on device %s.", device.Properties.Address)
 	}
@@ -171,19 +151,14 @@ func (d *BluezDiscoverer) processDevice(ctx context.Context, device *device.Devi
 				return
 			}
 
-			name := beacon.Device.Properties.Alias
-			if name == "" {
-				name = beacon.Device.Properties.Name
-			}
-
-			if !beacon.IsIBeacon() {
+			if !b.IsIBeacon() {
 				d.logger.Debugf("Device %s is not a ibeacon.", device.Properties.Address)
 
 				return
 			}
 
-			ibeaconBeacon := beacon.GetIBeacon()
-			d.logger.Debugf("Found IBeacon Name: %s, UUID: %s Major: %d, Minor: %d, Power: %d", name,
+			ibeaconBeacon := b.GetIBeacon()
+			d.logger.Debugf("Found IBeacon Address: %s, UUID: %s Major: %d, Minor: %d, Power: %d", device.Properties.Address,
 				ibeaconBeacon.ProximityUUID, ibeaconBeacon.Major, ibeaconBeacon.Minor, ibeaconBeacon.MeasuredPower)
 
 			ibeacon := IBeacon{
