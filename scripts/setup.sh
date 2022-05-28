@@ -1,6 +1,7 @@
 #!/bin/bash
 ZYM_PATH=$HOME/.zymurgauge
 
+# check for previous setup
 if [ -d $ZYM_PATH ] 
 then
     echo $'\e[31m'"$ZYM_PATH"' directory already exists'
@@ -11,7 +12,6 @@ unset zym_username
 unset zym_password
 unset influxdb_username
 unset influxdb_password
-
 
 # set credentials
 read -p $'\e[32m?\e[0m Enter Zymurgauge admin account username : ' zym_username
@@ -61,9 +61,7 @@ echo
 # create directories 
 mkdir -p $ZYM_PATH/data
 mkdir -p $ZYM_PATH/nginx
-mkdir -p $ZYM_PATH/influxdb/data
-mkdir -p $ZYM_PATH/influxdb/config
-mkdir -p $ZYM_PATH/influxdb/init
+mkdir -p $ZYM_PATH/influxdb
 mkdir -p $ZYM_PATH/telegraf
 
 influxdb_token=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 64 ; echo '')
@@ -71,6 +69,17 @@ influxdb_token=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 64 ; echo '')
 # copy conf files that are to be updated to their respective data directories
 cp config/nginx.conf $ZYM_PATH/nginx
 cp config/telegraf.conf $ZYM_PATH/telegraf
+
+# create self signed cert
+openssl req \
+    -new \
+    -newkey rsa:4096 \
+    -days 365 \
+    -nodes \
+    -x509 \
+    -subj "/C=US/CN=$(hostname).local" \
+    -keyout $ZYM_PATH/nginx/cert.key \
+    -out $ZYM_PATH/nginx/cert.pem
 
 # set token in telegraf.conf
 sed -i 's/^#   token = ""$/  token = "'${influxdb_token}'"/' $ZYM_PATH/telegraf/telegraf.conf
@@ -80,7 +89,7 @@ echo $'\e[32mSetting up InfluxDB\e[0m'
 # initalize influxdb
 docker run -d -p 8086:8086 \
       --name influxdb_setup \
-      -v $ZYM_PATH/influxdb/data:/var/lib/influxdb2 \
+      -v $ZYM_PATH/influxdb:/var/lib/influxdb2 \
       influxdb:2.2.0
 
 # wait for influx docker container to be ready
@@ -110,7 +119,7 @@ echo $'\e[32mInfluxDB setup complete\e[0m'
 
 echo $'\e[32mSetting up Zymurgauge\e[0m'
 
-influx_url=http://$(hostname).local:8086
+influx_url=https://$(hostname).local:8086
 
 # initalize zymurgauge
 docker run --rm -v $ZYM_PATH/data:/data \
