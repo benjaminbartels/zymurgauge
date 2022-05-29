@@ -21,8 +21,6 @@ func Errors(logger *logrus.Logger) web.Middleware {
 
 				var status int
 
-				// TODO: Add validation and handle errors
-
 				var requestError *web.RequestError
 
 				if errors.As(err, &requestError) {

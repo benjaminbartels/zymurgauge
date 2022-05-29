@@ -21,7 +21,7 @@ const (
 
 type AuthHandler struct {
 	SettingsRepo settings.Repo
-	Logger       *logrus.Logger // TODO: use logrus.Entry
+	Logger       *logrus.Logger
 }
 
 func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {

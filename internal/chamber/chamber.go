@@ -28,7 +28,7 @@ type Chamber struct {
 	CurrentBatch            *batch.Detail `json:"currentBatch,omitempty"`
 	CurrentFermentationStep string        `json:"currentFermentationStep,omitempty"`
 	ModTime                 time.Time     `json:"modTime"`
-	Readings                *Readings     `json:"readings,omitempty"` // TODO: validate required fields
+	Readings                *Readings     `json:"readings,omitempty"`
 	logger                  *logrus.Logger
 	metrics                 metrics.Metrics
 	beerThermometer         device.Thermometer
@@ -64,8 +64,6 @@ type Readings struct {
 	ExternalTemperature  *float64 `json:"externalTemperature,omitempty"`
 	HydrometerGravity    *float64 `json:"hydrometerGravity,omitempty"`
 }
-
-// TODO: refactor to use generics in the future.
 
 func (c *Chamber) Configure(configurator Configurator, service brewfather.Service,
 	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration,
@@ -179,7 +177,7 @@ func (c *Chamber) configureThermometers(configurator Configurator, config Device
 
 func getThermometer(configurator Configurator, thermometerType, id string) (device.Thermometer, error) {
 	switch thermometerType {
-	case "ds18b20": // TODO: make enum
+	case "ds18b20":
 		createdDevice, err := configurator.CreateDs18b20(id)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not create new Ds18b20 %s", id)
@@ -239,7 +237,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 	go func() {
 		err = c.temperatureController.Run(ctx, temp)
 		if err != nil {
-			c.cancelFunc = nil // TODO: test this
+			c.cancelFunc = nil
 			c.logger.WithError(err).Errorf("could not run temperature controller for chamber %s", c.Name)
 		}
 	}()
@@ -249,7 +247,7 @@ func (c *Chamber) StartFermentation(ctx context.Context, stepID string) error {
 	if err != nil {
 		cancelFunc() // stop updateReadings go routine
 
-		c.cancelFunc = nil // TODO: test this
+		c.cancelFunc = nil
 
 		return errors.Wrapf(err, "could not run temperature controller for chamber %s", c.Name)
 	}

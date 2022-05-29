@@ -3,7 +3,7 @@ package brewfather
 
 import "context"
 
-type Service interface { // TODO: needs better name
+type Service interface {
 	GetAllBatchSummaries(ctx context.Context) ([]BatchSummary, error)
 	GetBatchDetail(ctx context.Context, id string) (*BatchDetail, error)
 	Log(ctx context.Context, log LogEntry) error

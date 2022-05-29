@@ -123,5 +123,3 @@ func (m *Monitor) GetTilt(color Color) (*Tilt, error) {
 
 	return tilt, nil
 }
-
-// TODO: protect against 2 tilts with same color

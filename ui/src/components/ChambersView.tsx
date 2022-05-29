@@ -23,7 +23,7 @@ export default function Chambers() {
         console.log(e);
       });
   }, []);
-  // TODO: Use redux to store
+  // TODO: Use redux to store Chambers
   return (
     <>
       <Grid container spacing={5}>

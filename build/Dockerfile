@@ -1,18 +1,3 @@
-# TODO: Devle does not work on ARM32
-# FROM golang:1.17 as debug
-
-# WORKDIR /go/src/github.com/benjaminbartels/zymurgauge
-
-# COPY . .
-
-# RUN go install github.com/go-delve/delve/cmd/dlv@latest
-
-# EXPOSE 8080 2345
-
-# CMD ["dlv", "debug", "github.com/benjaminbartels/zymurgauge/cmd/zym", "--listen=:2345", "--headless=true", "--api-version=2", "--log"]
-
-#############################################################
-
 FROM node:17.6.0 as react-builder
 
 WORKDIR /src
@@ -25,7 +10,7 @@ RUN make build-react
 
 #############################################################
 
-FROM golang:1.17 as go-builder
+FROM golang:1.18 as go-builder
 
 WORKDIR /src
 

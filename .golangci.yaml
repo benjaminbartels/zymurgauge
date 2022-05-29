@@ -4,6 +4,8 @@ run:
   issues-exit-code: 1
   tests: true
   modules-download-mode: readonly
+  skip-dirs:
+    - ui
 output:
   format: colored-line-number
   print-issued-lines: true
@@ -124,7 +126,7 @@ linters-settings:
       - .WithMessagef(
       - .WithStack(
       - .NewRequestError( # used in create RequestError
-  gomoddirectives: # TODO: false positive (the replacement is not local)
+  gomoddirectives:
     replace-allow-list:
       - github.com/muka/go-bluetooth
 issues:

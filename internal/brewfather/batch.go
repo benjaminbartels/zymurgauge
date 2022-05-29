@@ -1030,7 +1030,7 @@ type Recipe struct {
 	Init                    bool          `json:"_init"`
 	Ev                      float64       `json:"_ev"`
 	HopsTotalAmount         float64       `json:"hopsTotalAmount"`
-	// Type                     string           `json:"_type"` // TODO: Are these needed
+	// Type                     string           `json:"_type"`
 	// Public                   bool             `json:"_public"`
 	StyleIbu                 bool             `json:"styleIbu"`
 	Style                    Style            `json:"style"`
