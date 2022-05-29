@@ -18,6 +18,7 @@ type Monitor struct {
 	colors            map[string]Color
 	isRunning         bool
 	runMutex          sync.Mutex
+	tiltMutex         sync.RWMutex
 }
 
 func NewMonitor(ibeaconDiscoverer ibeacon.Discoverer, logger *logrus.Logger) *Monitor {
@@ -92,6 +93,9 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 }
 
 func (m *Monitor) handleOnline(color Color, ibeacon ibeacon.IBeacon) {
+	m.tiltMutex.Lock()
+	defer m.tiltMutex.Unlock()
+
 	if _, tiltFound := m.tilts[color]; tiltFound {
 		m.logger.Debugf("Tilt online - Color: %s", color)
 		m.tilts[color].ibeacon = &ibeacon
@@ -99,6 +103,9 @@ func (m *Monitor) handleOnline(color Color, ibeacon ibeacon.IBeacon) {
 }
 
 func (m *Monitor) handleOffline(color Color) {
+	m.tiltMutex.Lock()
+	defer m.tiltMutex.Unlock()
+
 	if _, tiltFound := m.tilts[color]; tiltFound {
 		m.logger.Debugf("Tilt offline. - Color: %s", color)
 		m.tilts[color].ibeacon = nil
@@ -106,6 +113,9 @@ func (m *Monitor) handleOffline(color Color) {
 }
 
 func (m *Monitor) GetTilt(color Color) (*Tilt, error) {
+	m.tiltMutex.RLock()
+	defer m.tiltMutex.RUnlock()
+
 	tilt, ok := m.tilts[color]
 	if !ok {
 		return nil, ErrNotFound

@@ -51,7 +51,5 @@ COPY --from=go-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # USER 1000:1000
 
-EXPOSE 8080
-
 ENTRYPOINT ["./zym"]
 CMD ["run"] 
