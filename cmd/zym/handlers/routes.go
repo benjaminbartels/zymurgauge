@@ -30,8 +30,7 @@ func NewApp(chamberManager chamber.Controller, devicePath string, service brewfa
 ) (*web.App, error) {
 	api := web.NewAPI(shutdown,
 		middleware.RequestLogger(logger),
-		middleware.Errors(logger),
-		middleware.Cors())
+		middleware.Errors(logger))
 
 	s, err := settingsRepo.Get()
 	if err != nil {
