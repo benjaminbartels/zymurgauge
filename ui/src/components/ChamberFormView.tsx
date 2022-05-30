@@ -519,7 +519,7 @@ export default function ChamberFormView() {
 }
 
 const getGpioItems = () => {
-  var items: string[] = []; // TODO: fix "any's"
+  var items: string[] = [];
 
   for (let i = 0; i <= 25; i++) {
     items.push(i.toString());

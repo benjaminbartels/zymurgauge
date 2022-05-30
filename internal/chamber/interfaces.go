@@ -18,7 +18,7 @@ type Configurator interface {
 }
 
 type Repo interface {
-	GetAll() ([]*Chamber, error) // TODO: add ctx?
+	GetAll() ([]*Chamber, error)
 	Get(id string) (*Chamber, error)
 	Save(c *Chamber) error
 	Delete(id string) error

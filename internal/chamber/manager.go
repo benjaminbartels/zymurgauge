@@ -52,7 +52,6 @@ func NewManager(ctx context.Context, repo Repo, configurator Configurator, servi
 	defer m.mutex.Unlock()
 
 	for i := range chambers {
-		// TODO: Configure implementation should vary based on arch
 		if err := chambers[i].Configure(configurator, service, logger, metrics, readingsUpdateInterval); err != nil {
 			errs = multierror.Append(errs,
 				errors.Wrapf(err, "could not configure temperature controller for chamber %s", chambers[i].Name))

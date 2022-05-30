@@ -118,7 +118,6 @@ func run(logger *logrus.Logger, cfg config) error {
 		return errors.Wrap(err, "could not create databases")
 	}
 
-	// TODO: Handle settings update without restart
 	s, err := settingsRepo.Get()
 	if err != nil {
 		logger.WithError(err).Warn("could not get settings")
@@ -160,8 +159,6 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-
-	// TODO: Rename DefaultDevicePath and make configurable based on OS
 
 	settingsCh := startUpdateSettingsChannel(brewfatherClient)
 

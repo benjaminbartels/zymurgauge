@@ -4,7 +4,7 @@ api
 build
 config
 deployments
-# out
+out
 ui/node_modules
 ui/build
 scripts

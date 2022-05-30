@@ -51,8 +51,7 @@ func (a *API) Register(method, group, path string, handler Handler, middlewares 
 		ctx := InitContextValues(r.Context(), &v)
 
 		if err := handler(ctx, w, r, p); err != nil {
-			// TODO: log here?
-			a.SignalShutdown() // TODO: is this necessary?
+			a.SignalShutdown()
 
 			return
 		}
