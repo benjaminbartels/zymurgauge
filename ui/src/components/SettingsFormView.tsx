@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Card,
   CardActions,
@@ -20,6 +21,7 @@ import { AppSettings } from "../types/Settings";
 export default function SettingsView() {
   const { handleSubmit, control } = useForm();
   const [settings, setSettings] = useState<AppSettings>();
+  const [errorMessage, setErrorMessage] = useState<String>();
 
   React.useEffect(() => {
     SettingsService.get()
@@ -27,7 +29,7 @@ export default function SettingsView() {
         setSettings(response.data);
       })
       .catch((e: Error) => {
-        console.log(e);
+        setErrorMessage("Could not get Settings: " + e);
       });
   }, []);
 
@@ -48,12 +50,13 @@ export default function SettingsView() {
         console.debug("Settings saved: ", response.data);
       })
       .catch((e: any) => {
-        console.error("Save Error:", e);
+        setErrorMessage("Could not save Settings: " + e);
       });
   };
 
   return (
     <>
+      {errorMessage != null && <Alert severity="error">{errorMessage}</Alert>}
       {settings != null && (
         <Card sx={{ maxWidth: 600 }}>
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -232,7 +235,7 @@ export default function SettingsView() {
                     }) => (
                       <TextField
                         fullWidth
-                        label="STATSD Address (telegraf)"
+                        label="StatsD Address (telegraf)"
                         type="text"
                         value={value}
                         onChange={onChange}

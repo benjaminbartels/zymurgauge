@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Card,
   CardActionArea,
@@ -13,6 +14,7 @@ import { Chamber } from "../types/Chamber";
 
 export default function Chambers() {
   const [chambers, setChambers] = useState<Chamber[]>([]);
+  const [errorMessage, setErrorMessage] = useState<String>();
 
   React.useEffect(() => {
     ChamberService.getAll()
@@ -20,12 +22,13 @@ export default function Chambers() {
         setChambers(response.data);
       })
       .catch((e: Error) => {
-        console.log(e);
+        setErrorMessage("Could not get Chambers: " + e);
       });
   }, []);
   // TODO: Use redux to store Chambers
   return (
     <>
+      {errorMessage != null && <Alert severity="error">{errorMessage}</Alert>}
       <Grid container spacing={5}>
         {chambers.map((chamber: Chamber) => (
           <Grid item key={chamber.id} xs={12} sm={12} md={6} lg={3} xl={3}>

@@ -1,5 +1,6 @@
 import { ClientOptions, InfluxDB } from "@influxdata/influxdb-client-browser";
 import {
+  Alert,
   Button,
   Card,
   CardActions,
@@ -53,6 +54,7 @@ export default function ChamberView() {
   const [graphOptions, setGraphOptions] = useState<ChartOptions<any>>();
   const [chamber, setChamber] = useState<Chamber>();
   const [currentFermentationStep, setCurrentFermentationStep] = useState("");
+  const [errorMessage, setErrorMessage] = useState<String>();
 
   useEffect(() => {
     var influxDbUrl: string;
@@ -64,7 +66,7 @@ export default function ChamberView() {
         influxDbReadToken = response.data.influxDbReadToken;
       })
       .catch((e: Error) => {
-        console.log(e);
+        setErrorMessage("Could not get Settings: " + e);
       });
 
     if (params.chamberId != null) {
@@ -271,7 +273,7 @@ export default function ChamberView() {
           }
         })
         .catch((e: Error) => {
-          console.log(e);
+          setErrorMessage("Could not get Chamber: " + e);
         });
     }
   }, [params.chamberId]);
@@ -303,167 +305,173 @@ export default function ChamberView() {
       })
 
       .catch((e: Error) => {
-        console.log(e);
+        setErrorMessage("Could not delete Chamber: " + e);
       });
   }
-
-  return chamber != null ? (
-    <Card sx={{ maxWidth: 800 }}>
-      <CardContent>
-        <Typography gutterBottom>
-          <b>{chamber.name}</b>
-        </Typography>
-        <Typography gutterBottom>
-          {chamber?.currentBatch?.recipe?.name !== undefined
-            ? chamber?.currentBatch?.recipe?.name
-            : "No Recipe"}
-        </Typography>
-        <Grid container>
-          <Grid item xs={9}>
-            <Typography variant="body2" noWrap>
-              Beer Temperature:
+  return (
+    <>
+      {errorMessage != null && <Alert severity="error">{errorMessage}</Alert>}
+      {chamber != null && (
+        <Card sx={{ maxWidth: 800 }}>
+          <CardContent>
+            <Typography gutterBottom>
+              <b>{chamber.name}</b>
             </Typography>
-          </Grid>
-          <Grid item xs={3} alignContent="right">
-            <Typography align="right" noWrap>
-              {chamber?.readings?.beerTemperature} °C
+            <Typography gutterBottom>
+              {chamber?.currentBatch?.recipe?.name !== undefined
+                ? chamber?.currentBatch?.recipe?.name
+                : "No Recipe"}
             </Typography>
-          </Grid>
-          <Grid item xs={9}>
-            <Typography variant="body2" noWrap>
-              Auxiliary Temperature:
-            </Typography>
-          </Grid>
-          <Grid item xs={3}>
-            <Typography align="right" noWrap>
-              {chamber?.readings?.auxiliaryTemperature} °C
-            </Typography>
-          </Grid>
-          <Grid item xs={9}>
-            <Typography variant="body2" noWrap>
-              External Temperature:
-            </Typography>
-          </Grid>
-          <Grid item xs={3}>
-            <Typography align="right" noWrap>
-              {chamber?.readings?.externalTemperature} °C
-            </Typography>
-          </Grid>
-          <Grid item xs={9}>
-            <Typography variant="body2" noWrap>
-              Gravity:
-            </Typography>
-          </Grid>
-          <Grid item xs={3}>
-            <Typography align="right" noWrap>
-              {chamber?.readings?.hydrometerGravity} SG
-            </Typography>
-          </Grid>
-        </Grid>
-        {chamber.currentBatch != null &&
-          chamber.currentBatch.recipe.fermentation != null &&
-          chamber.currentBatch.recipe.fermentation.steps != null && (
             <Grid container>
-              <Grid item xs={12}>
-                <Typography align="center" noWrap variant="h6">
-                  Fermentation Profile:{" "}
-                  {chamber.currentBatch?.recipe.fermentation?.name}
+              <Grid item xs={9}>
+                <Typography variant="body2" noWrap>
+                  Beer Temperature:
                 </Typography>
               </Grid>
-              <Grid item xs={12}>
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>
-                          <Typography>Type</Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography noWrap>Temperature (°C)</Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography noWrap>Time (days)</Typography>
-                        </TableCell>
-                        <TableCell></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {chamber.currentBatch.recipe.fermentation.steps.map(
-                        (step, index) => (
-                          <TableRow
-                            key={index}
-                            sx={{
-                              "&:last-child td, &:last-child th": {
-                                border: 0,
-                              },
-                            }}
-                          >
-                            <TableCell>{step.name}</TableCell>
-                            <TableCell align="right">
-                              {step.temperature}
-                            </TableCell>
-                            <TableCell align="right">{step.duration}</TableCell>
-                            <TableCell align="right">
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                justifyContent="flex-end"
-                              >
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  onClick={() => startFermentation(step.name)}
-                                  disabled={
-                                    currentFermentationStep === step.name
-                                  }
-                                >
-                                  Start
-                                </Button>
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  onClick={stopFermentation}
-                                  disabled={
-                                    currentFermentationStep !== step.name
-                                  }
-                                >
-                                  Stop
-                                </Button>
-                              </Stack>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+              <Grid item xs={3} alignContent="right">
+                <Typography align="right" noWrap>
+                  {chamber?.readings?.beerTemperature} °C
+                </Typography>
               </Grid>
-              <Grid item xs={12}>
-                <Container
-                  sx={{
-                    height: 400,
-                  }}
-                >
-                  {graphData != null && (
-                    <Line options={graphOptions} data={graphData} />
-                  )}
-                </Container>
+              <Grid item xs={9}>
+                <Typography variant="body2" noWrap>
+                  Auxiliary Temperature:
+                </Typography>
+              </Grid>
+              <Grid item xs={3}>
+                <Typography align="right" noWrap>
+                  {chamber?.readings?.auxiliaryTemperature} °C
+                </Typography>
+              </Grid>
+              <Grid item xs={9}>
+                <Typography variant="body2" noWrap>
+                  External Temperature:
+                </Typography>
+              </Grid>
+              <Grid item xs={3}>
+                <Typography align="right" noWrap>
+                  {chamber?.readings?.externalTemperature} °C
+                </Typography>
+              </Grid>
+              <Grid item xs={9}>
+                <Typography variant="body2" noWrap>
+                  Gravity:
+                </Typography>
+              </Grid>
+              <Grid item xs={3}>
+                <Typography align="right" noWrap>
+                  {chamber?.readings?.hydrometerGravity} SG
+                </Typography>
               </Grid>
             </Grid>
-          )}
-      </CardContent>
-      <CardActions>
-        <Stack direction="row" spacing={1}>
-          <Button component={Link} to="edit" variant="contained">
-            Edit
-          </Button>
-          <Button variant="contained" onClick={() => remove(chamber.id!)}>
-            Delete
-          </Button>
-        </Stack>
-      </CardActions>
-    </Card>
-  ) : (
-    <Typography>Chamber not found</Typography>
+            {chamber.currentBatch != null &&
+              chamber.currentBatch.recipe.fermentation != null &&
+              chamber.currentBatch.recipe.fermentation.steps != null && (
+                <Grid container>
+                  <Grid item xs={12}>
+                    <Typography align="center" noWrap variant="h6">
+                      Fermentation Profile:{" "}
+                      {chamber.currentBatch?.recipe.fermentation?.name}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TableContainer component={Paper}>
+                      <Table>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>
+                              <Typography>Type</Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography noWrap>Temperature (°C)</Typography>
+                            </TableCell>
+                            <TableCell align="right">
+                              <Typography noWrap>Time (days)</Typography>
+                            </TableCell>
+                            <TableCell></TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {chamber.currentBatch.recipe.fermentation.steps.map(
+                            (step, index) => (
+                              <TableRow
+                                key={index}
+                                sx={{
+                                  "&:last-child td, &:last-child th": {
+                                    border: 0,
+                                  },
+                                }}
+                              >
+                                <TableCell>{step.name}</TableCell>
+                                <TableCell align="right">
+                                  {step.temperature}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {step.duration}
+                                </TableCell>
+                                <TableCell align="right">
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    justifyContent="flex-end"
+                                  >
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      onClick={() =>
+                                        startFermentation(step.name)
+                                      }
+                                      disabled={
+                                        currentFermentationStep === step.name
+                                      }
+                                    >
+                                      Start
+                                    </Button>
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      onClick={stopFermentation}
+                                      disabled={
+                                        currentFermentationStep !== step.name
+                                      }
+                                    >
+                                      Stop
+                                    </Button>
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          )}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Container
+                      sx={{
+                        height: 400,
+                      }}
+                    >
+                      {graphData != null && (
+                        <Line options={graphOptions} data={graphData} />
+                      )}
+                    </Container>
+                  </Grid>
+                </Grid>
+              )}
+          </CardContent>
+          <CardActions>
+            <Stack direction="row" spacing={1}>
+              <Button component={Link} to="edit" variant="contained">
+                Edit
+              </Button>
+              <Button variant="contained" onClick={() => remove(chamber.id!)}>
+                Delete
+              </Button>
+            </Stack>
+          </CardActions>
+        </Card>
+      )}
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Card,
   CardActions,
@@ -36,6 +37,7 @@ export default function ChamberFormView() {
   const [batchSummaries, setBatchSummaries] = useState<BatchSummary[]>();
   const [batchDetail, setBatchDetail] = useState<BatchDetail>();
   const [chamber, setChamber] = useState<Chamber>();
+  const [errorMessage, setErrorMessage] = useState<String>();
 
   // TODO: Use Redux to store Batches and Thermometers
 
@@ -43,11 +45,12 @@ export default function ChamberFormView() {
   React.useEffect(() => {
     BatchService.getAllSummaries()
       .then((response: any) => {
-        console.debug("batches: ", response.data);
         setBatchSummaries(response.data);
       })
       .catch((e: any) => {
-        console.error("Get Batch Summaries Error:", e); // TODO: handle errors
+        var arr: BatchSummary[] = [];
+        setBatchSummaries(arr);
+        setErrorMessage("Could not get Batches: " + e);
       });
   }, []);
 
@@ -55,11 +58,10 @@ export default function ChamberFormView() {
   React.useEffect(() => {
     ThermometerService.getAll()
       .then((response: any) => {
-        console.debug("thermometers: ", response.data);
         setThermometers(response.data);
       })
       .catch((e: any) => {
-        console.error("Get Thermometers Error:", e);
+        setErrorMessage("Could not get Thermometers: " + e);
       });
   }, []);
 
@@ -71,7 +73,7 @@ export default function ChamberFormView() {
           setBatchDetail(response.data);
         })
         .catch((e: Error) => {
-          console.error("Get Batch Detail Error:", e);
+          setErrorMessage("Could not get Batch: " + e);
         });
     } else {
       setBatchDetail(undefined);
@@ -92,7 +94,7 @@ export default function ChamberFormView() {
           setCurrentBatchId(response.data.currentBatch?.id);
         })
         .catch((e: any) => {
-          console.error("Get Chamber Error:", e);
+          setErrorMessage("Could not get Chamber: " + e);
         });
     }
   }, [params.chamberId, thermometers, batchSummaries]);
@@ -126,12 +128,13 @@ export default function ChamberFormView() {
         navigate(`../../../chambers/${response.data.id}`);
       })
       .catch((e: any) => {
-        console.error("Save Error:", e);
+        setErrorMessage("Could not save Chamber: " + e);
       });
   };
 
   return (
     <>
+      {errorMessage != null && <Alert severity="error">{errorMessage}</Alert>}
       {thermometers != null &&
         batchSummaries != null &&
         (chamber != null || params.chamberId == null) && (

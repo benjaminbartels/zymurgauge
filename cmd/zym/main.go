@@ -131,7 +131,7 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	monitor, err := createTiltMonitor(ctx, logger, errCh)
 	if err != nil {
-		return errors.Wrap(err, "could not create tilt monitor")
+		logger.WithError(err).Error("Could not create tilt monitor.")
 	}
 
 	startDebugEndpoint(cfg.DebugHost, logger)
@@ -147,6 +147,8 @@ func run(logger *logrus.Logger, cfg config) error {
 		if err != nil {
 			logger.WithError(err).Error("could not create statsd client")
 		}
+	} else {
+		logger.Warn("StatsD Address not set.")
 	}
 
 	brewfatherClient := brewfather.New(s.BrewfatherAPIUserID, s.BrewfatherAPIKey, s.BrewfatherLogURL)
@@ -296,7 +298,6 @@ func checkAndInitSettings(username, password, influxURL, influxReadToken string,
 			InfluxDBURL:       influxURL,
 			InfluxDBReadToken: influxReadToken,
 			TemperatureUnits:  "Celsius",
-			StatsDAddress:     "telegraf:8125",
 		},
 		Credentials: auth.Credentials{
 			Username: username,
