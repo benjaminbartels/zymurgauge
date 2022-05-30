@@ -1,9 +1,9 @@
 import { AxiosRequestHeaders } from "axios";
 
 export function getUrl(path: string) {
-  // If the app was bundled with a development API URL (localhost:8080 or some other remote server) use that one.
-  if (process.env.REACT_APP_DEVELOPMENT_API_URL) {
-    return process.env.REACT_APP_DEVELOPMENT_API_URL + path;
+  // If the app is in development mode (npm start), proxy setting in package.json will be used.
+  if (process.env.NODE_ENV === "development") {
+    return "/api/v1/" + path;
   }
 
   return window.location.origin + "/api/v1/" + path;
