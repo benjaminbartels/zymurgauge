@@ -30,8 +30,8 @@ build-go: ## Build the default go package and put the output binary in out/bin/
 	-ldflags="-w -s -extldflags '-static' -X 'main.version=$(VERSION)'" -o out/bin/$(BINARY_NAME) ./$(MAIN_DIR)
 
 build-react: ## Build the React UI
-	yarn --cwd "ui" install
-	yarn --cwd "ui" build
+	yarn --cwd "ui" install --network-timeout 100000
+	yarn --cwd "ui" build --network-timeout 100000
 
 clean: ## Remove build and coverage related file
 	rm -fr out $(MAIN_DIR)/tmp
