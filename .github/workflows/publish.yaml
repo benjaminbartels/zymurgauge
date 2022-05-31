@@ -30,6 +30,7 @@ jobs:
           file: build/Dockerfile
           platforms: linux/arm64
           build-args:
+            - VERSION=${{ github.ref_name }}
           tags: |
             ghcr.io/benjaminbartels/zymurgauge:latest
             ghcr.io/benjaminbartels/zymurgauge:${{ github.ref_name }}
