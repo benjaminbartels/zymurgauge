@@ -1,9 +1,7 @@
 ---
-name: Build
+name: Release
 on:
   push:
-    tags:
-      - v*
     branches:
       - master
   pull_request:
@@ -36,50 +34,9 @@ jobs:
         with:
           name: ui
           path: ui/build
-      - name: Set up Go 1.17
+      - name: Set up Go 1.18
         uses: actions/setup-go@v2
         with:
-          go-version: ^1.17
+          go-version: ^1.18
       - name: Build Go
         run: make build-go
-  test:
-    name: Test Go
-    needs: build-ui
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Download UI artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ui
-          path: ui/build
-      - name: Set up Go 1.17
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.17
-      - name: Generate coverage report
-        run: make coverage
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v2.1.0
-        with:
-          token: ddd9c571-814f-48d7-ad54-2bac7319737e
-          file: ./profile.cov
-          flags: unittests
-          name: codecov-umbrella
-  lint:
-    name: Lint Go
-    needs: build-ui
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Download UI artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: ui
-          path: ui/build
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.45.2

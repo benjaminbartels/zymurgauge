@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"net/http"
 	"os"
@@ -31,8 +32,10 @@ import (
 	"periph.io/x/host/v3"
 )
 
+// git version of this program. It is set using build flags in the makefile.
+var version = "develop"
+
 const (
-	build                = "development"
 	dbFilePermissions    = 0o600
 	bboltReadTimeout     = 1 * time.Second
 	statsDConnectTimeout = 5 * time.Second
@@ -59,6 +62,7 @@ type cli struct {
 		InfluxDBUrl   string `kong:"arg,help:'InfluxDB url.'"`
 		InfluxDBToken string `kong:"arg,help:'InfluxDB token.'"`
 	} `kong:"cmd,help:'Initialize admin credentials.'"`
+	Version struct{} `kong:"cmd,help:'Display Version.'"`
 }
 
 func main() {
@@ -99,6 +103,8 @@ func main() {
 			logger.Error(err)
 			os.Exit(1)
 		}
+	case "version":
+		os.Stdout.WriteString(fmt.Sprintf("%s\n", version))
 	default:
 		logger.Error("command not recognized:")
 		os.Exit(1)
@@ -179,7 +185,7 @@ func run(logger *logrus.Logger, cfg config) error {
 	}
 
 	go func() {
-		logger.Infof("zymurgauge version %s started, listening at %s", build, cfg.Host)
+		logger.Infof("zymurgauge version %s started, listening at %s", version, cfg.Host)
 		errCh <- httpServer.ListenAndServe()
 	}()
 
