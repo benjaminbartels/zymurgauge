@@ -5,9 +5,6 @@ on:
     tags:
       - v*
 
-env:
-  VERSION: ${{ github.ref_name }}
-
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -30,7 +27,7 @@ jobs:
           file: build/Dockerfile
           platforms: linux/arm64
           build-args: |
-            VERSION=${{ github.ref_name }}
+            app_version=${{ github.ref_name }}
           tags: |
             ghcr.io/benjaminbartels/zymurgauge:latest
             ghcr.io/benjaminbartels/zymurgauge:${{ github.ref_name }}

@@ -12,6 +12,10 @@ RUN make build-react
 
 FROM golang:1.18 as go-builder
 
+ARG app_version
+
+ENV VERSION=$app_version
+
 WORKDIR /src
 
 COPY --from=react-builder /src/ui/build ui/build
@@ -22,6 +26,8 @@ COPY go.mod .
 COPY go.sum .
 COPY makefile .
 COPY ui/ui.go ui/ui.go
+
+
 
 RUN make build-go
 
