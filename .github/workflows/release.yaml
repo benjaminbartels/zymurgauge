@@ -7,6 +7,7 @@ on:
 
 jobs:
   docker:
+    name: Build and Release Docker Image
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU

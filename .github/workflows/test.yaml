@@ -6,9 +6,8 @@ on:
       - master
   pull_request:
 jobs:
-  test:
+  test-go:
     name: Test Go
-    needs: build-ui
     runs-on: ubuntu-latest
     steps:
       - name: Check out code

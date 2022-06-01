@@ -6,9 +6,8 @@ on:
       - master
   pull_request:
 jobs:
-  lint:
-    name: Lint Go
-    needs: build-ui
+  lint-go:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
