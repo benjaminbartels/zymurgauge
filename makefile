@@ -69,6 +69,8 @@ test: ## Run the tests of the project
 	$(GOTEST) -v ./... -race
 
 coverage: ## Generate code coverge report
+	# Ensure that ui/build has somtehing in it so tests will work
+	mkdir -p ui/build && touch ui/build/.gitkeep
 	$(GOTEST) -v -covermode=atomic -coverpkg=./... -coverprofile=profile.cov  ./...
 	$(GOCMD) tool cover -func profile.cov
 ifeq ($(EXPORT_RESULT), true)
