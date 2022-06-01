@@ -27,8 +27,6 @@ COPY go.sum .
 COPY makefile .
 COPY ui/ui.go ui/ui.go
 
-
-
 RUN make build-go
 
 #############################################################
@@ -39,8 +37,6 @@ WORKDIR /
 
 COPY --from=go-builder /src/out/bin/zym . 
 COPY --from=go-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-# USER 1000:1000
 
 ENTRYPOINT ["./zym"]
 CMD ["run"] 
