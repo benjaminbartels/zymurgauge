@@ -3,7 +3,7 @@ version: "3.9"
 services:
   zymurgauge:
     restart: always
-    image: benjaminbartels/zymurgauge
+    image: ghcr.io/benjaminbartels/zymurgauge:latest
     container_name: zymurgauge
     depends_on:
       - telegraf

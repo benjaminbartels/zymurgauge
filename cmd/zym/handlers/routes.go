@@ -10,7 +10,6 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/middleware"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/benjaminbartels/zymurgauge/internal/settings"
-	"github.com/benjaminbartels/zymurgauge/ui"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -79,7 +78,7 @@ func NewApp(chamberManager chamber.Controller, devicePath string, service brewfa
 	api.Register(http.MethodGet, version, settingsPath, settingsHandler.Get, authMw)
 	api.Register(http.MethodPost, version, settingsPath, settingsHandler.Save, authMw)
 
-	app := web.NewApp(api, ui.FS, logger)
+	app := web.NewApp(api, uiFileReader, logger)
 
 	return app, nil
 }

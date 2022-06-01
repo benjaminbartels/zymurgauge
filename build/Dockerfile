@@ -12,6 +12,10 @@ RUN make build-react
 
 FROM golang:1.18 as go-builder
 
+ARG app_version
+
+ENV VERSION=$app_version
+
 WORKDIR /src
 
 COPY --from=react-builder /src/ui/build ui/build
@@ -33,8 +37,6 @@ WORKDIR /
 
 COPY --from=go-builder /src/out/bin/zym . 
 COPY --from=go-builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-
-# USER 1000:1000
 
 ENTRYPOINT ["./zym"]
 CMD ["run"] 

@@ -3,7 +3,7 @@ GOTEST=$(GOCMD) test
 MAIN_DIR=cmd/zym
 BINARY_NAME=zym
 #TODO: See https://dev.to/eugenebabichenko/generating-pretty-version-strings-including-nightly-with-git-and-makefiles-48p3
-VERSION?=0.0.0
+VERSION?=develop
 SERVICE_PORT?=8080
 DELVE_PORT?=2345
 # If set it should end with '/'
@@ -26,11 +26,12 @@ build: build-react build-go  ## Build both React UI and Go binary
 
 build-go: ## Build the default go package and put the output binary in out/bin/
 	mkdir -p out/bin
-	GOOS=linux GOARCH=arm CGO_ENABLED=0 $(GOCMD) build -a -ldflags="-w -s -extldflags '-static'" -o out/bin/$(BINARY_NAME) ./$(MAIN_DIR)
+	GOOS=linux GOARCH=arm CGO_ENABLED=0 $(GOCMD) build -a \
+	-ldflags="-w -s -extldflags '-static' -X 'main.version=$(VERSION)'" -o out/bin/$(BINARY_NAME) ./$(MAIN_DIR)
 
 build-react: ## Build the React UI
-	yarn --cwd "ui" install
-	yarn --cwd "ui" build
+	yarn --cwd "ui" add react-scripts@5.0.0 --network-timeout 100000
+	yarn --cwd "ui" build --network-timeout 100000
 
 clean: ## Remove build and coverage related file
 	rm -fr out $(MAIN_DIR)/tmp
@@ -63,9 +64,13 @@ debug: ## Run the code with Delve to debug
 
 ## Test:
 test: ## Run the tests of the project
+	# Ensure that ui/build has somtehing in it so tests will work
+	mkdir -p ui/build && touch ui/build/.gitkeep
 	$(GOTEST) -v ./... -race
 
 coverage: ## Generate code coverge report
+	# Ensure that ui/build has somtehing in it so tests will work
+	mkdir -p ui/build && touch ui/build/.gitkeep
 	$(GOTEST) -v -covermode=atomic -coverpkg=./... -coverprofile=profile.cov  ./...
 	$(GOCMD) tool cover -func profile.cov
 ifeq ($(EXPORT_RESULT), true)

@@ -39,3 +39,4 @@ out/bin
 /cmd/zym/tmp
 profile.cov
 coverage.xml
+!.gitkeep
