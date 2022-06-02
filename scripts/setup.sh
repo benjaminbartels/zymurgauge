@@ -88,9 +88,9 @@ echo $'\e[32mSetting up InfluxDB\e[0m'
 
 # initalize influxdb
 docker run -d -p 8086:8086 \
-      --name influxdb_setup \
-      -v $ZYM_PATH/influxdb:/var/lib/influxdb2 \
-      influxdb:2.2.0
+    --name influxdb_setup \
+    -v $ZYM_PATH/influxdb:/var/lib/influxdb2 \
+    influxdb:2.2.0
 
 # wait for influx docker container to be ready
 sleep 10s
@@ -123,6 +123,6 @@ influx_url=https://$(hostname).local:8086
 
 # initalize zymurgauge
 docker run --rm -v $ZYM_PATH/data:/data \
-    benjaminbartels/zymurgauge init $zym_username $zym_password $influx_url $read_token 
+    ghcr.io/benjaminbartels/zymurgauge:latest init $zym_username $zym_password $influx_url $read_token 
 
 echo $'\e[32mZymurgauge setup complete\e[0m'
