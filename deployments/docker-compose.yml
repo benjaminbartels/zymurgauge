@@ -22,8 +22,8 @@ services:
       - influxdb
       - zymurgauge
     ports:
-      - "8080:8080" # zymurgauge
-      - "8086:8086" # influxdb
+      - "8080:8080"   # zymurgauge
+      - "8086:8086"   # influxdb
     volumes:
       - ${HOME}/.zymurgauge/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ${HOME}/.zymurgauge/nginx/cert.pem:/etc/nginx/conf.d/cert.pem:ro

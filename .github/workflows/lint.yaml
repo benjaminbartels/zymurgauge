@@ -7,7 +7,7 @@ on:
   pull_request:
 jobs:
   lint-go:
-    name: Lint
+    name: Lint Go
     runs-on: ubuntu-latest
     steps:
       - name: Check out code

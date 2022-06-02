@@ -36,7 +36,6 @@ out/bin
 # Other
 .vscode
 /cmd/zymsim/*.png
-/cmd/zym/tmp
+/tmp
 profile.cov
-coverage.xml
 !.gitkeep
