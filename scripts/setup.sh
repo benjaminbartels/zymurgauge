@@ -138,6 +138,6 @@ docker run --rm -v $ZYM_PATH/data:/data \
     --brewfather-log-url=$brewfather_log_url \
     --influx-dburl=$influx_url \
     --influx-db-token=$read_token \
-    --stats-d-address=localhost:8125
+    --stats-d-address=telegraf:8125
 
 echo $'\e[32mZymurgauge setup complete\e[0m'

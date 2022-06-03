@@ -420,7 +420,7 @@ func (c *Chamber) sendData(ctx context.Context) {
 
 func (c *Chamber) emitMetrics() error {
 	if reflect.ValueOf(c.metrics).IsNil() {
-		return errors.New("metrics provider is nil")
+		return ErrMetricsIsNil
 	}
 
 	c.readingsMutex.Lock()
