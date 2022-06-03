@@ -10,6 +10,9 @@ fi
 
 unset zym_username
 unset zym_password
+unset brewfather_user_id
+unset brewfather_key
+unset brewfather_log_url
 unset influxdb_username
 unset influxdb_password
 
@@ -35,6 +38,12 @@ then
 fi
 
 echo
+
+read -p $'\e[32m?\e[0m Enter Brewfather API User ID : ' brewfather_user_id
+
+read -p $'\e[32m?\e[0m Enter Brewfather API Key : ' brewfather_key
+
+read -p $'\e[32m?\e[0m Enter Brewfather API Log URL : ' brewfather_log_url
 
 read -p $'\e[32m?\e[0m Enter InfluxDB admin account username : ' influxdb_username
 
@@ -123,6 +132,12 @@ influx_url=https://$(hostname).local:8086
 
 # initalize zymurgauge
 docker run --rm -v $ZYM_PATH/data:/data \
-    ghcr.io/benjaminbartels/zymurgauge:latest init $zym_username $zym_password $influx_url $read_token 
+    ghcr.io/benjaminbartels/zymurgauge:latest init --username=$zym_username --password=$zym_password \
+    --brewfather-user-id=$brewfather_user_id \
+    --brewfather-key=$brewfather_key \
+    --brewfather-log-url=$brewfather_log_url \
+    --influx-dburl=$influx_url \
+    --influx-db-token=$read_token \
+    --stats-d-address=telegraf:8125
 
 echo $'\e[32mZymurgauge setup complete\e[0m'

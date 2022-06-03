@@ -54,14 +54,20 @@ type config struct {
 	Debug                  bool          `default:"false"`
 }
 
+type initArgs struct {
+	Username         string `kong:"required,help:'Admin username.'"`
+	Password         string `kong:"required,help:'Admin password.'"`
+	BrewfatherUserID string `kong:"optional,help:'Brewfather API User ID.'"`
+	BrewfatherKey    string `kong:"optional,help:'Brewfather API Key.'"`
+	BrewfatherLogURL string `kong:"optional,help:'URL of the Brewfather logging endpoint.'"`
+	InfluxDBURL      string `kong:"optional,help:'URL of the InfluxDB server.'"`
+	InfluxDBToken    string `kong:"optional,help:'Read Access token for InfluxDB.'"`
+	StatsDAddress    string `kong:"optional,help:'Address of the telegraf metrics server. (hostname:port)'"`
+}
+
 type cli struct {
-	Run  struct{} `kong:"cmd,help:'Run zymurgauge service.'"`
-	Init struct {
-		AdminUsername string `kong:"arg,help:'Admin username.'"`
-		AdminPassword string `kong:"arg,help:'Admin password.'"`
-		InfluxDBUrl   string `kong:"arg,help:'InfluxDB url.'"`
-		InfluxDBToken string `kong:"arg,help:'InfluxDB token.'"`
-	} `kong:"cmd,help:'Initialize admin credentials.'"`
+	Run     struct{} `kong:"cmd,help:'Run zymurgauge service.'"`
+	Init    initArgs `kong:"cmd,help:'Initialize admin credentials.'"`
 	Version struct{} `kong:"cmd,help:'Display Version.'"`
 }
 
@@ -91,22 +97,21 @@ func main() {
 			logger.Error(err)
 			os.Exit(1)
 		}
-	case "init <admin-username> <admin-password> <influx-db-url> <influx-db-token>":
+	case "init":
 		_, settingsRepo, err := createRepos(cfg.DBPath)
 		if err != nil {
 			logger.Error(err)
 			os.Exit(1)
 		}
 
-		if err := checkAndInitSettings(cli.Init.AdminUsername, cli.Init.AdminPassword, cli.Init.InfluxDBUrl,
-			cli.Init.InfluxDBToken, settingsRepo, logger); err != nil {
+		if err := checkAndInitSettings(cli.Init, settingsRepo, logger); err != nil {
 			logger.Error(err)
 			os.Exit(1)
 		}
 	case "version":
 		os.Stdout.WriteString(fmt.Sprintf("%s\n", version))
 	default:
-		logger.Error("command not recognized:")
+		logger.Error("command not recognized:", ctx.Command())
 		os.Exit(1)
 	}
 }
@@ -154,6 +159,7 @@ func run(logger *logrus.Logger, cfg config) error {
 			logger.WithError(err).Error("could not create statsd client")
 		}
 	} else {
+		statsdClient = nil
 		logger.Warn("StatsD Address not set.")
 	}
 
@@ -266,8 +272,7 @@ func createRepos(path string) (chamberRepo *database.ChamberRepo, settingsRepo *
 	return
 }
 
-func checkAndInitSettings(username, password, influxURL, influxReadToken string, settingsRepo *database.SettingsRepo,
-	logger *logrus.Logger,
+func checkAndInitSettings(args initArgs, settingsRepo *database.SettingsRepo, logger *logrus.Logger,
 ) error {
 	s, err := settingsRepo.Get()
 	if err != nil {
@@ -283,7 +288,7 @@ func checkAndInitSettings(username, password, influxURL, influxReadToken string,
 		return nil
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(args.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.Wrap(err, "could not generate password hash")
 	}
@@ -300,13 +305,17 @@ func checkAndInitSettings(username, password, influxURL, influxReadToken string,
 
 	s = &settings.Settings{
 		AppSettings: settings.AppSettings{
-			AuthSecret:        string(b),
-			InfluxDBURL:       influxURL,
-			InfluxDBReadToken: influxReadToken,
-			TemperatureUnits:  "Celsius",
+			AuthSecret:          string(b),
+			TemperatureUnits:    "Celsius",
+			BrewfatherAPIUserID: args.BrewfatherUserID,
+			BrewfatherAPIKey:    args.BrewfatherKey,
+			BrewfatherLogURL:    args.BrewfatherLogURL,
+			InfluxDBURL:         args.InfluxDBURL,
+			InfluxDBReadToken:   args.InfluxDBToken,
+			StatsDAddress:       args.StatsDAddress,
 		},
 		Credentials: auth.Credentials{
-			Username: username,
+			Username: args.Username,
 			Password: string(hash),
 		},
 		ModTime: time.Now(),
