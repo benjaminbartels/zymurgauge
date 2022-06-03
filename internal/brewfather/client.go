@@ -26,6 +26,7 @@ var (
 	ErrUserAccessDenied = errors.New("access deined")
 	ErrNotFound         = errors.New("resource not found")
 	ErrTooManyRequests  = errors.New("too many request")
+	ErrLogURLNotSet     = errors.New("log url is not set")
 )
 
 // _ model.Repo = (*Client)(nil).
@@ -118,6 +119,10 @@ func (s *ServiceClient) GetBatchDetail(ctx context.Context, id string) (*BatchDe
 }
 
 func (s *ServiceClient) Log(ctx context.Context, log LogEntry) error {
+	if s.logURL == "" {
+		return ErrLogURLNotSet
+	}
+
 	if time.Now().After(s.nextSendTime) {
 		data, err := json.Marshal(log)
 		if err != nil {

@@ -15,9 +15,6 @@ RESET  := $(shell tput -Txterm sgr0)
 
 all: help
 
-## Build:
-build: build-react build-go  ## Build both React UI and Go binary
-
 build-go: ## Build the default go package and put the output binary in out/bin/
 	mkdir -p out/bin
 	GOOS=linux GOARCH=arm CGO_ENABLED=0 $(GOCMD) build -a \
@@ -40,7 +37,8 @@ tidy: ## Add missing and remove unused modules
 
 init-db: ## Initialize a local database
 	mkdir -p tmp
-	ZYM_DBPATH=tmp/zymurgaugedb go run cmd/zym/main.go init admin password optional optional
+	ZYM_DBPATH=tmp/zymurgaugedb go run cmd/zym/main.go init --username=admin --password=password \
+		--brewfather-user-id=$(BREWFATHER_USERID) --brewfather-key=$(BREWFATHER_KEY)
 
 watch: ## Run the code with Air to have automatic reload on changes
 	$(eval PACKAGE_NAME=$(shell head -n 1 go.mod | cut -d ' ' -f2))
@@ -52,7 +50,7 @@ watch: ## Run the code with Air to have automatic reload on changes
 
 ## Test:
 test: ## Run the tests of the project
-	# Ensure that ui/build has somtehing in it so tests will work
+	# Ensure that ui/build has somthing in it so tests will work
 	mkdir -p ui/build && touch ui/build/.gitkeep
 	$(GOTEST) -v ./... -race
 

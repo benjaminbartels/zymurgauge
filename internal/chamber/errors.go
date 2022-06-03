@@ -7,6 +7,7 @@ const (
 	ErrNotFermenting  = Error("fermentation has not started")
 	ErrFermenting     = Error("fermentation has started")
 	ErrDeviceIsNil    = Error("device is nil")
+	ErrMetricsIsNil   = Error("metrics provider nil")
 )
 
 type Error string

@@ -3,6 +3,7 @@ package chamber
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -408,14 +409,20 @@ func (c *Chamber) getStep(name string) *batch.FermentationStep {
 }
 
 func (c *Chamber) sendData(ctx context.Context) {
-	c.emitMetrics()
+	if err := c.emitMetrics(); err != nil {
+		c.logger.WithError(err).Error("Unable to emit metrics.")
+	}
 
 	if err := c.sendToBrewFather(ctx); err != nil {
 		c.logger.WithError(err).Error("Unable to send readings to Brewfather")
 	}
 }
 
-func (c *Chamber) emitMetrics() {
+func (c *Chamber) emitMetrics() error {
+	if reflect.ValueOf(c.metrics).IsNil() {
+		return errors.New("metrics provider is nil")
+	}
+
 	c.readingsMutex.Lock()
 	defer c.readingsMutex.Unlock()
 
@@ -440,6 +447,8 @@ func (c *Chamber) emitMetrics() {
 		c.metrics.Gauge(fmt.Sprintf("zymurgauge.%s.hydrometer_gravity,sensor_id=%s", name,
 			c.hydrometer.GetID()), *c.Readings.HydrometerGravity)
 	}
+
+	return nil
 }
 
 func (c *Chamber) sendToBrewFather(ctx context.Context) error {
