@@ -18,7 +18,7 @@ import { Controller, useForm } from "react-hook-form";
 import SettingsService from "../services/settings-service";
 import { AppSettings } from "../types/Settings";
 
-export default function SettingsView() {
+export default function SettingsFormView() {
   const { handleSubmit, control } = useForm();
   const [settings, setSettings] = useState<AppSettings>();
   const [errorMessage, setErrorMessage] = useState<String>();

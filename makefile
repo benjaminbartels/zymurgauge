@@ -27,15 +27,11 @@ build-react: ## Build the React UI
 build-docker: ## Use the dockerfile to build the container
 	DOCKER_BUILDKIT=1 docker build -t $(BINARY_NAME) -f build/Dockerfile --target production .
 
-clean: ## Remove build and coverage related file
-	rm -fr out tmp
-	rm -f  profile.cov
-	rm -fr ui/build
-
 tidy: ## Add missing and remove unused modules
 	$(GOCMD) mod tidy
 
-init-db: ## Initialize a local database
+init: ## Initialize folders and database
+	mkdir -p ui/build && touch ui/build/.gitkeep
 	mkdir -p tmp
 	ZYM_DBPATH=tmp/zymurgaugedb go run cmd/zym/main.go init --username=admin --password=password \
 		--brewfather-user-id=$(BREWFATHER_USERID) --brewfather-key=$(BREWFATHER_KEY)
@@ -48,7 +44,11 @@ watch: ## Run the code with Air to have automatic reload on changes
 	-w /$(PACKAGE_NAME) \
 	cosmtrek/air -c ./.air.conf
 
-## Test:
+clean: ## Remove build and coverage related file
+	rm -fr out tmp
+	rm -f  profile.cov
+	rm -fr ui/build
+
 test: ## Run the tests of the project
 	# Ensure that ui/build has somthing in it so tests will work
 	mkdir -p ui/build && touch ui/build/.gitkeep
@@ -60,7 +60,6 @@ coverage: ## Generate code coverge report
 	$(GOTEST) -v -covermode=atomic -coverpkg=./... -coverprofile=profile.cov  ./...
 	$(GOCMD) tool cover -func profile.cov
 
-## Help:
 help: ## Show this help
 	@echo ''
 	@echo 'Usage:'

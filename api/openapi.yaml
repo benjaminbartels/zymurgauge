@@ -21,7 +21,7 @@ servers:
           - "v1"
         default: v1
 paths:
-  "/login":
+  "/auth/login":
     post:
       description: Validates users credentials
       operationId: login
@@ -56,6 +56,39 @@ paths:
                   $ref: "#/components/examples/incorrectUsernameError"
                 incorrectPassword:
                   $ref: "#/components/examples/incorrectPasswordError"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                error:
+                  $ref: "#/components/examples/internalServerError"
+  "/auth/update":
+    post:
+      description: Validates users credentials
+      operationId: login
+      requestBody:
+        description: Users credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginCredentials"
+            examples:
+              credentials:
+                $ref: "#/components/examples/loginCredentials"
+      responses:
+        "200":
+          description: OK response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"
+              examples:
+                chambers:
+                  $ref: "#/components/examples/success"
         "500":
           description: Internal server error
           content:
