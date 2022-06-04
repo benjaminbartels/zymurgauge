@@ -52,6 +52,8 @@ export default function SettingsView() {
       .catch((e: any) => {
         setErrorMessage("Could not save Settings: " + e);
       });
+
+    localStorage.setItem("temperatureUnits", data.temperatureUnits);
   };
 
   return (

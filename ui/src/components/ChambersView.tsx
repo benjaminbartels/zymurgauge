@@ -14,7 +14,14 @@ import { Chamber } from "../types/Chamber";
 
 export default function Chambers() {
   const [chambers, setChambers] = useState<Chamber[]>([]);
+  const [temperatureUnitsLabel, SetTemperatureUnitsLabel] = useState("°C");
   const [errorMessage, setErrorMessage] = useState<String>();
+
+  React.useEffect(() => {
+    if (localStorage.getItem("temperatureUnits") === "Fahrenheit") {
+      SetTemperatureUnitsLabel("°F");
+    }
+  }, []);
 
   React.useEffect(() => {
     ChamberService.getAll()
@@ -32,7 +39,7 @@ export default function Chambers() {
       <Grid container spacing={5}>
         {chambers.map((chamber: Chamber) => (
           <Grid item key={chamber.id} xs={12} sm={12} md={6} lg={3} xl={3}>
-            <Card>
+            <Card sx={{ minWidth: 400 }}>
               <CardActionArea component={Link} to={chamber!.id!}>
                 <CardContent>
                   <Typography gutterBottom>
@@ -51,7 +58,11 @@ export default function Chambers() {
                     </Grid>
                     <Grid item xs={3}>
                       <Typography align="right" noWrap>
-                        {chamber?.readings?.beerTemperature} °C
+                        {chamber?.readings?.beerTemperature &&
+                          convertDisplayTemperature(
+                            chamber?.readings?.beerTemperature
+                          )}{" "}
+                        {temperatureUnitsLabel}
                       </Typography>
                     </Grid>
                     <Grid item xs={9}>
@@ -61,7 +72,11 @@ export default function Chambers() {
                     </Grid>
                     <Grid item xs={3}>
                       <Typography align="right" noWrap>
-                        {chamber?.readings?.auxiliaryTemperature} °C
+                        {chamber?.readings?.auxiliaryTemperature &&
+                          convertDisplayTemperature(
+                            chamber?.readings?.auxiliaryTemperature
+                          )}{" "}
+                        {temperatureUnitsLabel}
                       </Typography>
                     </Grid>
                     <Grid item xs={9}>
@@ -71,7 +86,11 @@ export default function Chambers() {
                     </Grid>
                     <Grid item xs={3}>
                       <Typography align="right" noWrap>
-                        {chamber?.readings?.externalTemperature} °C
+                        {chamber?.readings?.externalTemperature &&
+                          convertDisplayTemperature(
+                            chamber?.readings?.externalTemperature
+                          )}{" "}
+                        {temperatureUnitsLabel}
                       </Typography>
                     </Grid>
                     <Grid item xs={9}>
@@ -99,3 +118,11 @@ export default function Chambers() {
     </>
   );
 }
+
+const convertDisplayTemperature = (temperature: number) => {
+  if (localStorage.getItem("temperatureUnits") === "Fahrenheit") {
+    return (temperature * 9) / 5 + 32;
+  }
+
+  return temperature;
+};

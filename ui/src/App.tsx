@@ -12,8 +12,10 @@ import ListItemText from "@mui/material/ListItemText";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
+import React from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import AuthService from "./services/auth-service";
+import SettingsService from "./services/settings-service";
 
 const theme = createTheme();
 const drawerWidth = 240;
@@ -109,6 +111,21 @@ function NavigationDrawer() {
 }
 
 export default function App() {
+  React.useEffect(() => {
+    if (localStorage.getItem("temperatureUnits") === null) {
+      SettingsService.get()
+        .then((response: any) => {
+          localStorage.setItem(
+            "temperatureUnits",
+            response.data.temperatureUnits
+          );
+        })
+        .catch((e: Error) => {
+          console.log("Could not get Settings: " + e);
+        });
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ display: "flex" }}>

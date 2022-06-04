@@ -54,7 +54,14 @@ export default function ChamberView() {
   const [graphOptions, setGraphOptions] = useState<ChartOptions<any>>();
   const [chamber, setChamber] = useState<Chamber>();
   const [currentFermentationStep, setCurrentFermentationStep] = useState("");
+  const [temperatureUnitsLabel, SetTemperatureUnitsLabel] = useState("°C");
   const [errorMessage, setErrorMessage] = useState<String>();
+
+  useEffect(() => {
+    if (localStorage.getItem("temperatureUnits") === "Fahrenheit") {
+      SetTemperatureUnitsLabel("°F");
+    }
+  }, []);
 
   useEffect(() => {
     var influxDbUrl: string;
@@ -186,7 +193,7 @@ export default function ChamberView() {
                     y: {
                       title: {
                         display: true,
-                        text: "Temperature °C",
+                        text: "Temperature " + temperatureUnitsLabel,
                       },
                       display: true,
                       position: "left" as const,
@@ -268,7 +275,7 @@ export default function ChamberView() {
             });
           };
 
-          if (influxDbUrl !== "") {
+          if (influxDbUrl != null && influxDbUrl !== "") {
             influxQuery(influxDbUrl);
           }
         })
@@ -276,7 +283,7 @@ export default function ChamberView() {
           setErrorMessage("Could not get Chamber: " + e);
         });
     }
-  }, [params.chamberId]);
+  }, [params.chamberId, temperatureUnitsLabel]);
 
   function startFermentation(name: string) {
     if (params.chamberId != null) {
@@ -330,7 +337,11 @@ export default function ChamberView() {
               </Grid>
               <Grid item xs={3} alignContent="right">
                 <Typography align="right" noWrap>
-                  {chamber?.readings?.beerTemperature} °C
+                  {chamber?.readings?.beerTemperature &&
+                    convertDisplayTemperature(
+                      chamber?.readings?.beerTemperature
+                    )}{" "}
+                  {temperatureUnitsLabel}
                 </Typography>
               </Grid>
               <Grid item xs={9}>
@@ -340,7 +351,11 @@ export default function ChamberView() {
               </Grid>
               <Grid item xs={3}>
                 <Typography align="right" noWrap>
-                  {chamber?.readings?.auxiliaryTemperature} °C
+                  {chamber?.readings?.auxiliaryTemperature &&
+                    convertDisplayTemperature(
+                      chamber?.readings?.auxiliaryTemperature
+                    )}{" "}
+                  {temperatureUnitsLabel}
                 </Typography>
               </Grid>
               <Grid item xs={9}>
@@ -350,7 +365,11 @@ export default function ChamberView() {
               </Grid>
               <Grid item xs={3}>
                 <Typography align="right" noWrap>
-                  {chamber?.readings?.externalTemperature} °C
+                  {chamber?.readings?.externalTemperature &&
+                    convertDisplayTemperature(
+                      chamber?.readings?.externalTemperature
+                    )}{" "}
+                  {temperatureUnitsLabel}
                 </Typography>
               </Grid>
               <Grid item xs={9}>
@@ -383,7 +402,9 @@ export default function ChamberView() {
                               <Typography>Type</Typography>
                             </TableCell>
                             <TableCell align="right">
-                              <Typography noWrap>Temperature (°C)</Typography>
+                              <Typography noWrap>
+                                Temperature ({temperatureUnitsLabel})
+                              </Typography>
                             </TableCell>
                             <TableCell align="right">
                               <Typography noWrap>Time (days)</Typography>
@@ -404,7 +425,7 @@ export default function ChamberView() {
                               >
                                 <TableCell>{step.name}</TableCell>
                                 <TableCell align="right">
-                                  {step.temperature}
+                                  {convertDisplayTemperature(step.temperature)}
                                 </TableCell>
                                 <TableCell align="right">
                                   {step.duration}
@@ -446,17 +467,17 @@ export default function ChamberView() {
                       </Table>
                     </TableContainer>
                   </Grid>
-                  <Grid item xs={12}>
-                    <Container
-                      sx={{
-                        height: 400,
-                      }}
-                    >
-                      {graphData != null && (
+                  {graphData != null && (
+                    <Grid item xs={12}>
+                      <Container
+                        sx={{
+                          height: 400,
+                        }}
+                      >
                         <Line options={graphOptions} data={graphData} />
-                      )}
-                    </Container>
-                  </Grid>
+                      </Container>
+                    </Grid>
+                  )}
                 </Grid>
               )}
           </CardContent>
@@ -475,3 +496,11 @@ export default function ChamberView() {
     </>
   );
 }
+
+const convertDisplayTemperature = (temperature: number) => {
+  if (localStorage.getItem("temperatureUnits") === "Fahrenheit") {
+    return (temperature * 9) / 5 + 32;
+  }
+
+  return temperature;
+};

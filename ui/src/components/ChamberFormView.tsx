@@ -37,9 +37,16 @@ export default function ChamberFormView() {
   const [batchSummaries, setBatchSummaries] = useState<BatchSummary[]>();
   const [batchDetail, setBatchDetail] = useState<BatchDetail>();
   const [chamber, setChamber] = useState<Chamber>();
+  const [temperatureUnitsLabel, SetTemperatureUnitsLabel] = useState("°C");
   const [errorMessage, setErrorMessage] = useState<String>();
 
   // TODO: Use Redux to store Batches and Thermometers
+
+  React.useEffect(() => {
+    if (localStorage.getItem("temperatureUnits") === "Fahrenheit") {
+      SetTemperatureUnitsLabel("°F");
+    }
+  }, []);
 
   // Load Batches on load
   React.useEffect(() => {
@@ -180,7 +187,7 @@ export default function ChamberFormView() {
                         fieldState: { error },
                       }) => (
                         <TextField
-                          label="Chilling Differential (°C)"
+                          label={`Chilling Differential (${temperatureUnitsLabel})`}
                           type="number"
                           inputProps={{ step: ".1" }}
                           value={value}
@@ -202,7 +209,7 @@ export default function ChamberFormView() {
                         fieldState: { error },
                       }) => (
                         <TextField
-                          label="Heating Differential (°C)"
+                          label={`Heating Differential (${temperatureUnitsLabel})`}
                           type="number"
                           inputProps={{ step: ".1" }}
                           value={value}
@@ -472,7 +479,7 @@ export default function ChamberFormView() {
                                 </TableCell>
                                 <TableCell align="right">
                                   <Typography noWrap>
-                                    Temperature (°C)
+                                    Temperature ({temperatureUnitsLabel})
                                   </Typography>
                                 </TableCell>
                                 <TableCell align="right">
@@ -493,7 +500,9 @@ export default function ChamberFormView() {
                                   >
                                     <TableCell>{step.name}</TableCell>
                                     <TableCell align="right">
-                                      {step.temperature}
+                                      {convertDisplayTemperature(
+                                        step.temperature
+                                      )}
                                     </TableCell>
                                     <TableCell align="right">
                                       {step.duration}
@@ -595,4 +604,12 @@ const getTiltColorItems = () => {
       Pink
     </MenuItem>,
   ];
+};
+
+const convertDisplayTemperature = (temperature: number) => {
+  if (localStorage.getItem("temperatureUnits") === "Fahrenheit") {
+    return (temperature * 9) / 5 + 32;
+  }
+
+  return temperature;
 };
