@@ -14,10 +14,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Status struct {
-	Message string `json:"message"`
-}
-
 type ChambersHandler struct {
 	ChamberController chamber.Controller
 	Logger            *logrus.Logger

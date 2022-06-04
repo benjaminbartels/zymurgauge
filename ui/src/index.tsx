@@ -8,6 +8,7 @@ import ChamberView from "./components/ChamberView";
 import LoginFormView from "./components/LoginFormView";
 import NotFoundView from "./components/NotFoundView";
 import PrivateRoute from "./components/PrivateRoute";
+import UpdateLoginFormView from "./components/UpdateLoginFormView";
 // import Dashboard from "./components/DashboardView";
 import SettingsFormView from "./components/SettingsFormView";
 import "./index.css";
@@ -65,6 +66,14 @@ ReactDOM.render(
             element={
               <PrivateRoute>
                 <SettingsFormView />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="updateLogin"
+            element={
+              <PrivateRoute>
+                <UpdateLoginFormView />
               </PrivateRoute>
             }
           />

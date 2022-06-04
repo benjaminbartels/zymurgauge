@@ -61,6 +61,36 @@ func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.
 	return nil
 }
 
+func (h *AuthHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+	credentials, err := parseCredentials(r)
+	if err != nil {
+		return errors.Wrap(err, "could not parse settings")
+	}
+
+	s, err := h.SettingsRepo.Get()
+	if err != nil {
+		return errors.Wrap(err, "could not get settings from repository")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(credentials.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.Wrap(err, "could not generate password hash")
+	}
+
+	s.Credentials.Username = credentials.Username
+	s.Credentials.Password = string(hash)
+
+	if err := h.SettingsRepo.Save(s); err != nil {
+		return errors.Wrap(err, "could not save settings to repository")
+	}
+
+	if err := web.Respond(ctx, w, &Status{Message: "Success"}, http.StatusOK); err != nil {
+		return errors.Wrap(err, "problem responding to client")
+	}
+
+	return nil
+}
+
 func parseCredentials(r *http.Request) (auth.Credentials, error) {
 	var user auth.Credentials
 	err := json.NewDecoder(r.Body).Decode(&user)

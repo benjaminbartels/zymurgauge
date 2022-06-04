@@ -15,13 +15,17 @@ import (
 )
 
 const (
-	loginPath        = "/login"
+	authPath         = "/auth"
 	chambersPath     = "/chambers"
 	thermometersPath = "/thermometers"
 	batchesPath      = "/batches"
 	settingsPath     = "/settings"
 	version          = "v1"
 )
+
+type Status struct {
+	Message string `json:"message"`
+}
 
 func NewApp(chamberManager chamber.Controller, devicePath string, service brewfather.Service,
 	settingsRepo settings.Repo, updateChan chan settings.Settings, uiFileReader web.FileReader, shutdown chan os.Signal,
@@ -43,7 +47,8 @@ func NewApp(chamberManager chamber.Controller, devicePath string, service brewfa
 		Logger:       logger,
 	}
 
-	api.Register(http.MethodPost, version, loginPath, AuthHandler.Login)
+	api.Register(http.MethodPost, version, fmt.Sprintf("%s/login", authPath), AuthHandler.Login)
+	api.Register(http.MethodPost, version, fmt.Sprintf("%s/update", authPath), AuthHandler.Save, authMw)
 
 	chambersHandler := &ChambersHandler{
 		ChamberController: chamberManager,

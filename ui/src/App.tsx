@@ -1,4 +1,5 @@
 // import DashboardIcon from "@mui/icons-material/Dashboard";
+import KeyIcon from "@mui/icons-material/Key";
 import KitchenIcon from "@mui/icons-material/Kitchen";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -26,6 +27,8 @@ const getDisplayName = (pathname: string) => {
       return "Chambers";
     case "settings":
       return "Settings";
+    case "updateLogin":
+      return "Update Login Credentials";
     case "login":
       return "Login";
     case "":
@@ -97,6 +100,12 @@ function NavigationDrawer() {
               <SettingsIcon />
             </ListItemIcon>
             <ListItemText primary="Settings" />
+          </ListItem>
+          <ListItem button component={Link} to="updateLogin">
+            <ListItemIcon>
+              <KeyIcon />
+            </ListItemIcon>
+            <ListItemText primary="Update Login" />
           </ListItem>
           <ListItem button onClick={onLogoutClicked}>
             <ListItemIcon>

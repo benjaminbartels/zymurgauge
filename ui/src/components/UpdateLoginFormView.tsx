@@ -5,26 +5,40 @@ import {
   CardActions,
   CardContent,
   Grid,
+  Stack,
   TextField,
 } from "@mui/material";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import AuthService from "../services/auth-service";
+import { Credentials } from "../types/Auth";
 
-export default function LoginFormView() {
+export default function UpdateLoginFormView() {
   const { handleSubmit, control } = useForm();
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<String>();
 
-  const onSubmit = async (data: any) => {
-    try {
-      await AuthService.login(data.username, data.password);
-
-      navigate(`/chambers`);
-    } catch (e: any) {
-      setErrorMessage("Could not login: " + e);
+  const onSubmit = (data: any) => {
+    if (data.password !== data.confirmPassword) {
+      setErrorMessage("Passwords do not match");
+      return;
     }
+
+    let credentials: Credentials = {
+      username: data.username,
+      password: data.password,
+    };
+
+    AuthService.save(credentials)
+      .then((response: any) => {
+        console.debug("Credentials saved: ", response.data);
+        AuthService.logout();
+        navigate(`/login`);
+      })
+      .catch((e: any) => {
+        setErrorMessage("Could not save Settings: " + e);
+      });
   };
 
   return (
@@ -43,7 +57,8 @@ export default function LoginFormView() {
                 <Controller
                   name="username"
                   control={control}
-                  rules={{ required: "Username required" }}
+                  defaultValue={localStorage.getItem("username")}
+                  rules={{ required: "Username is required" }}
                   render={({
                     field: { onChange, value },
                     fieldState: { error },
@@ -64,7 +79,8 @@ export default function LoginFormView() {
                 <Controller
                   name="password"
                   control={control}
-                  rules={{ required: "Password required" }}
+                  // defaultValue={settings?.authSecret || ""}
+                  rules={{ required: "Password is required" }}
                   render={({
                     field: { onChange, value },
                     fieldState: { error },
@@ -81,12 +97,36 @@ export default function LoginFormView() {
                   )}
                 />
               </Grid>
+              <Grid item xs={12}>
+                <Controller
+                  name="confirmPassword"
+                  control={control}
+                  // defaultValue={settings?.authSecret || ""}
+                  rules={{ required: "Password is required" }}
+                  render={({
+                    field: { onChange, value },
+                    fieldState: { error },
+                  }) => (
+                    <TextField
+                      fullWidth
+                      label="Confirm Password"
+                      type="password"
+                      value={value}
+                      onChange={onChange}
+                      error={!!error}
+                      helperText={error ? error.message : null}
+                    />
+                  )}
+                />
+              </Grid>
             </Grid>
           </CardContent>
           <CardActions>
-            <Button type="submit" variant="contained">
-              Login
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button type="submit" variant="contained">
+                Save
+              </Button>
+            </Stack>
           </CardActions>
         </form>
       </Card>
