@@ -36,13 +36,16 @@ init: ## Initialize folders and database
 	ZYM_DBPATH=tmp/zymurgaugedb go run cmd/zym/main.go init --username=admin --password=password \
 		--brewfather-user-id=$(BREWFATHER_USERID) --brewfather-key=$(BREWFATHER_KEY)
 
-watch: ## Run the code with Air to have automatic reload on changes
+watch-go: ## Run the go service with Air to have automatic reload on changes
 	$(eval PACKAGE_NAME=$(shell head -n 1 go.mod | cut -d ' ' -f2))
 	docker run -it --rm \
 	-p $(SERVICE_PORT):$(SERVICE_PORT) \
 	-v $(shell pwd):/$(PACKAGE_NAME) \
 	-w /$(PACKAGE_NAME) \
 	cosmtrek/air -c ./.air.conf
+
+watch-react: ## Run the React UI with automatic reload on changes
+	yarn --cwd "ui" start
 
 clean: ## Remove build and coverage related file
 	rm -fr out tmp

@@ -29,7 +29,6 @@ In the future it will be extended to also control a HERMS (Heat Exchange Re-circ
 ### Prerequisites
 
 > **Note**
->
 > Before setting things up, you will need a Premium Brewfather account.  You will need a API UserID and Key to access
 > their API.  You will also need to turn on the "Custom Stream" in the "Power-ups" section in your Brewfather settings.
 > This will create a unique url used to log data to Brewfather.
@@ -37,8 +36,7 @@ In the future it will be extended to also control a HERMS (Heat Exchange Re-circ
 Update and upgrade to the latest packages:
 
 ```sh
-sudo apt-get update
-sudo apt-get upgrade
+sudo apt-get update && sudo apt-get upgrade
 ```
 
 Install the GPIO package is it is not already installed:
@@ -60,15 +58,21 @@ dtoverlay=w1-gpio
 ```
 
 > **Note**
-> 
-> If you plan on using a Tilt Hydrometer you will also need to sure bluetooh services are installed on you Raspberry Pi.
+> If you plan on using a Tilt Hydrometer you will also need to insure bluetooh services are installed on you Raspberry
+> Pi.
 
-Install docker on you Raspberry Pi if needed and ensure the current user is in the docker group:
+Install docker on you Raspberry Pi if needed :
 
 ```sh
 curl -sSL https://get.docker.com | sh
+```
+
+Ensure that the current user is in the docker group:
+
+```sh
 sudo usermod -aG docker ${USER}
 ```
+
 
 Ensure that docker starts on boot:
 
@@ -113,6 +117,75 @@ Once the services are up go to `https://<your-raspberry-pis-hostname>:8080` your
 
 ## Project Layout
 
+api - OpenAPI/Swagger specs
+build - Packaging and Continuous Integration (Dockerfiles)
+
+```sh
+/
+├─ api - OpenAPI/Swagger specs
+├─ build - Packaging and Continuous Integration (Dockerfiles)
+├─ cmd - Main GO applications for this project
+│  ├─ zym - zymurgauge app
+│  │  └─ handlers - HTTP request router and handlers
+│  └─ zymsim - simlation apps
+├─ config - config files
+├─ deployments - container deployment configurations (docker-compose files)
+├─ internal - private application and library code
+│  ├─ auth - jwt authorization models and functions
+│  ├─ batch - Batch models and functions
+│  ├─ brewfather - Brewfather HTTPS client and models
+│  ├─ chamber - fermentation chamber manager and models
+│  ├─ database - bbolt database client and database models
+│  ├─ device - device realted logic
+│  │  ├─ gpio - GPIO Actuator device logic
+│  │  ├─ onewire - One-Wire (ds18b20) device logic
+│  │  └─ tilt - Tilt Hydrometer monitor and logic
+│  ├─ middleware - HTTP request router middlewares
+│  ├─ platform - foundational packages
+│  │  ├─ bluetooth - bluetooth discoverer and ibeacon logic
+│  │  ├─ clock - wrapper for Go time package
+│  │  ├─ debug - pprof mux
+│  │  ├─ metrics - metrics interface for statsd
+│  │  └─ web - web server, api and 
+│  ├─ settings - settings models
+│  ├─ temperaturecontrol - temperature controller implementations
+│  │  ├─ hysteresis - hysteresis temperature controller implementation
+│  │  └─ pid - pid temperature controller implementation
+│  └─ test - fakes, mocks and stubs for testing
+├─ scripts - setup scripts
+└─ ui - react ui source and ui file embed filesystem
+   ├─ public - public static assets
+   ├─ src - source code for web application
+   │  ├─ components - web application views
+   │  ├─ services - API clients
+   │  └─ types - typescript type interfaces
+```
+
 ## Roadmap
 
+- [ ] Add HERMS management functionality
+- [ ] Improve and polish React UI
+- [ ] Add ISpendle support
+
 ## Development Setup
+
+> **Note**
+> Ensure that you have at least Go 1.8 and yarn 1.22 installed.
+
+To initialize your local development environment run:
+
+```sh
+make init
+```
+
+To run the Go service locally with live reloading run:
+
+```sh
+make watch-go
+```
+
+To run the React UI locally with live reloading run:
+
+```sh
+make watch-react
+```
