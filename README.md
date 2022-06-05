@@ -29,6 +29,7 @@ In the future it will be extended to also control a HERMS (Heat Exchange Re-circ
 ### Prerequisites
 
 > **Note**
+>
 > Before setting things up, you will need a Premium Brewfather account.  You will need a API UserID and Key to access
 > their API.  You will also need to turn on the "Custom Stream" in the "Power-ups" section in your Brewfather settings.
 > This will create a unique url used to log data to Brewfather.
@@ -59,6 +60,7 @@ dtoverlay=w1-gpio
 ```
 
 > **Note**
+> 
 > If you plan on using a Tilt Hydrometer you will also need to sure bluetooh services are installed on you Raspberry Pi.
 
 Install docker on you Raspberry Pi if needed and ensure the current user is in the docker group:
