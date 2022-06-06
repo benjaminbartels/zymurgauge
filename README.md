@@ -73,7 +73,6 @@ Ensure that the current user is in the docker group:
 sudo usermod -aG docker ${USER}
 ```
 
-
 Ensure that docker starts on boot:
 
 ```sh
@@ -82,10 +81,12 @@ sudo systemctl enable docker
 
 ### Installation
 
-Run the setup script:
+Download and run the setup script:
 
 ```sh
-curl -sSL https://raw.githubusercontent.com/benjaminbartels/zymurgauge/master/scripts/setup.sh | sh
+wget https://raw.githubusercontent.com/benjaminbartels/zymurgauge/master/scripts/setup.sh
+chmod +x setup.sh
+./setup.sh
 ```
 
 The setup script will prompt you for the following:
@@ -104,13 +105,13 @@ The script will initialize the local storage and conf files for zymurgauge, infl
 Download the Docker compose file to your home directory:
 
 ```sh
-wget https://github.com/benjaminbartels/zymurgauge/blob/master/deployments/docker-compose.yml
+wget https://raw.githubusercontent.com/benjaminbartels/zymurgauge/master/deployments/docker-compose.yml
 ```
 
 Run this following to start the services:
 
 ```sh
-GROUP_ID=$(stat -c '%g' /var/run/docker.sock) docker compose -d -f docker-compose.yml -p zymurgauge up
+GROUP_ID=$(stat -c '%g' /var/run/docker.sock) docker compose -p zymurgauge up -d
 ```
 
 Once the services are up go to `https://<your-raspberry-pis-hostname>:8080` your web browser:
