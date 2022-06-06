@@ -45,7 +45,7 @@ services:
     ports:
       - "8125:8125/udp"
     # TODO: Find better solution. This allows for collection of docker metrics which might be out of scope
-    user: telegraf:${GROUP_ID:?"Please run as follows 'GROUP_ID=$$(stat -c '%g' /var/run/docker.sock) docker-compose up'"}
+    user: telegraf:${GROUP_ID:?"Please run as follows 'GROUP_ID=$$(stat -c '%g' /var/run/docker.sock) docker compose -p zymurgauge up -d'"}
     volumes:
       - ${HOME}/.zymurgauge/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro

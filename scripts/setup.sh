@@ -75,9 +75,9 @@ mkdir -p $ZYM_PATH/telegraf
 
 influxdb_token=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 64 ; echo '')
 
-# copy conf files that are to be updated to their respective data directories
-cp config/nginx.conf $ZYM_PATH/nginx
-cp config/telegraf.conf $ZYM_PATH/telegraf
+# download config files that are to be updated to their respective data directories
+wget -P $ZYM_PATH/nginx/ https://raw.githubusercontent.com/benjaminbartels/zymurgauge/master/config/nginx.conf
+wget -P $ZYM_PATH/telegraf https://raw.githubusercontent.com/benjaminbartels/zymurgauge/master/config/telegraf.conf
 
 # create self signed cert
 openssl req \
