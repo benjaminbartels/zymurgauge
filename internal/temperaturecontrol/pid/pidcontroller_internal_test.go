@@ -16,13 +16,13 @@ func TestOptions(t *testing.T) {
 	expected := time.Nanosecond
 	clock := clock.NewRealClock()
 
-	pid := NewPIDTemperatureController(nil, nil, 1, 1, 1, l, SetClock(clock), CyclePeriod(expected))
+	pid := NewPIDTemperatureController(nil, nil, 1, 1, 1, l, SetClock(clock), Period(expected))
 
 	if pid.clock != clock {
 		assert.Equal(t, expected, pid.clock)
 	}
 
-	if pid.cyclePeriod != expected {
-		assert.Equal(t, expected, pid.cyclePeriod)
+	if pid.period != expected {
+		assert.Equal(t, expected, pid.period)
 	}
 }

@@ -16,11 +16,11 @@ import (
 var _ temperaturecontrol.TemperatureController = (*Controller)(nil)
 
 const (
-	pidMin             float64       = 0
-	pidMax             float64       = 100
-	defaultCyclePeriod time.Duration = 1 * time.Second
-	errorWaitPeriod    time.Duration = 10 * time.Second
-	dutyTimeDivisor                  = 100
+	pidMin          float64       = 0
+	pidMax          float64       = 100
+	defaultPeriod   time.Duration = 10 * time.Second
+	errorWaitPeriod time.Duration = 10 * time.Second
+	dutyTimeDivisor               = 100
 
 	ErrAlreadyRunning   = Error("pid is already running")
 	ErrThermometerIsNil = Error("thermometer is nil")
@@ -37,7 +37,7 @@ type Controller struct {
 	thermometer device.Thermometer
 	actuator    device.Actuator
 	pid         *pidctrl.PIDController
-	cyclePeriod time.Duration
+	period      time.Duration
 	clock       clock.Clock
 	logger      *logrus.Logger
 	isRunning   bool
@@ -55,10 +55,10 @@ func NewPIDTemperatureController(thermometer device.Thermometer, actuator device
 	c := &Controller{
 		thermometer: thermometer,
 
-		cyclePeriod: defaultCyclePeriod,
-		actuator:    actuator,
-		clock:       clock.NewRealClock(),
-		logger:      logger,
+		period:   defaultPeriod,
+		actuator: actuator,
+		clock:    clock.NewRealClock(),
+		logger:   logger,
 	}
 
 	pid := pidctrl.NewPIDController(kP, kI, kD)
@@ -80,10 +80,9 @@ func SetClock(clock clock.Clock) OptionsFunc {
 	}
 }
 
-// CyclePeriod sets the duration of the chiller's PWM cycle.
-func CyclePeriod(period time.Duration) OptionsFunc {
+func Period(period time.Duration) OptionsFunc {
 	return func(t *Controller) {
-		t.cyclePeriod = period
+		t.period = period
 	}
 }
 
@@ -109,10 +108,6 @@ func (c *Controller) Run(ctx context.Context, setPoint float64) error {
 
 	c.runMutex.Unlock()
 
-	return c.startCycle(ctx)
-}
-
-func (c *Controller) startCycle(ctx context.Context) error {
 	lastUpdateTime := c.clock.Now()
 
 	for {
@@ -124,74 +119,34 @@ func (c *Controller) startCycle(ctx context.Context) error {
 			continue
 		}
 
-		since := c.clock.Since(lastUpdateTime)
-		dutyCycle := c.pid.UpdateDuration(temperature, since)
-		lastUpdateTime = c.clock.Now()
-		dutyTime := time.Duration(float64(c.cyclePeriod.Nanoseconds()) * dutyCycle / dutyTimeDivisor)
-		waitTime := c.cyclePeriod - dutyTime
-
 		c.logger.Debugf("Actuator current temperature is %.4f°C, set point is %.4f°C", temperature, c.pid.Get())
-		c.logger.Debugf("Actuator dutyCycle is %.2f%%, dutyTime is %s, waitTime is %s",
-			dutyCycle, dutyTime, waitTime)
 
-		if dutyTime > 0 {
-			if err := c.actuator.On(); err != nil {
-				c.logger.WithError(err).Error("could not turn actuator on")
-				<-time.After(errorWaitPeriod)
+		since := c.clock.Since(lastUpdateTime)
+		duty := c.pid.UpdateDuration(temperature, since)
 
-				return nil
-			}
+		c.logger.Debugf("Actuator duty is %.2f%%", duty)
 
-			c.logger.Debugf("Actuator acting for %v", dutyTime)
-
-			if didComplete := c.wait(ctx, dutyTime); !didComplete {
-				return c.quit(c.actuator)
-			}
-
-			c.logger.Debugf("Actuator acted for %v", dutyTime)
+		if duty > 0 {
+			c.actuator.PWMOn(duty / 100)
+		} else {
+			c.actuator.Off()
 		}
 
-		if waitTime > 0 {
+		timer := c.clock.NewTimer(c.period)
+		defer timer.Stop()
+
+		select {
+		case <-timer.C:
+			continue
+		case <-ctx.Done():
+			c.runMutex.Lock()
+			defer c.runMutex.Unlock()
+			c.isRunning = false
 			if err := c.actuator.Off(); err != nil {
-				c.logger.WithError(err).Error("could not turn actuator off")
-				<-time.After(errorWaitPeriod)
-
-				return nil
+				return errors.Wrap(err, "could not turn actuator off while quiting")
 			}
 
-			c.logger.Debugf("Actuator waiting for %v", waitTime)
-
-			if didComplete := c.wait(ctx, waitTime); !didComplete {
-				return c.quit(c.actuator)
-			}
-
-			c.logger.Debugf("Actuator waited for %v", waitTime)
+			return nil
 		}
 	}
-}
-
-func (c *Controller) wait(ctx context.Context, waitTime time.Duration) bool {
-	timer := c.clock.NewTimer(waitTime)
-	defer timer.Stop()
-
-	select {
-	case <-timer.C:
-		return true
-	case <-ctx.Done():
-		c.runMutex.Lock()
-		defer c.runMutex.Unlock()
-		c.isRunning = false
-
-		return false
-	}
-}
-
-func (c *Controller) quit(actuator device.Actuator) error {
-	c.logger.Debug("Actuator quiting")
-
-	if err := actuator.Off(); err != nil {
-		return errors.Wrap(err, "could not turn actuator off while quiting")
-	}
-
-	return nil
 }

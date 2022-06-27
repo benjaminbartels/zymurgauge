@@ -28,6 +28,7 @@ type ThermometerAndHydrometer interface {
 type Actuator interface {
 	On() error
 	Off() error
+	PWMOn(duty float64) error
 }
 
 type TemperatureController interface {

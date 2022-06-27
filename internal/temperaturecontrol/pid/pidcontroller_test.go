@@ -188,7 +188,7 @@ func TestLogging(t *testing.T) {
 		})
 
 	therm := pid.NewPIDTemperatureController(thermometerMock, actuatorMock, kP, kI, kD, l,
-		pid.CyclePeriod(100*time.Millisecond))
+		pid.Period(100*time.Millisecond))
 
 	ctx, stop := context.WithCancel(context.Background())
 

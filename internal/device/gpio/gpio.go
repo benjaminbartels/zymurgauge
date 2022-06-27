@@ -5,7 +5,11 @@ import (
 	"github.com/pkg/errors"
 	"periph.io/x/conn/v3/gpio"
 	"periph.io/x/conn/v3/gpio/gpioreg"
+	"periph.io/x/conn/v3/physic"
 )
+
+// See: https://www.homebrewtalk.com/threads/craftbeerpi-raspberry-pi-software.569497/page-18
+const frequency = 1 * physic.Hertz
 
 var _ device.Actuator = (*Actuator)(nil)
 
@@ -24,6 +28,16 @@ func NewGPIOActuator(pinID string) (*Actuator, error) {
 
 func (a *Actuator) On() error {
 	if err := a.pin.Out(gpio.High); err != nil {
+		return errors.Wrapf(err, "could not set pin %s to high", a.pin.Name())
+	}
+
+	return nil
+}
+
+func (a *Actuator) PWMOn(duty float64) error {
+	d := gpio.Duty(float64(gpio.DutyMax) * duty)
+
+	if err := a.pin.PWM(d, frequency); err != nil {
 		return errors.Wrapf(err, "could not set pin %s to high", a.pin.Name())
 	}
 
