@@ -31,8 +31,8 @@ func SetDevicePath(path string) OptionsFunc {
 	}
 }
 
-// NewDs18b20 Create a new ds18b20 Thermometer.
-func NewDs18b20(id string, options ...OptionsFunc) (*Ds18b20, error) {
+// New creates a new ds18b20 Thermometer.
+func New(id string, options ...OptionsFunc) (*Ds18b20, error) {
 	d := &Ds18b20{
 		ID:   id,
 		path: DefaultDevicePath,

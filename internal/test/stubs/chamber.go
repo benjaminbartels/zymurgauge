@@ -34,6 +34,8 @@ type Actuator struct {
 
 func (a *Actuator) On() error { return nil }
 
+func (a *Actuator) PWMOn(duty float64) error { return nil }
+
 func (a *Actuator) Off() error { return nil }
 
 type Tilt struct {
