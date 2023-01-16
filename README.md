@@ -15,11 +15,11 @@ The system currently supports controlling chilling and heating devices, such as 
 the Raspberry Pi's GPIO interface.  It also uses DS18B20 sensors and/or [Tilt Hydrometers](https://tilthydrometer.com/)
 to monitor temperatures.  Gravity readings from the Tilts can also be monitored.  
 
-Zymurgauge interfaces the Brewfather to allow the user to select the the batch to be fermeneted.  During fermentation,
+Zymurgauge interfaces the Brewfather to allow the user to select the batch to be fermeneted.  During fermentation,
 data is collected and sent to your Brewfather account's streaming endpoint.  A premium membership to Brewfather is
-required to use their API.  Data is collected by an Telegraf instance which send it to an InfluxDB instance via the
+required to use their API.  Data is collected by a Telegraf instance which sends data to an InfluxDB instance via the
 StatsD protocol.  A graph of the temperature and gravity readings can be view in the Zymurgauge UI.  The project
-constains a Docker compose file which starts Zymurgauge along side InfluxDB and Telegraf all behind a nginx reverse
+contains a Docker compose file which starts Zymurgauge along side InfluxDB and Telegraf all behind an Nginx reverse
 proxy.
 
 In the future it will be extended to also control a HERMS (Heat Exchange Re-circulating Mash System).
