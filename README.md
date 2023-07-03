@@ -171,7 +171,7 @@ build - Packaging and Continuous Integration (Dockerfiles)
 ## Development Setup
 
 > **Note**
-> Ensure that you have at least Go 1.8 and yarn 1.22 installed.
+> Ensure that you have at least Go 1.20 and yarn 1.22 installed.
 
 To initialize your local development environment run:
 
