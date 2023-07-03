@@ -354,9 +354,9 @@ type Source struct {
 }
 
 type SpargeAdjustmentsAcids struct {
-	Amount        int    `json:"amount"`
-	Type          string `json:"type"`
-	Concentration int    `json:"concentration"`
+	Amount        float64 `json:"amount"`
+	Type          string  `json:"type"`
+	Concentration int     `json:"concentration"`
 }
 
 type SpargeAdjustments struct {
