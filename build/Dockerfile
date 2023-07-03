@@ -10,7 +10,7 @@ RUN make build-react
 
 #############################################################
 
-FROM golang:1.18 as go-builder
+FROM golang:1.20 as go-builder
 
 ARG app_version
 
