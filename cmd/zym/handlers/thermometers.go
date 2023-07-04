@@ -14,8 +14,8 @@ type ThermometersHandler struct {
 	DevicePath string
 }
 
-func (h *ThermometersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
-	p httprouter.Params,
+func (h *ThermometersHandler) GetAll(ctx context.Context, w http.ResponseWriter, _ *http.Request,
+	_ httprouter.Params,
 ) error {
 	ids, err := onewire.GetIDs(h.DevicePath, onewire.Ds18b20Prefix)
 	if err != nil {

@@ -19,8 +19,8 @@ type ChambersHandler struct {
 	Logger            *logrus.Logger
 }
 
-func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
-	p httprouter.Params,
+func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, _ *http.Request,
+	_ httprouter.Params,
 ) error {
 	chambers, err := h.ChamberController.GetAll()
 
@@ -39,7 +39,7 @@ func (h *ChambersHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *
 	return nil
 }
 
-func (h *ChambersHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *ChambersHandler) Get(ctx context.Context, w http.ResponseWriter, _ *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
 	c, err := h.ChamberController.Get(id)
@@ -60,7 +60,7 @@ func (h *ChambersHandler) Get(ctx context.Context, w http.ResponseWriter, r *htt
 	return nil
 }
 
-func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) error {
 	c, err := parseChamber(r)
 	if err != nil {
 		return errors.Wrap(err, "could not parse chamber")
@@ -95,7 +95,7 @@ func (h *ChambersHandler) Save(ctx context.Context, w http.ResponseWriter, r *ht
 	return nil
 }
 
-func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, r *http.Request,
+func (h *ChambersHandler) Delete(ctx context.Context, w http.ResponseWriter, _ *http.Request,
 	p httprouter.Params,
 ) error {
 	id := p.ByName("id")
@@ -125,7 +125,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 
 	step := r.URL.Query().Get("step")
 
-	if err := h.ChamberController.StartFermentation(id, step); err != nil {
+	if err := h.ChamberController.StartFermentation(ctx, id, step); err != nil {
 		switch {
 		case errors.Is(err, chamber.ErrNotFound):
 			return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
@@ -145,7 +145,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 	return nil
 }
 
-func (h *ChambersHandler) Stop(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *ChambersHandler) Stop(ctx context.Context, w http.ResponseWriter, _ *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
 	if err := h.ChamberController.StopFermentation(id); err != nil {

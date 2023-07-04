@@ -21,12 +21,13 @@ func (t *Tilt) GetID() string {
 	return string(t.color)
 }
 
+//nolint:gomnd
 func (t *Tilt) GetTemperature() (float64, error) {
 	if t.ibeacon == nil {
 		return 0, ErrIBeaconIsNil
 	}
 
-	return math.Round(float64(t.ibeacon.Major-32)/1.8*100) / 100, nil
+	return math.Round(float64(t.ibeacon.Major-32) / 1.8), nil
 }
 
 func (t *Tilt) GetGravity() (float64, error) {
@@ -34,5 +35,7 @@ func (t *Tilt) GetGravity() (float64, error) {
 		return 0, ErrIBeaconIsNil
 	}
 
-	return float64(t.ibeacon.Minor) / 1000, nil
+	gravityDenom := 1000.0
+
+	return float64(t.ibeacon.Minor) / gravityDenom, nil
 }

@@ -22,7 +22,7 @@ const (
 	gpioErrMsg    = "could not create new GPIO %s"
 )
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestConfigure(t *testing.T) {
 	t.Parallel()
 	t.Run("configure", configure)
@@ -135,7 +135,7 @@ func configureGPIOError(t *testing.T) {
 	assert.Contains(t, cfgErr.Problems()[0].Error(), fmt.Sprintf(gpioErrMsg, gpio2))
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestLogging(t *testing.T) {
 	t.Parallel()
 	t.Run("log", log)

@@ -16,7 +16,7 @@ type SettingsHandler struct {
 	UpdateChan   chan settings.Settings
 }
 
-func (h *SettingsHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *SettingsHandler) Get(ctx context.Context, w http.ResponseWriter, _ *http.Request, _ httprouter.Params) error {
 	s, err := h.SettingsRepo.Get()
 	if err != nil {
 		return errors.Wrap(err, "could not get settings from repository")
@@ -33,7 +33,7 @@ func (h *SettingsHandler) Get(ctx context.Context, w http.ResponseWriter, r *htt
 	return nil
 }
 
-func (h *SettingsHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *SettingsHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) error {
 	appSettings, err := parseAppSettings(r)
 	if err != nil {
 		return errors.Wrap(err, "could not parse settings")

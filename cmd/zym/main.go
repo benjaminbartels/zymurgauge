@@ -36,10 +36,11 @@ import (
 var version = "develop"
 
 const (
-	dbFilePermissions    = 0o600
-	bboltReadTimeout     = 1 * time.Second
-	statsDConnectTimeout = 5 * time.Second
-	statsDRetryCount     = 5
+	dbFilePermissions      = 0o600
+	bboltReadTimeout       = 1 * time.Second
+	statsDConnectTimeout   = 5 * time.Second
+	statsDRetryCount       = 5
+	debugReadHeaderTimeout = 3 * time.Second
 )
 
 type config struct {
@@ -116,7 +117,7 @@ func main() {
 	}
 }
 
-func run(logger *logrus.Logger, cfg config) error {
+func run(logger *logrus.Logger, cfg config) error { //nolint: funlen // Shorten
 	if _, err := host.Init(); err != nil {
 		return errors.Wrap(err, "could not initialize gpio")
 	}
@@ -165,7 +166,7 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	brewfatherClient := brewfather.New(s.BrewfatherAPIUserID, s.BrewfatherAPIKey, s.BrewfatherLogURL)
 
-	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherClient, logger, statsdClient,
+	chamberManager, err := chamber.NewManager(chamberRepo, configurator, brewfatherClient, logger, statsdClient,
 		cfg.ReadingsUpdateInterval)
 	if err != nil {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
@@ -240,36 +241,42 @@ func createTiltMonitor(ctx context.Context, logger *logrus.Logger, errCh chan er
 }
 
 func startDebugEndpoint(host string, logger *logrus.Logger) {
+	server := &http.Server{
+		Addr:              host,
+		ReadHeaderTimeout: debugReadHeaderTimeout,
+		Handler:           debug.Mux(),
+	}
+
 	go func() {
-		if err := http.ListenAndServe(host, debug.Mux()); err != nil {
+		if err := server.ListenAndServe(); err != nil {
 			logger.WithError(err).Errorf("Debug endpoint %s closed.", host)
 		}
 	}()
 }
 
-func createRepos(path string) (chamberRepo *database.ChamberRepo, settingsRepo *database.SettingsRepo, err error) {
+func createRepos(path string) (*database.ChamberRepo, *database.SettingsRepo, error) {
 	db, err := bbolt.Open(path, dbFilePermissions, &bbolt.Options{Timeout: bboltReadTimeout})
 	if err != nil {
 		err = errors.Wrap(err, "could not open database")
 
-		return
+		return nil, nil, err
 	}
 
-	chamberRepo, err = database.NewChamberRepo(db)
+	chamberRepo, err := database.NewChamberRepo(db)
 	if err != nil {
 		err = errors.Wrap(err, "could not create chamber repo")
 
-		return
+		return nil, nil, err
 	}
 
-	settingsRepo, err = database.NewSettingsRepo(db)
+	settingsRepo, err := database.NewSettingsRepo(db)
 	if err != nil {
 		err = errors.Wrap(err, "could not create settings repo")
 
-		return
+		return nil, nil, err
 	}
 
-	return
+	return chamberRepo, settingsRepo, nil
 }
 
 func checkAndInitSettings(args initArgs, settingsRepo *database.SettingsRepo, logger *logrus.Logger,

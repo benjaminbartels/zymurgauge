@@ -50,8 +50,7 @@ func NewDiscoverer(logger *logrus.Logger) (*BluezDiscoverer, error) {
 	return discoverer, nil
 }
 
-func (d *BluezDiscoverer) Discover(ctx context.Context) (chan Event, error) { // todo: rename
-	d.runMutex.Lock()
+func (d *BluezDiscoverer) Discover(ctx context.Context) (chan Event, error) { //nolint: funlen // Shorten
 	if d.isRunning {
 		defer d.runMutex.Unlock()
 
@@ -120,7 +119,7 @@ func (d *BluezDiscoverer) Discover(ctx context.Context) (chan Event, error) { //
 	return d.ch, nil
 }
 
-func (d *BluezDiscoverer) processDevice(ctx context.Context, device *device.Device1) {
+func (d *BluezDiscoverer) processDevice(ctx context.Context, device *device.Device1) { //nolint: funlen // Shorten
 	d.logger.Debugf("Processing device %s.", device.Properties.Address)
 
 	b, err := beacon.NewBeacon(device)

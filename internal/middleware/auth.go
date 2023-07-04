@@ -8,12 +8,11 @@ import (
 	"github.com/benjaminbartels/zymurgauge/internal/auth"
 	"github.com/benjaminbartels/zymurgauge/internal/platform/web"
 	"github.com/julienschmidt/httprouter"
-	"github.com/sirupsen/logrus"
 )
 
 const partsLength = 2
 
-func Authorize(secret string, logger *logrus.Logger) web.Middleware {
+func Authorize(secret string) web.Middleware {
 	m := func(handler web.Handler) web.Handler {
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
 			authHeader := r.Header["Authorization"]

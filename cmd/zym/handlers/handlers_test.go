@@ -31,21 +31,21 @@ const (
 
 var errSomeError = errors.New("some error")
 
-func setupHandlerTest(query string, body io.Reader) (w *httptest.ResponseRecorder, r *http.Request,
-	ctx context.Context,
+func setupHandlerTest(query string, body io.Reader) (*httptest.ResponseRecorder, *http.Request,
+	context.Context,
 ) {
-	w = httptest.NewRecorder()
+	w := httptest.NewRecorder()
 
 	if query != "" {
 		query = "?" + query
 	}
 
-	r = httptest.NewRequest("", "/"+query, body)
+	r := httptest.NewRequest("", "/"+query, body)
 	v := web.CtxValues{
 		Path: r.URL.Path,
 		Now:  time.Now(),
 	}
-	ctx = web.InitContextValues(r.Context(), &v)
+	ctx := web.InitContextValues(r.Context(), &v)
 
-	return
+	return w, r, ctx
 }

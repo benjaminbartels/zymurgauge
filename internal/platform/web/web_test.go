@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestGet(t *testing.T) {
 	t.Parallel()
 	t.Run("getIndex", getIndex)
@@ -137,7 +137,7 @@ type mockResponseWriter struct {
 	http.ResponseWriter
 }
 
-func (m mockResponseWriter) Write(bytes []byte) (int, error) {
+func (m mockResponseWriter) Write(_ []byte) (int, error) {
 	return 0, errors.New("write error")
 }
 
