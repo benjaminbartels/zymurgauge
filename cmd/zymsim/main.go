@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"math"
 	"os"
 	"strings"
@@ -195,7 +195,7 @@ func writeChart(c chart.Chart, fileName string) error {
 		return errors.Wrap(err, "could not render chart")
 	}
 
-	readBuf, err := ioutil.ReadAll(buffer)
+	readBuf, err := io.ReadAll(buffer)
 	if err != nil {
 		return errors.Wrap(err, "could not real buffer")
 	}
@@ -204,7 +204,7 @@ func writeChart(c chart.Chart, fileName string) error {
 		fileName = "chart_" + time.Now().Format("20060102150405") + ".png"
 	}
 
-	if err := ioutil.WriteFile(fileName, readBuf, chartFilePermissions); err != nil {
+	if err := os.WriteFile(fileName, readBuf, chartFilePermissions); err != nil {
 		return errors.Wrap(err, "could not write file")
 	}
 

@@ -3,7 +3,7 @@ package handlers_test
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,7 +40,7 @@ func getAllThermometers(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := []string{}
@@ -61,7 +61,7 @@ func getAllThermometersEmpty(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := []string{}

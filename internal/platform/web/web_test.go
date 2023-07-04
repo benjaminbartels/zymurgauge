@@ -1,7 +1,7 @@
 package web_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -47,7 +47,7 @@ func getIndex(t *testing.T) {
 	app.ServeHTTP(w, r)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	assert.Equal(t, []byte(response), bodyBytes)
@@ -88,7 +88,7 @@ func getStatic(t *testing.T) {
 		app.ServeHTTP(w, r)
 
 		resp := w.Result()
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 
 		assert.Equal(t, []byte(response), bodyBytes)

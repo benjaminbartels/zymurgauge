@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sort"
 	"testing"
@@ -80,7 +80,7 @@ func getAllChambers(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := []*chamber.Chamber{}
@@ -105,7 +105,7 @@ func getAllChambersEmpty(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := []*chamber.Chamber{}
@@ -174,7 +174,7 @@ func getChamberFound(t *testing.T) {
 
 	resp := w.Result()
 
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := &chamber.Chamber{}
@@ -269,7 +269,7 @@ func saveChamber(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := &chamber.Chamber{}

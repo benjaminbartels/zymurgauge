@@ -1,7 +1,6 @@
 package database_test
 
 import (
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -19,7 +18,7 @@ type testDB struct {
 func createTestDB() *testDB {
 	p := "zymurgauge-test-"
 
-	f, err := ioutil.TempFile("", p)
+	f, err := os.CreateTemp("", p)
 	if err != nil {
 		panic(err)
 	}
