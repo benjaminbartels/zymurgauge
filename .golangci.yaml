@@ -21,7 +21,6 @@ linters:
     - contextcheck
     - cyclop
     - decorder
-    - depguard
     - dogsled
     - dupl
     - dupword
@@ -104,6 +103,7 @@ linters:
     - wrapcheck
     - wsl
   disable:
+    - depguard                  # Unnecessary
     - godox                     # Need to be able to commit code with TODO
     - varnamelen                # Too optionated
 linters-settings:
