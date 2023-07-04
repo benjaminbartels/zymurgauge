@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -46,7 +46,7 @@ func getAllBatches(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := []batch.Summary{}
@@ -69,7 +69,7 @@ func getAllBatchesEmpty(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := []batch.Summary{}
@@ -138,7 +138,7 @@ func getBatchFound(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	batch := batch.Detail{}

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -56,7 +56,7 @@ func getSettingsFound(t *testing.T) {
 
 	resp := w.Result()
 
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := &settings.Settings{}
@@ -161,7 +161,7 @@ func saveSettings(t *testing.T) {
 	assert.NoError(t, err)
 
 	resp := w.Result()
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	bodyBytes, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	result := &settings.Settings{}
