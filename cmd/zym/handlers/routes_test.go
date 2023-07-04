@@ -110,7 +110,7 @@ func TestRoutes(t *testing.T) {
 		controllerMock.On("Get", mock.Anything).Return(c, nil)
 		controllerMock.On("Save", mock.Anything).Return(nil)
 		controllerMock.On("Delete", mock.Anything).Return(nil)
-		controllerMock.On("StartFermentation", chamberID, "A").Return(nil)
+		controllerMock.On("StartFermentation", ctxMatcher, chamberID, "A").Return(nil)
 		controllerMock.On("StopFermentation", chamberID).Return(nil)
 
 		s := &settings.Settings{
