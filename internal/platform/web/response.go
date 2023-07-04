@@ -15,7 +15,7 @@ type RequestError struct {
 }
 
 // NewRequestError creates a new RequestError with the provided error and HTTP status code.
-func NewRequestError(errMessage string, status int) error {
+func NewRequestError(errMessage string, status int) error { // TODO: refactor this
 	return &RequestError{errMessage, status}
 }
 

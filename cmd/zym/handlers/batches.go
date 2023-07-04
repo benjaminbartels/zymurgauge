@@ -16,8 +16,8 @@ type BatchesHandler struct {
 	Service brewfather.Service
 }
 
-func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *http.Request,
-	p httprouter.Params,
+func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, _ *http.Request,
+	_ httprouter.Params,
 ) error {
 	batchSummaries, err := h.Service.GetAllBatchSummaries(ctx)
 	if err != nil {
@@ -33,7 +33,7 @@ func (h *BatchesHandler) GetAll(ctx context.Context, w http.ResponseWriter, r *h
 	return nil
 }
 
-func (h *BatchesHandler) Get(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *BatchesHandler) Get(ctx context.Context, w http.ResponseWriter, _ *http.Request, p httprouter.Params) error {
 	id := p.ByName("id")
 
 	batchDetail, err := h.Service.GetBatchDetail(ctx, id)

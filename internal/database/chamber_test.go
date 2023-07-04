@@ -10,7 +10,7 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestGetAllChambers(t *testing.T) {
 	t.Parallel()
 	t.Run("saveNewChamber", saveNewChamber)

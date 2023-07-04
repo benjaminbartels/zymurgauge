@@ -24,7 +24,7 @@ type AuthHandler struct {
 	Logger       *logrus.Logger
 }
 
-func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) error {
 	creds, err := parseCredentials(r)
 	if err != nil {
 		return errors.Wrap(err, "could not parse credentials")
@@ -61,7 +61,7 @@ func (h *AuthHandler) Login(ctx context.Context, w http.ResponseWriter, r *http.
 	return nil
 }
 
-func (h *AuthHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, p httprouter.Params) error {
+func (h *AuthHandler) Save(ctx context.Context, w http.ResponseWriter, r *http.Request, _ httprouter.Params) error {
 	credentials, err := parseCredentials(r)
 	if err != nil {
 		return errors.Wrap(err, "could not parse settings")

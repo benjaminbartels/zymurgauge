@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestGetAllBatches(t *testing.T) {
 	t.Parallel()
 	t.Run("getAllBatches", getAllBatches)
@@ -107,7 +107,7 @@ func getAllBatchesRespondError(t *testing.T) {
 	assert.Contains(t, err.Error(), respondErrMsg)
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestGetBatch(t *testing.T) {
 	t.Parallel()
 	t.Run("getBatchFound", getBatchFound)

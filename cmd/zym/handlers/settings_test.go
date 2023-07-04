@@ -29,7 +29,7 @@ func getTestSettings() *settings.Settings {
 	}
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestGetSettings(t *testing.T) {
 	t.Parallel()
 	t.Run("getSettingsFound", getSettingsFound)
@@ -90,7 +90,8 @@ func getSettingsOtherError(t *testing.T) {
 	t.Parallel()
 
 	s := getTestSettings()
-	jsonBytes, _ := json.Marshal(s)
+	jsonBytes, err := json.Marshal(s)
+	assert.NoError(t, err)
 
 	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 
@@ -101,7 +102,7 @@ func getSettingsOtherError(t *testing.T) {
 
 	handler := &handlers.SettingsHandler{SettingsRepo: settingsMock, UpdateChan: ch}
 
-	err := handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{}})
+	err = handler.Get(ctx, w, r, httprouter.Params{httprouter.Param{}})
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get settings from"))
 }
 
@@ -109,7 +110,8 @@ func getSettingsRespondError(t *testing.T) {
 	t.Parallel()
 
 	s := getTestSettings()
-	jsonBytes, _ := json.Marshal(s)
+	jsonBytes, err := json.Marshal(s)
+	assert.NoError(t, err)
 
 	w, r, _ := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 
@@ -121,11 +123,11 @@ func getSettingsRespondError(t *testing.T) {
 	handler := &handlers.SettingsHandler{SettingsRepo: settingsMock, UpdateChan: ch}
 
 	// use new ctx to force error
-	err := handler.Get(context.Background(), w, r, httprouter.Params{})
+	err = handler.Get(context.Background(), w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), respondErrMsg)
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestSaveSettings(t *testing.T) {
 	t.Parallel()
 	t.Run("saveSettings", saveSettings)
@@ -138,7 +140,8 @@ func saveSettings(t *testing.T) {
 	t.Parallel()
 
 	s := getTestSettings()
-	jsonBytes, _ := json.Marshal(s)
+	jsonBytes, err := json.Marshal(s)
+	assert.NoError(t, err)
 
 	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 
@@ -154,7 +157,7 @@ func saveSettings(t *testing.T) {
 
 	handler := &handlers.SettingsHandler{SettingsRepo: settingsMock, UpdateChan: ch}
 
-	err := handler.Save(ctx, w, r, httprouter.Params{})
+	err = handler.Save(ctx, w, r, httprouter.Params{})
 	assert.NoError(t, err)
 
 	resp := w.Result()
@@ -185,7 +188,8 @@ func saveSettingsOtherError(t *testing.T) {
 	t.Parallel()
 
 	s := getTestSettings()
-	jsonBytes, _ := json.Marshal(s)
+	jsonBytes, err := json.Marshal(s)
+	assert.NoError(t, err)
 
 	w, r, ctx := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 
@@ -197,7 +201,7 @@ func saveSettingsOtherError(t *testing.T) {
 
 	handler := &handlers.SettingsHandler{SettingsRepo: settingsMock, UpdateChan: ch}
 
-	err := handler.Save(ctx, w, r, httprouter.Params{})
+	err = handler.Save(ctx, w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "save settings to"))
 }
 
@@ -205,7 +209,8 @@ func saveSettingsRespondError(t *testing.T) {
 	t.Parallel()
 
 	s := getTestSettings()
-	jsonBytes, _ := json.Marshal(s)
+	jsonBytes, err := json.Marshal(s)
+	assert.NoError(t, err)
 
 	w, r, _ := setupHandlerTest("", bytes.NewBuffer(jsonBytes))
 
@@ -218,6 +223,6 @@ func saveSettingsRespondError(t *testing.T) {
 	handler := &handlers.SettingsHandler{SettingsRepo: settingsMock, UpdateChan: ch}
 
 	// use new ctx to force error
-	err := handler.Save(context.Background(), w, r, httprouter.Params{})
+	err = handler.Save(context.Background(), w, r, httprouter.Params{})
 	assert.Contains(t, err.Error(), respondErrMsg)
 }

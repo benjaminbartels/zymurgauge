@@ -16,7 +16,6 @@ import (
 var _ Controller = (*Manager)(nil)
 
 type Manager struct {
-	ctx                    context.Context
 	repo                   Repo
 	chambers               map[string]*Chamber
 	configurator           Configurator
@@ -27,11 +26,10 @@ type Manager struct {
 	mutex                  sync.RWMutex
 }
 
-func NewManager(ctx context.Context, repo Repo, configurator Configurator, service brewfather.Service,
+func NewManager(repo Repo, configurator Configurator, service brewfather.Service,
 	logger *logrus.Logger, metrics metrics.Metrics, readingsUpdateInterval time.Duration,
 ) (*Manager, error) {
 	m := &Manager{
-		ctx:                    ctx,
 		repo:                   repo,
 		chambers:               make(map[string]*Chamber),
 		configurator:           configurator,
@@ -133,7 +131,7 @@ func (m *Manager) Delete(id string) error {
 }
 
 // StartFermentation signals the given chamber to start the given fermentation step.
-func (m *Manager) StartFermentation(chamberID string, step string) error {
+func (m *Manager) StartFermentation(ctx context.Context, chamberID string, step string) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -146,7 +144,7 @@ func (m *Manager) StartFermentation(chamberID string, step string) error {
 		return ErrFermenting
 	}
 
-	err := chamber.StartFermentation(m.ctx, step)
+	err := chamber.StartFermentation(ctx, step)
 	if err != nil {
 		return errors.Wrap(err, "could not start fermentation")
 	}

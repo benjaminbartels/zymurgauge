@@ -102,7 +102,7 @@ func createTestChambers() []*chamber.Chamber {
 	return []*chamber.Chamber{chamber1, chamber2, chamber3}
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestNewManager(t *testing.T) {
 	t.Parallel()
 
@@ -128,7 +128,7 @@ func newManagerGetAllError(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
+	manager, err := chamber.NewManager(repoMock, configuratorMock, serviceMock, l, m,
 		readingUpdateInterval)
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "get all chambers from"))
 	assert.Nil(t, manager)
@@ -159,13 +159,13 @@ func newManagerConfigureErrors(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
+	manager, err := chamber.NewManager(repoMock, configuratorMock, serviceMock, l, m,
 		readingUpdateInterval)
 	assert.Contains(t, err.Error(), "could not configure temperature controllers")
 	assert.NotNil(t, manager)
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestGetAllChambers(t *testing.T) {
 	t.Parallel()
 	t.Run("getAllChambers", getAllChambers)
@@ -195,7 +195,7 @@ func getAllChambersEmpty(t *testing.T) {
 	assertChamberListsAreEqual(t, chambers, result)
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestGetChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("getChamberFound", getChamberFound)
@@ -226,7 +226,7 @@ func getChamberNotFoundError(t *testing.T) {
 	assert.Nil(t, result)
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestSaveChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("saveChamber", saveChamber)
@@ -265,7 +265,7 @@ func saveChamberFermentingError(t *testing.T) {
 	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Save", testChambers[0]).Return(nil)
 
-	err := manager.StartFermentation(chamberID1, "Primary")
+	err := manager.StartFermentation(context.Background(), chamberID1, "Primary")
 	assert.NoError(t, err)
 
 	err = manager.Save(testChambers[0])
@@ -306,7 +306,7 @@ func saveChamberConfigureError(t *testing.T) {
 	assert.ErrorAs(t, err, &cfgErr)
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestDeleteChamber(t *testing.T) {
 	t.Parallel()
 	t.Run("deleteChamber", deleteChamber)
@@ -338,7 +338,7 @@ func deleteChamberFermentingError(t *testing.T) {
 	manager, repoMock, _ := setupManagerTest(t, testChambers)
 	repoMock.On("Delete", chamberID1).Return(nil)
 
-	err := manager.StartFermentation(chamberID1, "Primary")
+	err := manager.StartFermentation(context.Background(), chamberID1, "Primary")
 	assert.NoError(t, err)
 
 	err = manager.Delete(chamberID1)
@@ -357,7 +357,7 @@ func deleteChamberRepoError(t *testing.T) {
 	assert.Contains(t, err.Error(), fmt.Sprintf(repoErrMsg, "delete chamber "+chamberID1+" from"))
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestStartFermentation(t *testing.T) {
 	t.Parallel()
 	t.Run("startFermentation", startFermentation)
@@ -395,7 +395,7 @@ func startFermentation(t *testing.T) {
 		})
 	metricsMock.On(mock.Anything, mock.Anything).Return()
 
-	err := manager.StartFermentation(chamberID1, "Primary")
+	err := manager.StartFermentation(context.Background(), chamberID1, "Primary")
 	assert.NoError(t, err)
 
 	select {
@@ -411,7 +411,7 @@ func startFermentationNotFoundError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation("", "Primary")
+	err := manager.StartFermentation(context.Background(), "", "Primary")
 	assert.ErrorIs(t, err, chamber.ErrNotFound)
 }
 
@@ -422,7 +422,7 @@ func startFermentationNoCurrentBatchError(t *testing.T) {
 	testChambers[0].CurrentBatch = nil
 	manager, _, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(chamberID1, "Primary")
+	err := manager.StartFermentation(context.Background(), chamberID1, "Primary")
 	assert.ErrorIs(t, err, chamber.ErrNoCurrentBatch)
 }
 
@@ -432,7 +432,7 @@ func startFermentationInvalidStepError(t *testing.T) {
 	testChambers := createTestChambers()
 
 	manager, _, _ := setupManagerTest(t, testChambers)
-	err := manager.StartFermentation(chamberID1, "BadStep")
+	err := manager.StartFermentation(context.Background(), chamberID1, "BadStep")
 	assert.ErrorIs(t, err, chamber.ErrInvalidStep)
 }
 
@@ -466,8 +466,7 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
-		readingUpdateInterval)
+	manager, err := chamber.NewManager(repoMock, configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	go func() {
@@ -482,7 +481,7 @@ func startFermentationTemperatureControllerLogError(t *testing.T) {
 		}
 	}()
 
-	err = manager.StartFermentation(chamberID1, "Primary")
+	err = manager.StartFermentation(context.Background(), chamberID1, "Primary")
 	assert.NoError(t, err)
 	select {
 	case <-doneCh:
@@ -518,11 +517,10 @@ func startFermentationOtherDevicesAreNil(t *testing.T) {
 
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, m,
-		readingUpdateInterval)
+	manager, err := chamber.NewManager(repoMock, configuratorMock, serviceMock, l, m, readingUpdateInterval)
 	assert.NoError(t, err)
 
-	err = manager.StartFermentation(chamberID3, "Primary")
+	err = manager.StartFermentation(context.Background(), chamberID3, "Primary")
 	assert.NoError(t, err)
 
 	<-doneCh
@@ -531,7 +529,7 @@ func startFermentationOtherDevicesAreNil(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-//nolint: paralleltest // False positives with r.Run not in a loop
+//nolint:paralleltest // False positives with r.Run not in a loop
 func TestStopFermentation(t *testing.T) {
 	t.Parallel()
 	t.Run("stopFermentation", stopFermentation)
@@ -546,7 +544,7 @@ func stopFermentation(t *testing.T) {
 
 	manager, _, _ := setupManagerTest(t, testChambers)
 
-	err := manager.StartFermentation(chamberID1, "Primary")
+	err := manager.StartFermentation(context.Background(), chamberID1, "Primary")
 	assert.NoError(t, err)
 
 	err = manager.StopFermentation(chamberID1)
@@ -622,8 +620,7 @@ func setupManagerTest(t *testing.T,
 	serviceMock := &mocks.Service{}
 	serviceMock.On("Log", mock.Anything, mock.Anything).Return(nil)
 
-	manager, err := chamber.NewManager(context.Background(), repoMock, configuratorMock, serviceMock, l, metricsMock,
-		readingUpdateInterval)
+	manager, err := chamber.NewManager(repoMock, configuratorMock, serviceMock, l, metricsMock, readingUpdateInterval)
 	assert.NoError(t, err)
 
 	return manager, repoMock, metricsMock

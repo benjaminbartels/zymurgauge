@@ -40,7 +40,7 @@ func NewApp(chamberManager chamber.Controller, devicePath string, service brewfa
 		return nil, errors.Wrap(err, "could not get settings")
 	}
 
-	authMw := middleware.Authorize(s.AuthSecret, logger)
+	authMw := middleware.Authorize(s.AuthSecret)
 
 	AuthHandler := &AuthHandler{
 		SettingsRepo: settingsRepo,

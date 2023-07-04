@@ -1,13 +1,15 @@
 package chamber
 
 import (
+	"context"
+
 	"github.com/benjaminbartels/zymurgauge/internal/device"
 	"github.com/benjaminbartels/zymurgauge/internal/device/tilt"
 )
 
 type Controller interface {
 	Repo
-	StartFermentation(chamberID string, step string) error
+	StartFermentation(ctx context.Context, chamberID string, step string) error
 	StopFermentation(chamberID string) error
 }
 
