@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	apiURL              = "https://api.brewfather.app/v1"
+	apiURL              = "https://api.brewfather.app/v2"
 	batchesPath         = "batches"
 	logInterval         = 15 * time.Minute
 	requestTimeout      = 10 * time.Second
-	dialTimeout         = 5 * time.Second
-	tlsHandshakeTimeout = 5 * time.Second
+	dialTimeout         = 10 * time.Second
+	tlsHandshakeTimeout = 10 * time.Second
 )
 
 var (
