@@ -125,7 +125,7 @@ func (h *ChambersHandler) Start(ctx context.Context, w http.ResponseWriter, r *h
 
 	step := r.URL.Query().Get("step")
 
-	if err := h.ChamberController.StartFermentation(ctx, id, step); err != nil {
+	if err := h.ChamberController.StartFermentation(id, step); err != nil {
 		switch {
 		case errors.Is(err, chamber.ErrNotFound):
 			return web.NewRequestError(fmt.Sprintf("chamber '%s' not found", id), http.StatusNotFound)
