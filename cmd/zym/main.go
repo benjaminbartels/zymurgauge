@@ -167,7 +167,7 @@ func run(logger *logrus.Logger, cfg config) error {
 
 	brewfatherClient := brewfather.New(s.BrewfatherAPIUserID, s.BrewfatherAPIKey, s.BrewfatherLogURL)
 
-	chamberManager, err := chamber.NewManager(chamberRepo, configurator, brewfatherClient, logger, statsdClient,
+	chamberManager, err := chamber.NewManager(ctx, chamberRepo, configurator, brewfatherClient, logger, statsdClient,
 		cfg.ReadingsUpdateInterval)
 	if err != nil {
 		logger.WithError(err).Warn("An error occurred while creating chamber manager")
