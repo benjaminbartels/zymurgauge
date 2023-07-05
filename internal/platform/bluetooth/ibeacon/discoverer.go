@@ -52,6 +52,7 @@ func NewDiscoverer(logger *logrus.Logger) (*BluezDiscoverer, error) {
 
 //nolint:funlen // TODO: Shorten
 func (d *BluezDiscoverer) Discover(ctx context.Context) (chan Event, error) {
+	d.runMutex.Lock()
 	if d.isRunning {
 		defer d.runMutex.Unlock()
 
