@@ -2,44 +2,46 @@ package tilt
 
 import (
 	"context"
+	"encoding/binary"
+	"encoding/hex"
 	"sync"
+	"time"
 
-	"github.com/benjaminbartels/zymurgauge/internal/platform/bluetooth/ibeacon"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"tinygo.org/x/bluetooth"
+)
+
+const (
+	iBeaconCompanyID = 76 // Apple's IBeacon company Id
+	tiltTLL          = 60 * time.Second
 )
 
 type Color string
 
 type Monitor struct {
-	ibeaconDiscoverer ibeacon.Discoverer
-	logger            *logrus.Logger
-	tilts             map[Color]*Tilt
-	colors            map[string]Color
-	isRunning         bool
-	runMutex          sync.Mutex
-	tiltMutex         sync.RWMutex
+	logger    *logrus.Logger
+	tilts     map[Color]*Tilt
+	colors    map[string]Color
+	isRunning bool
+	runMutex  sync.Mutex
+	tiltMutex sync.RWMutex
 }
 
-func NewMonitor(ibeaconDiscoverer ibeacon.Discoverer, logger *logrus.Logger) *Monitor {
+func NewMonitor(logger *logrus.Logger) *Monitor {
 	m := &Monitor{
-		ibeaconDiscoverer: ibeaconDiscoverer,
-		logger:            logger,
-		tilts:             make(map[Color]*Tilt),
+		logger: logger,
+		tilts:  make(map[Color]*Tilt),
 		colors: map[string]Color{
-			"A495BB10C5B14B44B5121370F02D74DE": "red",
-			"A495BB20C5B14B44B5121370F02D74DE": "green",
-			"A495BB30C5B14B44B5121370F02D74DE": "black",
-			"A495BB40C5B14B44B5121370F02D74DE": "purple",
-			"A495BB50C5B14B44B5121370F02D74DE": "orange",
-			"A495BB60C5B14B44B5121370F02D74DE": "blue",
-			"A495BB70C5B14B44B5121370F02D74DE": "yellow",
-			"A495BB80C5B14B44B5121370F02D74DE": "pink",
+			"a495bb10c5b14b44b5121370f02d74de": "red",
+			"a495bb20c5b14b44b5121370f02d74de": "green",
+			"a495bb30c5b14b44b5121370f02d74de": "black",
+			"a495bb40c5b14b44b5121370f02d74de": "purple",
+			"a495bb50c5b14b44b5121370f02d74de": "orange",
+			"a495bb60c5b14b44b5121370f02d74de": "blue",
+			"a495bb70c5b14b44b5121370f02d74de": "yellow",
+			"a495bb80c5b14b44b5121370f02d74de": "pink",
 		},
-	}
-
-	for _, color := range m.colors {
-		m.tilts[color] = &Tilt{color: color}
 	}
 
 	return m
@@ -61,29 +63,44 @@ func (m *Monitor) Run(ctx context.Context) error {
 	return m.startCycle(ctx)
 }
 
+func (m *Monitor) removeExpiredTilts() {
+	m.tiltMutex.Lock()
+	defer m.tiltMutex.Unlock()
+
+	for _, tilt := range m.tilts {
+		if tilt.lastSeen.Before(time.Now().Add(-tiltTLL)) {
+			m.logger.Debugf("Removing expired Tilt: %s", tilt.color)
+			delete(m.tilts, tilt.color)
+		}
+	}
+}
+
 func (m *Monitor) startCycle(ctx context.Context) error {
-	discovery, err := m.ibeaconDiscoverer.Discover(ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not start discovery")
+	adapter := bluetooth.DefaultAdapter
+
+	if err := adapter.Enable(); err != nil {
+		return errors.Wrap(err, "could not enable bluetooth adapter")
+	}
+
+	if err := adapter.Scan(m.scan); err != nil {
+		return errors.Wrap(err, "could not scan bluetooth adapter")
 	}
 
 	for {
+		timer := time.NewTimer(tiltTLL)
+		defer timer.Stop()
+
 		select {
-		case event := <-discovery:
-			if color, ok := m.colors[event.UUID]; ok {
-				if event.Type == ibeacon.Offline {
-					m.handleOffline(color)
-
-					continue
-				}
-
-				m.handleOnline(color, event.IBeacon)
-			} else {
-				m.logger.Debugf("IBeacon %s is not a tilt.", event.IBeacon.ProximityUUID)
-			}
+		case <-timer.C:
+			m.removeExpiredTilts()
 
 		case <-ctx.Done():
 			m.runMutex.Lock()
+
+			if err := adapter.StopScan(); err != nil {
+				return errors.Wrap(err, "could not stop scaning bluetooth adapter")
+			}
+
 			defer m.runMutex.Unlock()
 			m.isRunning = false
 
@@ -92,34 +109,44 @@ func (m *Monitor) startCycle(ctx context.Context) error {
 	}
 }
 
-func (m *Monitor) handleOnline(color Color, ibeacon ibeacon.IBeacon) {
-	m.tiltMutex.Lock()
-	defer m.tiltMutex.Unlock()
+func (m *Monitor) scan(_ *bluetooth.Adapter, device bluetooth.ScanResult) {
+	manufacturerData := device.ManufacturerData()
 
-	if _, tiltFound := m.tilts[color]; tiltFound {
-		m.logger.Debugf("Tilt online - Color: %s", color)
-		m.tilts[color].ibeacon = &ibeacon
+	if len(manufacturerData) > 0 {
+		for _, element := range manufacturerData {
+			if element.CompanyID == iBeaconCompanyID && len(element.Data) == 23 {
+				uuid := hex.EncodeToString(element.Data[2:18])
+
+				if color, ok := m.colors[uuid]; ok {
+					major := binary.BigEndian.Uint16(element.Data[18:20])
+					minor := binary.BigEndian.Uint16(element.Data[20:22])
+					measuredPower := int8(element.Data[22])
+
+					m.logger.Debugf("Tilt Online: Color: %s UUID: %s Major: %d, Minor: %d, Power: %d dBm",
+						color, uuid, major, minor, measuredPower)
+
+					m.tiltMutex.Lock()
+					m.tilts[color] = &Tilt{
+						color:       color,
+						temperature: float64(major),
+						gravity:     float64(minor),
+						lastSeen:    time.Now(),
+					}
+					m.tiltMutex.Unlock()
+				}
+			}
+		}
 	}
 }
 
-func (m *Monitor) handleOffline(color Color) {
-	m.tiltMutex.Lock()
-	defer m.tiltMutex.Unlock()
-
-	if _, tiltFound := m.tilts[color]; tiltFound {
-		m.logger.Debugf("Tilt offline. - Color: %s", color)
-		m.tilts[color].ibeacon = nil
-	}
-}
-
-func (m *Monitor) GetTilt(color Color) (*Tilt, error) {
+func (m *Monitor) GetTilt(color Color) (Tilt, error) {
 	m.tiltMutex.RLock()
 	defer m.tiltMutex.RUnlock()
 
 	tilt, ok := m.tilts[color]
 	if !ok {
-		return nil, ErrNotFound
+		return Tilt{}, ErrNotFound
 	}
 
-	return tilt, nil
+	return *tilt, nil
 }
