@@ -139,14 +139,14 @@ func (m *Monitor) scan(_ *bluetooth.Adapter, device bluetooth.ScanResult) {
 	}
 }
 
-func (m *Monitor) GetTilt(color Color) (Tilt, error) {
+func (m *Monitor) GetTilt(color Color) (*Tilt, error) {
 	m.tiltMutex.RLock()
 	defer m.tiltMutex.RUnlock()
 
 	tilt, ok := m.tilts[color]
 	if !ok {
-		return Tilt{}, ErrNotFound
+		return nil, ErrNotFound
 	}
 
-	return *tilt, nil
+	return tilt, nil
 }
